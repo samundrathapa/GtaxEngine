@@ -1,0 +1,7 @@
+{
+  "platform": "ios",
+  "version": "1.0.0",
+  "timestamp": "20261023_094420",
+  "bundleIdentifier": "com.gtax.enterprise",
+  "workspace": "ios/Runner.xcworkspace"
+}

@@ -1,0 +1,8 @@
+{
+  "platform": "android",
+  "version": "1.0.0",
+  "timestamp": "20261023_094420",
+  "package": "com.gtax.enterprise",
+  "entryPoint": "lib/main.dart",
+  "gradle": "android/build.gradle"
+}

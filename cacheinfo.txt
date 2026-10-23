@@ -1,0 +1,175 @@
+================================================================================
+           gtax Enterprise - Redis Cache & Database Synchronization Guide
+================================================================================
+Document: cacheinfo.txt
+Purpose: Comprehensive explanation of the Data Retrieval, Redis Caching,
+         PostgreSQL Database Persistence, Auto-Sync Pipeline, and Client User Menu.
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURE TOPOLOGY & DATA FLOW
+--------------------------------------------------------------------------------
+
+  +-----------------------+
+  | Client Browser / App  |
+  +-----------+-----------+
+              |  HTTP JSON API (/api/v1/property/masters, /rates, /users, etc.)
+              v
+  +-----------------------+
+  | Node.js / Express API |
+  +-----------+-----------+
+              |
+      +-------+-------+
+      |               |
+      v               v
++------------+  +--------------------+
+|   Redis    |  |  PostgreSQL Server |
+| Cache Engine|  | (gtax_db/gtax_test)|
++------------+  +--------------------+
+
+Dual Engine Redis Cache:
+1. Live Redis via 'ioredis' (configured via REDIS_URL or REDIS_HOST:REDIS_PORT).
+2. High-speed In-Memory LRU Simulation fallback if Redis server is offline.
+
+
+--------------------------------------------------------------------------------
+2. HOW DATA RETRIEVAL WORKS (READ PIPELINE)
+--------------------------------------------------------------------------------
+
+Every data request follows a strict Cache-First (Read-Through) strategy:
+
+Step 1: Check Redis Cache
+  - When the client requests table data (e.g. GET /api/v1/property/masters,
+    GET /api/v1/property/taxpayers, GET /api/v1/users, or GET /api/v1/cache/table/:name),
+    the server generates the Redis key:
+      gtax:cache:table:<table_name> (e.g. gtax:cache:table:tbl_land_rate)
+  - The server queries Redis for this key.
+
+Step 2A: Cache Hit (Sub-millisecond retrieval)
+  - If the key exists in Redis and contains records:
+    -> The cached JSON payload is parsed and returned immediately to the client.
+    -> Zero database queries are sent to PostgreSQL.
+    -> Redis hits counter increments, providing maximum throughput.
+
+Step 2B: Cache Miss (Automatic DB Load & Cache Warm)
+  - If the key is not in Redis (e.g. on server startup, cold boot, or TTL expiry):
+    -> Server queries the PostgreSQL database table directly:
+       SELECT * FROM <table_name> WHERE is_deleted IS NOT TRUE ORDER BY 1 ASC;
+    -> The retrieved records are immediately written into Redis with a 3600s (1 hour) TTL:
+       RedisCacheManager.set("gtax:cache:table:<table_name>", rows, 3600);
+    -> The data is returned to the client from the newly warmed Redis cache.
+
+
+--------------------------------------------------------------------------------
+3. HOW DATA MUTATIONS WORK (WRITE PIPELINE & AUTO-SYNC)
+--------------------------------------------------------------------------------
+
+When a user adds, modifies, or deletes a record (e.g. adding a land rate to
+tbl_land_rate, registering a taxpayer, or adding a land/house/floor parcel):
+
+Step 1: PostgreSQL Serial Sequence Synchronization
+  - Before INSERT, the server automatically aligns the PostgreSQL sequence to the
+    highest ID in the table to prevent duplicate key constraint violations:
+    SELECT setval(pg_get_serial_sequence('<table_name>', 'id'),
+                  GREATEST(COALESCE((SELECT MAX(id) FROM <table_name>), 0), 1));
+
+Step 2: Direct Database Persistence with User ID Audit Columns
+  - The record is written directly to PostgreSQL via parameterized SQL INSERT/UPDATE.
+  - Audit fields are strictly enforced according to BaseFrame standards:
+    * insert_by: Stores the integer/string ID from tbl_user (e.g. '1' for Eleanor Vance)
+    * insert_on: CURRENT_TIMESTAMP
+    * update_by: Stores the integer/string ID from tbl_user (e.g. '1')
+    * update_on: CURRENT_TIMESTAMP
+    * delete_by: NULL on create, stores user ID on soft-delete
+    * deleted_on: NULL on create, timestamp on soft-delete
+    * is_active:  TRUE
+    * is_deleted: FALSE
+
+Step 3: Automatic Database-to-Redis Synchronization
+  - As soon as the database write succeeds, the server auto-interacts with Redis:
+    -> Executes a clean SELECT query on PostgreSQL for the affected table.
+    -> Updates the Redis cache key 'gtax:cache:table:<table_name>' with the fresh table rows.
+    -> Updates the global lastSyncTimestamp in Redis telemetry.
+
+Step 4: Response Returned from Redis
+  - The newly created or updated record is returned to the client directly from
+    the synchronized Redis cache.
+
+
+--------------------------------------------------------------------------------
+4. CLIENT-SIDE USER MENU BAR: "CLEAR CACHE & SYNC DB"
+--------------------------------------------------------------------------------
+
+An interactive control is available directly in the user menu bar:
+
+Location:
+  Top-right header -> User Profile Avatar / Name -> Dropdown Menu
+  -> Section: "Redis Cache Engine: DB <-> REDIS"
+  -> Button: "Clear Cache & Sync DB"
+
+How it works:
+  1. The user clicks "Clear Cache & Sync DB".
+  2. The frontend triggers an authenticated POST request to:
+     POST /api/v1/cache/clear-and-sync
+  3. The server performs the full cache purge and re-sync cycle:
+     a) Calls RedisCacheManager.clearAll() to flush all Redis cache keys.
+     b) Iterates through all 26 core tables.
+     c) Queries fresh records directly from the live PostgreSQL database.
+     d) Re-populates each table key in Redis with fresh data.
+     e) Records the operation latency (typically 5ms - 25ms).
+  4. The server returns a complete synchronization manifest.
+  5. The frontend displays the "Redis Cache Flushed & Re-Synced" modal showing:
+     - Connected Database Name (e.g. gtax_db or gtax_dbtest)
+     - Tables Synced count (26/26 complete)
+     - Total Records Loaded
+     - Latency in milliseconds
+     - Itemized table-by-table record count
+  6. A global custom event ('gtax:cache-cleared-and-synced') is dispatched
+     so active views reload without requiring a full browser refresh.
+
+
+--------------------------------------------------------------------------------
+5. ALL 26 SYNCHRONIZED TABLES
+--------------------------------------------------------------------------------
+
+All of the following 26 tables are stored in PostgreSQL and synced with Redis:
+
+  1.  tbl_role                 - RBAC system roles (superadmin, admin, operator, user)
+  2.  tbl_user                 - User accounts with employee IDs & security policies
+  3.  tbl_right                - Granular permission rights across all modules
+  4.  tbl_role_right           - Role-to-Right mapping matrix
+  5.  tbl_user_role            - User-to-Role assignments
+  6.  tbl_user_right           - Specific user permission overrides
+  7.  tbl_user_log             - User action & audit trails
+  8.  tbl_session_log          - Bearer token & active session registry
+  9.  tbl_fiscal_year          - Multi-year fiscal calendar (2079/80, 2080/81, 2081/82)
+  10. tbl_unit                 - Area measurement units (Aana, Ropani, Kattha, Bigha, SqFt)
+  11. tbl_construction_type    - Building structural types (RCC Pillar, Load Bearing, etc.)
+  12. tbl_land_nature          - Land zoning classifications (Commercial, Residential, etc.)
+  13. tbl_land_rate            - Municipal land valuation rates per ward & road category
+  14. tbl_malpot_rates         - Government Land Revenue (मालपोत) baseline rates
+  15. tbl_construction_rates   - Construction valuation rates per sq.ft
+  16. tbl_depreciation         - Depreciation schedule curves by building age
+  17. tbl_fine_rebate          - Penalty and discount matrix by payment timeliness
+  18. tbl_taxpayer_master      - Core taxpayer identity, citizenship & PAN/VAT records
+  19. tbl_taxpayer             - Municipal ward taxpayer registry
+  20. tbl_land                 - Taxpayer land parcel titles, moth & kitta numbers
+  21. tbl_house                - Registered house structures and plinth areas
+  22. tbl_floor                - Individual building floors with depreciation
+  23. tax_jurisdictions        - Federal, State, and Municipal tax authorities
+  24. tax_rules_matrix         - Complex tax rule definitions & rate percentages
+  25. tax_transactions         - Invoices and assessment transactions
+  26. tax_liability_breakdown  - Itemized multi-tier liability breakdown entries
+
+
+--------------------------------------------------------------------------------
+6. DYNAMIC DATABASE SWITCHING & PYTHON INTEGRATION
+--------------------------------------------------------------------------------
+
+- Dynamic DB Target:
+  Setting DB_NAME (or db_name) in .env (e.g. DB_NAME=gtax_dbtest) dynamically overrides
+  the database connection target in both TypeScript (postgresPool.ts) and Python
+  (dbconnect.py and backend/BaseFrame/db/DbConnects.py).
+
+- Python CLI & Connector:
+  python3 dbconnect.py dynamically loads .env, parses the database target,
+  checks the pool, and executes raw SQL queries seamlessly.

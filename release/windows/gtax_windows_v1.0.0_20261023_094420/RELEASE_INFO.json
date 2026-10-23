@@ -1,0 +1,9 @@
+{
+  "platform": "windows",
+  "target": "iis_web_server",
+  "version": "1.0.0",
+  "timestamp": "20261023_094420",
+  "updateMethod": "extract_and_replace",
+  "updateScript": "update_iis.bat",
+  "config": "web.config"
+}

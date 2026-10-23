@@ -1,0 +1,490 @@
+{
+  "_metadata": {
+    "title": "gtax DB Column Language Mapping",
+    "description": "Multi-language dictionary mapping database column names to localized display labels",
+    "version": "1.0.0",
+    "supported_languages": ["eng", "nep", "ind"]
+  },
+  "columns": {
+    "taxpayer_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Taxpayer ID",
+      "nep": "करदाता परिचय नं.",
+      "ind": "करदाता पहचान संख्या"
+    },
+    "taxpayer_code": {
+      "table": "tbl_taxpayer",
+      "eng": "Taxpayer Code",
+      "nep": "करदाता संकेत नं.",
+      "ind": "करदाता कोड"
+    },
+    "fullname": {
+      "table": "tbl_taxpayer",
+      "eng": "Full Name",
+      "nep": "पूरा नाम / विवरण",
+      "ind": "पूरा नाम"
+    },
+    "taxpayer_type_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Taxpayer Category / Entity",
+      "nep": "करदाता वर्ग (व्यक्तिगत/संस्थागत)",
+      "ind": "करदाता श्रेणी (व्यक्तिगत/संस्थागत)"
+    },
+    "gender_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Gender",
+      "nep": "लिंग (पुरुष/महिला/अन्य)",
+      "ind": "लिंग"
+    },
+    "date_of_birth_bs": {
+      "table": "tbl_taxpayer",
+      "eng": "Date of Birth (BS)",
+      "nep": "जन्म मिति (वि.सं.)",
+      "ind": "जन्म तिथि (संवत)"
+    },
+    "date_of_birth_ad": {
+      "table": "tbl_taxpayer",
+      "eng": "Date of Birth (AD)",
+      "nep": "जन्म मिति (ई.सं.)",
+      "ind": "जन्म तिथि (ईस्वी)"
+    },
+    "citizenship_number": {
+      "table": "tbl_taxpayer",
+      "eng": "Citizenship Number",
+      "nep": "नागरिकता नम्बर",
+      "ind": "नागरिकता / पहचान पत्र सं."
+    },
+    "citizenship_issue_district_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Citizenship Issue District",
+      "nep": "नागरिकता जारी जिल्ला",
+      "ind": "पहचान पत्र जारी जिला"
+    },
+    "citizenship_issue_date_bs": {
+      "table": "tbl_taxpayer",
+      "eng": "Citizenship Issue Date (BS)",
+      "nep": "नागरिकता जारी मिति (वि.सं.)",
+      "ind": "पहचान पत्र जारी तिथि"
+    },
+    "pan_number": {
+      "table": "tbl_taxpayer",
+      "eng": "PAN Number",
+      "nep": "स्थायी लेखा नम्बर (PAN)",
+      "ind": "पैन नंबर (PAN)"
+    },
+    "national_id_number": {
+      "table": "tbl_taxpayer",
+      "eng": "National ID Number",
+      "nep": "राष्ट्रिय परिचयपत्र नं.",
+      "ind": "राष्ट्रीय पहचान पत्र / आधार सं."
+    },
+    "father_name": {
+      "table": "tbl_taxpayer",
+      "eng": "Father's Name",
+      "nep": "बाबुको नाम",
+      "ind": "पिता का नाम"
+    },
+    "mother_name": {
+      "table": "tbl_taxpayer",
+      "eng": "Mother's Name",
+      "nep": "आमाको नाम",
+      "ind": "माता का नाम"
+    },
+    "spouse_name": {
+      "table": "tbl_taxpayer",
+      "eng": "Spouse's Name",
+      "nep": "पति/पत्नीको नाम",
+      "ind": "पति/पत्नी का नाम"
+    },
+    "grandfather_name": {
+      "table": "tbl_taxpayer",
+      "eng": "Grandfather's Name",
+      "nep": "बाजेको नाम",
+      "ind": "दादा का नाम"
+    },
+    "province_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Province",
+      "nep": "प्रदेश",
+      "ind": "राज्य / प्रांत"
+    },
+    "district_id": {
+      "table": "tbl_taxpayer",
+      "eng": "District",
+      "nep": "जिल्ला",
+      "ind": "ज़िला"
+    },
+    "municipality_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Municipality",
+      "nep": "नगरपालिका / गाउँपालिका",
+      "ind": "नगर निगम / पालिका"
+    },
+    "ward_no": {
+      "table": "common",
+      "eng": "Ward Number",
+      "nep": "वडा नम्बर",
+      "ind": "वार्ड संख्या"
+    },
+    "tole_village": {
+      "table": "tbl_taxpayer",
+      "eng": "Tole / Street Address",
+      "nep": "टोल / गाउँ / ठेगाना",
+      "ind": "मोहल्ला / टोला / पता"
+    },
+    "mobile_no": {
+      "table": "tbl_taxpayer",
+      "eng": "Mobile Number",
+      "nep": "मोबाइल नम्बर",
+      "ind": "मोबाइल नंबर"
+    },
+    "email": {
+      "table": "tbl_taxpayer",
+      "eng": "Email Address",
+      "nep": "इमेल ठेगाना",
+      "ind": "ईमेल पता"
+    },
+    "occupation_id": {
+      "table": "tbl_taxpayer",
+      "eng": "Occupation",
+      "nep": "पेशा / व्यवसाय",
+      "ind": "व्यवसाय / पेशा"
+    },
+    "land_id": {
+      "table": "tbl_land",
+      "eng": "Land Parcel ID",
+      "nep": "जग्गा परिचय नं.",
+      "ind": "भूमि खाता / आईडी"
+    },
+    "kitta_number": {
+      "table": "tbl_land",
+      "eng": "Kitta Number (Plot No)",
+      "nep": "कित्ता नम्बर",
+      "ind": "खसरा / कित्ता संख्या"
+    },
+    "moth_number": {
+      "table": "tbl_land",
+      "eng": "Moth Number (Ledger No)",
+      "nep": "मोठ नम्बर",
+      "ind": "खाता / मोठ संख्या"
+    },
+    "tole": {
+      "table": "tbl_land",
+      "eng": "Land Location / Tole",
+      "nep": "जग्गाको स्थान / टोल",
+      "ind": "स्थान / टोला"
+    },
+    "area_sqfeet": {
+      "table": "common",
+      "eng": "Area (Sq. Feet)",
+      "nep": "क्षेत्रफल (वर्गफुट)",
+      "ind": "क्षेत्रफल (वर्गफुट)"
+    },
+    "unit_id": {
+      "table": "common",
+      "eng": "Measuring Unit ID",
+      "nep": "मापन एकाई संकेत",
+      "ind": "मापन इकाई आईडी"
+    },
+    "land_measuring_unit_id": {
+      "table": "tbl_land",
+      "eng": "Land Measuring Unit",
+      "nep": "जग्गा नाप प्रणाली (रोपनी/विघा)",
+      "ind": "भूमि मापन इकाई"
+    },
+    "ropani": {
+      "table": "tbl_land",
+      "eng": "Ropani",
+      "nep": "रोपनी",
+      "ind": "रोपनी"
+    },
+    "aana": {
+      "table": "tbl_land",
+      "eng": "Aana",
+      "nep": "आना",
+      "ind": "आना"
+    },
+    "paisa": {
+      "table": "tbl_land",
+      "eng": "Paisa",
+      "nep": "पैसा",
+      "ind": "पैसा"
+    },
+    "dam": {
+      "table": "tbl_land",
+      "eng": "Daam",
+      "nep": "दाम",
+      "ind": "दाम"
+    },
+    "bigha": {
+      "table": "tbl_land",
+      "eng": "Bigha",
+      "nep": "बिघा",
+      "ind": "बीघा"
+    },
+    "kattha": {
+      "table": "tbl_land",
+      "eng": "Kattha",
+      "nep": "कठ्ठा",
+      "ind": "कट्ठा"
+    },
+    "dhur": {
+      "table": "tbl_land",
+      "eng": "Dhur",
+      "nep": "धुर",
+      "ind": "धूर"
+    },
+    "land_nature_id": {
+      "table": "tbl_land",
+      "eng": "Land Nature / Zoning",
+      "nep": "जग्गाको प्रकृति (आवासीय/व्यापारिक/कृषि)",
+      "ind": "भूमि की प्रकृति (आवासीय/व्यावसायिक/कृषि)"
+    },
+    "land_rate_id": {
+      "table": "tbl_land",
+      "eng": "Municipal Land Rate",
+      "nep": "नगरपालिका जग्गा दर",
+      "ind": "नगर निगम सर्किल दर"
+    },
+    "malpot_rate_id": {
+      "table": "tbl_land",
+      "eng": "Government (Malpot) Rate",
+      "nep": "मालपोत मूल्यांकन दर",
+      "ind": "सरकारी / राजस्व दर"
+    },
+    "acquisition_fy_id": {
+      "table": "tbl_land",
+      "eng": "Acquisition Fiscal Year",
+      "nep": "प्राप्ति / खरिद आर्थिक वर्ष",
+      "ind": "अधिग्रहण वित्तीय वर्ष"
+    },
+    "boundary_east": {
+      "table": "tbl_land",
+      "eng": "East Boundary (पूर्व साँध)",
+      "nep": "पूर्व साँध",
+      "ind": "पूर्व सीमा"
+    },
+    "boundary_west": {
+      "table": "tbl_land",
+      "eng": "West Boundary (पश्चिम साँध)",
+      "nep": "पश्चिम साँध",
+      "ind": "पश्चिम सीमा"
+    },
+    "boundary_north": {
+      "table": "tbl_land",
+      "eng": "North Boundary (उत्तर साँध)",
+      "nep": "उत्तर साँध",
+      "ind": "उत्तर सीमा"
+    },
+    "boundary_south": {
+      "table": "tbl_land",
+      "eng": "South Boundary (दक्षिण साँध)",
+      "nep": "दक्षिण साँध",
+      "ind": "दक्षिण सीमा"
+    },
+    "house_id": {
+      "table": "tbl_house",
+      "eng": "House Structure ID",
+      "nep": "घर संरचना संकेत नं.",
+      "ind": "भवन संरचना आईडी"
+    },
+    "house_no": {
+      "table": "tbl_house",
+      "eng": "House Number",
+      "nep": "घर नम्बर",
+      "ind": "मकान नंबर"
+    },
+    "secondary_land_id": {
+      "table": "tbl_house",
+      "eng": "Secondary Land Parcel (Spanning)",
+      "nep": "दोस्रो जग्गा कित्ता (दुई कित्तामा बनेको)",
+      "ind": "द्वितीय भूमि कित्ता"
+    },
+    "land_ids": {
+      "table": "tbl_house",
+      "eng": "Linked Land Parcel IDs",
+      "nep": "सम्बन्धित जग्गा कित्ता सूची",
+      "ind": "संबद्ध भूमि कित्ताएं"
+    },
+    "kitta_numbers": {
+      "table": "tbl_house",
+      "eng": "Located on Land Kitta #",
+      "nep": "घर बनेको जग्गा कित्ता नं.",
+      "ind": "भवन स्थित खसरा / कित्ता सं."
+    },
+    "plinth_area": {
+      "table": "tbl_house",
+      "eng": "Plinth Area (Sq.Ft)",
+      "nep": "प्लिन्थ क्षेत्रफल (वर्गफुट)",
+      "ind": "प्लिंथ क्षेत्रफल (वर्गफुट)"
+    },
+    "floor_no": {
+      "table": "common",
+      "eng": "Floor Number / Level",
+      "nep": "तला क्रम नं.",
+      "ind": "मंजिल संख्या"
+    },
+    "floor_id": {
+      "table": "tbl_floor",
+      "eng": "Floor Slab ID",
+      "nep": "तला एकाई संकेत नं.",
+      "ind": "मंजिल स्लैब आईडी"
+    },
+    "construction_type_id": {
+      "table": "common",
+      "eng": "Construction Structure Type",
+      "nep": "भवन निर्माण संरचना प्रकार",
+      "ind": "निर्माण संरचना प्रकार"
+    },
+    "rate_id": {
+      "table": "common",
+      "eng": "Construction Rate Matrix ID",
+      "nep": "निर्माण दररेट संकेत",
+      "ind": "निर्माण दर मैट्रिक्स आईडी"
+    },
+    "measuring_unit_id": {
+      "table": "common",
+      "eng": "Unit of Measurement",
+      "nep": "नाप एकाई",
+      "ind": "मापन इकाई"
+    },
+    "construction_date_bs": {
+      "table": "tbl_floor",
+      "eng": "Construction Date (BS)",
+      "nep": "निर्माण सम्पन्न मिति (वि.सं.)",
+      "ind": "निर्माण पूर्ण तिथि (संवत)"
+    },
+    "construction_date_ad": {
+      "table": "tbl_floor",
+      "eng": "Construction Date (AD)",
+      "nep": "निर्माण सम्पन्न मिति (ई.सं.)",
+      "ind": "निर्माण पूर्ण तिथि (ईस्वी)"
+    },
+    "depreciation_percent": {
+      "table": "tbl_floor",
+      "eng": "Depreciation %",
+      "nep": "ह्रासकट्टी प्रतिशत",
+      "ind": "मूल्यह्रास प्रतिशत"
+    },
+    "floor_modifier_percent": {
+      "table": "tbl_floor",
+      "eng": "Floor Level Modifier %",
+      "nep": "तला समायोजन प्रतिशत",
+      "ind": "मंजिल स्तर समायोजन %"
+    },
+    "plinth_multiplier": {
+      "table": "tbl_house",
+      "eng": "Plinth Multiplier Factor",
+      "nep": "प्लिन्थ गुणक दर",
+      "ind": "प्लिंथ गुणक कारक"
+    },
+    "custom_adjustment": {
+      "table": "tbl_house",
+      "eng": "Custom Municipal Adjustment",
+      "nep": "स्थानीय दर समायोजन (रु.)",
+      "ind": "नगरपालिका समायोजन (रु.)"
+    },
+    "land_amount": {
+      "table": "tbl_calculation",
+      "eng": "Land Amount (Evaluated)",
+      "nep": "जग्गा मूल्यांकन रकम",
+      "ind": "भूमि मूल्यांकन राशि"
+    },
+    "house_amount": {
+      "table": "tbl_calculation",
+      "eng": "House Amount (Evaluated)",
+      "nep": "घर संरचना मूल्यांकन रकम",
+      "ind": "भवन मूल्यांकन राशि"
+    },
+    "floor_amount": {
+      "table": "tbl_calculation",
+      "eng": "Floor Amount (Slabs Net)",
+      "nep": "तला एकाई मूल्यांकन रकम",
+      "ind": "मंजिल मूल्यांकन राशि"
+    },
+    "evaluated_amount": {
+      "table": "tbl_calculation",
+      "eng": "Total Evaluated Property",
+      "nep": "कुल सम्पत्ति मूल्यांकन रकम",
+      "ind": "कुल मूल्यांकित संपत्ति राशि"
+    },
+    "ipt_tax": {
+      "table": "tbl_calculation",
+      "eng": "Integrated Property Tax (IPT)",
+      "nep": "एकीकृत सम्पत्ति कर",
+      "ind": "एकीकृत संपत्ति कर (IPT)"
+    },
+    "sanitation_fee": {
+      "table": "tbl_calculation",
+      "eng": "Municipal Sanitation Fee",
+      "nep": "सरसफाई तथा फोहोर व्यवस्थापन शुल्क",
+      "ind": "स्वच्छता एवं कचरा प्रबंधन शुल्क"
+    },
+    "fine_amount": {
+      "table": "tbl_calculation",
+      "eng": "Late Penalty / Fine",
+      "nep": "विलम्ब जरिवाना रकम",
+      "ind": "विलंब जुर्माना राशि"
+    },
+    "discount_amount": {
+      "table": "tbl_calculation",
+      "eng": "Early Payment Rebate",
+      "nep": "अग्रिम भुक्तानी छुट रकम",
+      "ind": "अग्रिम भुगतान छूट राशि"
+    },
+    "total_amount": {
+      "table": "tbl_calculation",
+      "eng": "Net Total Tax Payable",
+      "nep": "तिर्नुपर्ने खुद कुल कर रकम",
+      "ind": "कुल देय कर राशि"
+    },
+    "fiscal_year_id": {
+      "table": "common",
+      "eng": "Fiscal Year ID",
+      "nep": "आर्थिक वर्ष संकेत",
+      "ind": "वित्तीय वर्ष आईडी"
+    },
+    "fiscal_year_code": {
+      "table": "tbl_fiscal_year",
+      "eng": "Fiscal Year (आ.व.)",
+      "nep": "आर्थिक वर्ष (कोड)",
+      "ind": "वित्तीय वर्ष"
+    },
+    "rate_per_unit": {
+      "table": "common",
+      "eng": "Rate Per Unit",
+      "nep": "प्रति एकाई दर (रु.)",
+      "ind": "प्रति इकाई दर"
+    },
+    "area_per_unit": {
+      "table": "common",
+      "eng": "Area Per Unit",
+      "nep": "प्रति एकाई क्षेत्रफल",
+      "ind": "प्रति इकाई क्षेत्रफल"
+    },
+    "remarks": {
+      "table": "common",
+      "eng": "Remarks / Notes",
+      "nep": "कैफियत / टिप्पणी",
+      "ind": "टिप्पणी / विवरण"
+    },
+    "is_active": {
+      "table": "common",
+      "eng": "Status (Active/Inactive)",
+      "nep": "अवस्था (सक्रिय/निष्क्रिय)",
+      "ind": "स्थिति (सक्रिय/निष्क्रिय)"
+    },
+    "created_at": {
+      "table": "common",
+      "eng": "Created Date & Time",
+      "nep": "प्रविष्टि मिति र समय",
+      "ind": "रजिस्ट्रेशन तिथि एवं समय"
+    },
+    "updated_at": {
+      "table": "common",
+      "eng": "Last Updated Time",
+      "nep": "अन्तिम सम्पादन समय",
+      "ind": "अंतिम अद्यतन समय"
+    }
+  }
+}

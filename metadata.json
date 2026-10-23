@@ -1,0 +1,6 @@
+{
+  "name": "Gtax - Multi-Jurisdictional Tax Liabilities & Architecture Engine",
+  "description": "Enterprise multi-jurisdictional tax liability platform with real-time data sync, microservices architecture blueprint, versioned DB migrations, and AI orchestrator (Gemini, OpenAI, Grok) with voice command.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

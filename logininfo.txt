@@ -1,0 +1,97 @@
+================================================================================
+gtax ENTERPRISE - LOGIN CREDENTIALS & SYSTEM REFERENCE
+================================================================================
+
+1. QUICK DEMO ACCOUNTS & PRESETS
+--------------------------------------------------------------------------------
+Default Password for all preset accounts: Password123!
+
+Role: Superadmin
+Email: superadmin@gtax.enterprise
+Access: Full system access, RBAC, company settings, master rates, database logs.
+
+Role: Admin
+Email: admin@gtax.enterprise
+Access: Municipality administration, taxpayer approval, property tax assessments.
+
+Role: Operator
+Email: operator@gtax.enterprise
+Access: 1-Door taxpayer registration, land & house structure data entry, reports.
+
+Role: User
+Email: user@gtax.enterprise
+Access: Citizen self-service portal, view property assessment dossier, tax receipts.
+
+
+2. POSTGRESQL DATABASE CONFIGURATION & CREDENTIALS
+--------------------------------------------------------------------------------
+For existing PostgreSQL installations (no need to reinstall):
+- Database Name: gtax_db
+- Database User: gtax_user
+- Password:      gtax_password
+- Host:          localhost (or 127.0.0.1)
+- Port:          5432
+- Database URL:  postgresql://gtax_user:gtax_password@localhost:5432/gtax_db
+
+How to create gtax_db and gtax_user on your existing PostgreSQL instance:
+  Method A (All-in-one script):
+    sudo -u postgres psql -f database/setup_gtax_db.sql
+  Method B (Helper script):
+    chmod +x database/setup_postgres.sh && ./database/setup_postgres.sh
+  Method C (Manual psql command):
+    CREATE ROLE gtax_user LOGIN PASSWORD 'gtax_password';
+    ALTER ROLE gtax_user CREATEDB;
+    CREATE DATABASE gtax_db OWNER gtax_user;
+    GRANT ALL PRIVILEGES ON DATABASE gtax_db TO gtax_user;
+    \c gtax_db
+    \i database/02_init_gtax_schema.sql
+
+Where to change database configuration in codebase:
+  1. Root .env file:
+     DB_HOST="localhost"
+     DB_PORT="5432"
+     DB_NAME="gtax_db"
+     DB_USER="gtax_user"
+     DB_PASSWORD="gtax_password"
+     DATABASE_URL="postgresql://gtax_user:gtax_password@localhost:5432/gtax_db"
+  2. Pool manager: src/server/db/postgresPool.ts
+  3. BaseFrame connector: src/server/BaseFrame/db/DbConnects.ts
+  4. Documentation guide: docs/DATABASE_CONFIGURATION.md
+
+
+3. CORE RELATIONAL DATABASE TABLES
+--------------------------------------------------------------------------------
+- tbl_fiscal_year          : Fiscal year definitions (BS / AD dates).
+- tbl_unit                 : Area measurement units (Aana, Ropani, Kattha, Sq.Ft).
+- tbl_construction_type    : Structural materials (RCC Frame, Brick Masonry, etc.).
+- tbl_land_nature          : Zoning types (Residential, Commercial, Agricultural).
+- tbl_land_rate            : Municipal land valuation rates per ward.
+- tbl_malpot_rates         : Land revenue statutory evaluation rates.
+- tbl_construction_rate    : Building base construction rates per sq.ft.
+- tbl_depreciation         : Structural age depreciation matrix.
+- tbl_taxpayer             : Citizen Taxpayer Master records.
+- tbl_property_master      : Citizen land and structural assets portfolio.
+- tbl_tax_calculation_year : Computed multi-year tax liabilities and receipts.
+- tbl_users                : Operators and staff authentication.
+- tbl_sync_event           : Real-time CDC audit ledger.
+
+
+4. BASEFRAME MANDATORY AUDIT CONTRACT (7 COLUMNS)
+--------------------------------------------------------------------------------
+Every database interaction and record creation adheres to the strict audit contract:
+- insert_by  : User ID or system actor who created the record.
+- insert_on  : Timestamp (UTC) when record was inserted.
+- update_by  : User ID or system actor who last modified the record.
+- update_on  : Timestamp of last modification.
+- delete_by  : User ID who soft-deleted the record (NULL if active).
+- deleted_on : Timestamp of soft-deletion (NULL if active).
+- is_active  : Soft-delete flag (TRUE = active, FALSE = deleted).
+
+
+5. ARCHITECTURE & SECURITY SPECIFICATIONS
+--------------------------------------------------------------------------------
+- Framework: Node.js Express + Next.js 15 App Router / React 19 + TypeScript
+- Single Common Entry Point: /api/v1 (Port 3000)
+- Multi-Platform Deployment: Flutter iOS & Android (mobileapp/)
+- Database: Relational PostgreSQL Engine with Migration Runner
+- AI: Google Gemini 2.5 Flash + Web Speech Voice Recognition Engine
