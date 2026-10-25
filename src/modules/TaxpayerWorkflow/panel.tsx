@@ -301,7 +301,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   };
 
   const handleDeleteLand = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this land record? Audit trails will mark it as deleted.")) return;
+    if (!confirm("Are you sure you want to delete this land record? ")) return;
     const res = await ApiController.deleteLand(id);
     if (res.success) {
       setStatusMsg("Land parcel deleted successfully.");
@@ -697,9 +697,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <UserCheck className="w-5 h-5 text-indigo-600" />
             <span>Taxpayer Detail (करदाता विवरण)</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Municipal taxpayer registry. Click Calculate to run valuation or Edit to manage land, house, and taxpayer records.
-          </p>
+        
         </div>
 
         <div className="flex items-center gap-2">
@@ -1016,7 +1014,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-600" />
-                <span>Land Parcels (tbl_land) for {taxpayerDossier?.taxpayer?.fullanme}</span>
+                <span>Land Parcels for {taxpayerDossier?.taxpayer?.fullanme}</span>
               </h3>
               <p className="text-xs text-slate-500">
                 Each parcel can be edited with real-time recalculation based on area, measuring unit, zoning nature, and rate matrices.
@@ -1140,7 +1138,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Home className="w-4 h-4 text-purple-600" />
-                <span>Building & House Structures (tbl_house) for {taxpayerDossier?.taxpayer?.fullanme}</span>
+                <span>Building & House Structures for {taxpayerDossier?.taxpayer?.fullanme}</span>
               </h3>
               <p className="text-xs text-slate-500">
                 Manage building numbers, plinth areas, floor counts, construction dates, and types.
@@ -1249,7 +1247,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-600" />
-                <span>Floor Units (tbl_floor) for {taxpayerDossier?.taxpayer?.fullanme}</span>
+                <span>Floor Units for {taxpayerDossier?.taxpayer?.fullanme}</span>
               </h3>
               <p className="text-xs text-slate-500">
                 Floor breakdown with individual construction rates, depreciation percentages, and net assessed values.
@@ -1470,7 +1468,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Edit Land Parcel (Kitta {editingLand.kitta_number})
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_land · ID: {editingLand.id}</div>
+                <div className="text-[11px] text-slate-500 font-mono">Land Parcel · ID: {editingLand.id}</div>
               </div>
               <button onClick={() => setEditLandModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -1619,7 +1617,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Add Land Parcel for {taxpayerDossier?.taxpayer?.fullanme}
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_land · New Parcel</div>
+                <div className="text-[11px] text-slate-500 font-mono">New Land Parcel</div>
               </div>
               <button onClick={() => setNewLandModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2002,7 +2000,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Edit House Structure ({editingHouse.house_no})
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_house · ID: {editingHouse.id}</div>
+                <div className="text-[11px] text-slate-500 font-mono">House Structure · ID: {editingHouse.id}</div>
               </div>
               <button onClick={() => setEditHouseModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2118,7 +2116,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Add House Structure for {taxpayerDossier?.taxpayer?.fullanme}
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_house · New Building</div>
+                <div className="text-[11px] text-slate-500 font-mono">New House Structure</div>
               </div>
               <button onClick={() => setNewHouseModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2214,7 +2212,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Edit Floor Slab #{editingFloor.floor_no}
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_floor · ID: {editingFloor.id}</div>
+                <div className="text-[11px] text-slate-500 font-mono">Floor Slab · ID: {editingFloor.id}</div>
               </div>
               <button onClick={() => setEditFloorModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2310,7 +2308,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Add Floor Unit to Building
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_floor · New Floor Slab</div>
+                <div className="text-[11px] text-slate-500 font-mono">New Floor Slab</div>
               </div>
               <button onClick={() => setNewFloorModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2393,7 +2391,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Construction Rate (tbl_const_rate)</label>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Construction Rate</label>
                   <select
                     value={newFloorRateId}
                     onChange={(e) => setNewFloorRateId(Number(e.target.value))}
@@ -2469,7 +2467,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Edit Taxpayer Master ({editingTaxpayer.code})
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_taxpayer_master · ID: {editingTaxpayer.id}</div>
+                <div className="text-[11px] text-slate-500 font-mono">Taxpayer Master · ID: {editingTaxpayer.id}</div>
               </div>
               <button onClick={() => setEditTaxpayerModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
@@ -2570,7 +2568,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Register New Taxpayer Master
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">tbl_taxpayer_master · New Record</div>
+                <div className="text-[11px] text-slate-500 font-mono">New Taxpayer Record</div>
               </div>
               <button onClick={() => setNewTpModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />

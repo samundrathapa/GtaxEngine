@@ -78,7 +78,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
                 G
               </div>
               <div>
-                <span className="text-2xl font-black tracking-tight text-white">gtax</span>
+                <span className="text-2xl font-black tracking-tight text-white">Gtax</span>
                 <p className="text-xs text-indigo-300">
                   Municipal Revenue & Tax Management
                 </p>

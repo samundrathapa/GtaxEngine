@@ -279,9 +279,9 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
                   onChange={(e) => setSelectedTableFilter(e.target.value)}
                   className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
-                  <option value="all">All Schema Tables ({tableNames.length})</option>
+                  <option value="all">All Modules ({tableNames.length})</option>
                   {tableNames.map((tbl) => (
-                    <option key={tbl} value={tbl}>Table: {tbl}</option>
+                    <option key={tbl} value={tbl}>Module: {tbl.replace(/^tbl_/, "").replace(/_/g, " ").toUpperCase()}</option>
                   ))}
                 </select>
               </div>
@@ -311,8 +311,8 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
                   <tr>
-                    <th className="p-3 w-48">Database Column (db_column_name)</th>
-                    <th className="p-3 w-32">Table Scope</th>
+                    <th className="p-3 w-48">Field / Attribute Key</th>
+                    <th className="p-3 w-32">Module Scope</th>
                     <th className="p-3">English Label (eng)</th>
                     <th className="p-3">Nepali Label (nep)</th>
                     <th className="p-3">Hindi Label (ind)</th>
@@ -335,8 +335,8 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
                             <code>{colName}</code>
                           </td>
                           <td className="p-3 font-sans text-slate-500">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono">
-                              {colData.table || "common"}
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono capitalize">
+                              {(colData.table || "common").replace(/^tbl_/, "").replace(/_/g, " ")}
                             </span>
                           </td>
                           <td className="p-2.5 font-sans">

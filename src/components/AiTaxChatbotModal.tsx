@@ -418,7 +418,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
           const botMsg: ChatMessage = {
             id: `bot-${Date.now()}`,
             sender: "bot",
-            text: `✅ Land Rate ${rateIdentifier} has been automatically inserted into the database (tbl_land_rate):\n• Code: ${res.data.code}\n• Rate per Aana: NPR ${Number(res.data.rate_per_unit || parsedRateAmount).toLocaleString()}\n• Ward Coverage: Wards ${res.data.ward_no_ids || "1,2,3"}\n• Fiscal Year: FY 2081/82`,
+            text: `✅ Land Rate ${rateIdentifier} has been automatically inserted into the database (Municipal Land Rates):\n• Code: ${res.data.code}\n• Rate per Aana: NPR ${Number(res.data.rate_per_unit || parsedRateAmount).toLocaleString()}\n• Ward Coverage: Wards ${res.data.ward_no_ids || "1,2,3"}\n• Fiscal Year: FY 2081/82`,
             actionTaken: "inserted_land_rate",
             landRateResult: res.data,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -634,7 +634,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
           <button
             onClick={() => handleSendMessage("add landrate 1 to land rate")}
             className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 font-medium flex items-center gap-1.5 shrink-0 transition-colors"
-            title="Auto-insert Land Rate 1 into tbl_land_rate"
+            title="Auto-insert Land Rate 1 into Land Rates"
           >
             <DollarSign className="w-3 h-3 text-amber-600" />
             <span>"add landrate 1 to land rate"</span>
@@ -682,7 +682,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
                   <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">
-                        Database Auto-Inserted (tbl_land_rate)
+                        Database Auto-Inserted (Land Rates)
                       </span>
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-mono">
                         ID: #{msg.landRateResult.id}

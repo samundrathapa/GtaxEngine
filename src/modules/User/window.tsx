@@ -91,10 +91,10 @@ export const UserWindow: React.FC<UserWindowProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {editUser ? "Edit User Record (tbl_user)" : "Register User in tbl_user"}
+                {editUser ? "Edit User Record" : "Register User"}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                PostgreSQL persistence with 7 mandatory audit columns & RBAC roles
+                Persistence with mandatory audit columns & RBAC roles
               </p>
             </div>
           </div>
@@ -162,7 +162,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                 <BadgeCheck className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Security Role (tbl_role)</span>
+                <span>Security Role</span>
               </label>
               <select
                 value={formData.role}
@@ -208,7 +208,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
 
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             <div className="text-[11px] text-slate-400 font-mono">
-              BaseFrame Contract: Auto-persisted to tbl_user & tbl_user_role with insert_by & timestamps.
+              Audit Contract: User record and assigned roles managed with insert_by & timestamps.
             </div>
           </div>
 
@@ -225,7 +225,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
               disabled={isSubmitting}
               className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              {isSubmitting ? "Saving to tbl_user..." : editUser ? "Update User" : "Create User in tbl_user"}
+              {isSubmitting ? "Saving..." : editUser ? "Update User" : "Create User"}
             </button>
           </div>
         </form>

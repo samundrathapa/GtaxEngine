@@ -89,19 +89,11 @@ export const ReportsPanel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>BaseFrame</span>
-            <span aria-hidden="true">·</span>
-            <span>reports/report_engine</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono text-slate-700">PDF, Excel, HTML, CSV</span>
-          </div>
+        
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             Multi-Format Tax Liability Reports Engine
           </h2>
-          <p className="text-sm text-slate-500">
-            Export compliant audit reports in PDF, Excel Spreadsheet XML, HTML, or CSV formats.
-          </p>
+         
         </div>
       </div>
 

@@ -50,19 +50,11 @@ export const TaxCalculationPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>BaseFrame</span>
-            <span aria-hidden="true">·</span>
-            <span>ApiServiceStruct</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono text-slate-700">/api/v1/tax-calc</span>
-          </div>
+        
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             Complex Tax Liability Engine
           </h2>
-          <p className="text-sm text-slate-500">
-            Real-time multi-jurisdictional calculation, compounding rules, economic nexus, and CDC event broadcast.
-          </p>
+       
         </div>
 
         <div className="flex items-center gap-2">

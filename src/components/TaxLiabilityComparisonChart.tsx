@@ -259,9 +259,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                 Tax Liability Side-by-Side Comparison
               </h2>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Interactive visualization highlighting differences in Land & House assessed valuations and tax obligations across two fiscal years.
-            </p>
+           
           </div>
 
           <div className="flex items-center gap-2">
@@ -748,7 +746,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                   {landDiff.pct >= 0 ? "+" : ""}{landDiff.pct}%
                 </td>
                 <td className="py-3 px-4 text-slate-500 text-[11px]">
-                  {landDiff.diff > 0 ? "Updated tbl_land_rate municipal tariff" : "Same base matrix"}
+                  {landDiff.diff > 0 ? "Updated municipal tariff" : "Same base matrix"}
                 </td>
               </tr>
 
@@ -767,7 +765,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                   {houseDiff.pct >= 0 ? "+" : ""}{houseDiff.pct}%
                 </td>
                 <td className="py-3 px-4 text-slate-500 text-[11px]">
-                  {houseDiff.diff < 0 ? "Annual depreciation schedule (tbl_depreciation)" : "Structural revaluation"}
+                  {houseDiff.diff < 0 ? "Annual depreciation schedule" : "Structural revaluation"}
                 </td>
               </tr>
 
@@ -822,7 +820,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                 <td className="py-3 px-4 font-mono text-rose-600">{formatNpr(dataB?.fineAmount || 0)}</td>
                 <td className="py-3 px-4 font-mono text-slate-500">{formatNpr((dataB?.fineAmount || 0) - (dataA?.fineAmount || 0))}</td>
                 <td className="py-3 px-4 font-mono text-slate-500">-</td>
-                <td className="py-3 px-4 text-slate-500 text-[11px]">Arrears penalty (tbl_fine_rebate)</td>
+                <td className="py-3 px-4 text-slate-500 text-[11px]">Arrears penalty policy</td>
               </tr>
 
               <tr>

@@ -47,9 +47,9 @@ export const RegisterWindow: React.FC<RegisterWindowProps> = ({ isOpen, onClose,
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-0.5">
-              <span>Database Architecture</span>
+              <span>Security & Roles</span>
               <span aria-hidden="true">·</span>
-              <span className="font-mono text-indigo-600 font-semibold">tbl_user & tbl_user_role</span>
+              <span className="font-semibold text-indigo-600">Enterprise Registry</span>
             </div>
             <h3 className="text-base font-bold text-slate-900">
               New User Registration
@@ -70,7 +70,7 @@ export const RegisterWindow: React.FC<RegisterWindowProps> = ({ isOpen, onClose,
             </div>
             <h4 className="text-base font-bold text-slate-900">Account Created Successfully</h4>
             <p className="text-xs text-slate-600 max-w-md mx-auto">
-              Your profile has been saved to <strong>tbl_user</strong> and assigned the <strong>{successInfo.role}</strong> role in <strong>tbl_user_role</strong>.
+              Your profile has been saved and assigned the <strong>{successInfo.role}</strong> role.
             </p>
 
             {successInfo.email_dispatched ? (

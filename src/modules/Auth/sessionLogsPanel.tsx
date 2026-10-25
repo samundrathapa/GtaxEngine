@@ -29,17 +29,17 @@ export const SessionLogsPanel: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Database Architecture</span>
+            <span>Security</span>
             <span aria-hidden="true">·</span>
-            <span>Security Ledger</span>
+            <span>Audit Trail</span>
             <span aria-hidden="true">·</span>
-            <span className="font-mono text-slate-700">tbl_user_log & tbl_session_log</span>
+            <span className="font-semibold text-slate-700">User Activity & Sessions</span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             Active Sessions & User Security Audit Ledger
           </h2>
           <p className="text-sm text-slate-500">
-            Real-time session tracker and tamper-evident event log with BaseFrame audit columns.
+            Real-time session tracker and tamper-evident event log with audit columns.
           </p>
         </div>
 
@@ -52,13 +52,13 @@ export const SessionLogsPanel: React.FC = () => {
         </button>
       </div>
 
-      {/* Active tbl_session_log Grid */}
+      {/* Active Session Grid */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
             <h3 className="text-sm font-bold text-slate-900">
-              Active Sessions Ledger (tbl_session_log)
+              Active Sessions Ledger
             </h3>
           </div>
           <span className="text-xs font-mono text-slate-500">
@@ -116,13 +116,13 @@ export const SessionLogsPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Historical tbl_user_log Table */}
+      {/* Historical Event Stream Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-600" />
             <h3 className="text-sm font-bold text-slate-900">
-              User Activity Event Stream (tbl_user_log)
+              User Activity Event Stream
             </h3>
           </div>
           <span className="text-xs font-mono text-slate-500">

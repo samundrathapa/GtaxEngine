@@ -8,7 +8,7 @@ export interface ReportConfig {
 }
 
 export const initialReportConfig: ReportConfig = {
-  title: "gtax Enterprise Multi-Jurisdictional Tax Liabilities Summary",
+  title: "Gtax Enterprise Multi-Jurisdictional Tax Liabilities Summary",
   format: "csv",
   includeAuditColumns: true,
   jurisdictionFilter: "ALL"

@@ -292,7 +292,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
           ...prev,
           {
             role: "assistant",
-            text: `✅ Land Rate 1 has been automatically inserted into tbl_land_rate:\n• Code: LR-1\n• Rate: NPR 1,200,000 / Aana\n• Wards: 1, 2, 3\n• Live in mobile calculation engine!`,
+            text: `✅ Land Rate 1 has been automatically inserted into Municipal Land Rates:\n• Code: LR-1\n• Rate: NPR 1,200,000 / Aana\n• Wards: 1, 2, 3\n• Live in mobile calculation engine!`,
             landRate: created
           }
         ]);
@@ -975,7 +975,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                             {/* Render Inserted Land Rate Card if inserted */}
                             {msg.landRate && (
                               <div className="mt-2 p-1.5 bg-emerald-950/40 rounded border border-emerald-700 text-[9px] text-emerald-300">
-                                <div className="font-bold">✓ Live in tbl_land_rate</div>
+                                <div className="font-bold">✓ Live in Municipal Land Rates</div>
                                 <div>Ready for live municipal calculations!</div>
                               </div>
                             )}

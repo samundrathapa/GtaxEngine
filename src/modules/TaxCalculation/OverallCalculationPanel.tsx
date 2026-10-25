@@ -422,13 +422,11 @@ export const OverallCalculationPanel: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>gtax Municipal Platform</span>
+            <span>Gtax Municipal Platform</span>
             <span>·</span>
             <span className="font-semibold text-indigo-600">Tax Calculation Master Engine</span>
           </div>
-          <h2 className="text-xl font-black tracking-tight text-slate-900">
-            Municipal Property Tax Calculation & Assessment Panel
-          </h2>
+        
         </div>
 
         {/* Tab Toggle */}
@@ -664,7 +662,7 @@ export const OverallCalculationPanel: React.FC = () => {
               {/* Fine & Rebate Factor */}
               <div className="text-xs">
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Fine & Rebate Policy (tbl_fine_rebate)
+                  Fine & Rebate Policy
                 </label>
                 <select
                   value={fineRebateFactor}
@@ -987,7 +985,7 @@ export const OverallCalculationPanel: React.FC = () => {
             <div>
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-indigo-600" />
-                <span>Municipal Tax Calculation Master Registry (tbl_calc_master)</span>
+                <span>Municipal Tax Calculation Master Registry</span>
               </h3>
               <p className="text-xs text-slate-500">
                 Official persistent records of all property tax calculations performed and certified in the system.

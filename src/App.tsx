@@ -620,7 +620,7 @@ export default function App() {
                     }`}
                   >
                     <Users className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Users (tbl_user)</span>
+                    <span>Users</span>
                   </button>
 
                   <button

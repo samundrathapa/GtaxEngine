@@ -1762,12 +1762,12 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Summary & Integrated Property Tax (tbl_property_range) Calculation */}
+                  {/* Summary & Integrated Property Tax Calculation */}
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white space-y-4 shadow-xl">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-indigo-800/60">
                       <div>
                         <div className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
-                          Final Assessment · GetIPT_Amount (tbl_property_range) · Active FY: {currentFiscalYear?.code}
+                          Final Assessment · Integrated Property Tax · Active FY: {currentFiscalYear?.code}
                         </div>
                         <h4 className="text-lg font-bold text-white">
                           Total Evaluated Amount & IPT Liability

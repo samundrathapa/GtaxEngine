@@ -175,7 +175,7 @@ export function getDepreciationAmount(
 }
 
 /**
- * IPT Calculation from tbl_property_range
+ * IPT Calculation from property tax ranges
  * Exact logic specified by user:
  * double tax_amount = GetIPT_Amount(propertyTax, Evaluated_Amount, fiscalYearId);
  * if (Evaluated_Amount <= 0 || propertyTax == null) return 0;

@@ -133,7 +133,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     { id: "construction_rate", label: "Construction Rate", sub: "Structure rate per sqft", icon: Building, count: masters.constructionRates.length, group: "rate" },
     { id: "depreciation", label: "Depreciation Rate", sub: "Age-based reduction schedule", icon: TrendingDown, count: masters.depreciations.length, group: "rate" },
     { id: "fine_rebate", label: "Fine and Rebate", sub: "Discount & late fine tiers", icon: Gift, count: masters.fineRebates.length, group: "rate" },
-    { id: "property_range", label: "Property Range", sub: "tbl_property_range tax slabs", icon: Sliders, count: masters.propertyRanges.length, group: "rate" },
+    { id: "property_range", label: "Property Range", sub: "Property valuation tax slabs", icon: Sliders, count: masters.propertyRanges.length, group: "rate" },
 
     // Masters Group
     { id: "fiscal_year", label: "Fiscal Year", sub: "Municipal accounting calendar", icon: Calendar, count: masters.fiscalYears.length, group: "masters" },
@@ -265,9 +265,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>gtax Enterprise Rate Architecture</span>
+            <span>Gtax Enterprise Rate Architecture</span>
             <span aria-hidden="true">·</span>
-            <span>Master Matrices (tbl_rate)</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-indigo-600 font-semibold uppercase">{activeTab}</span>
           </div>
@@ -275,9 +274,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
             <DollarSign className="w-5 h-5 text-indigo-600" />
             <span>Rate & Master Matrix Configuration (दररेट व्यवस्थापन)</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Configure multi-jurisdiction land valuation, malpot rates, building construction rates, depreciation slabs, and early-payment rebate policies.
-          </p>
+         
         </div>
 
         <div className="flex items-center gap-2">
@@ -581,7 +578,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                       </>
                     )}
 
-                    {/* Property Range Columns (tbl_property_range) */}
+                    {/* Property Range Columns */}
                     {activeTab === "property_range" && (
                       <>
                         <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">
@@ -603,7 +600,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                       </>
                     )}
 
-                    {/* Company Columns (tbl_company) */}
+                    {/* Company Columns */}
                     {activeTab === "company" && (
                       <>
                         <td className="p-3.5 text-slate-600 dark:text-slate-300">
@@ -620,7 +617,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                       </>
                     )}
 
-                    {/* Application Setting Columns (tbl_appication_setting) */}
+                    {/* Application Setting Columns */}
                     {activeTab === "application_setting" && (
                       <>
                         <td className="p-3.5">
@@ -682,8 +679,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {editingItem ? `Edit Rate: ${editingItem.code || editingItem.id}` : `Add New ${activeTab.replace("_", " ")}`}
                 </h3>
-                <div className="text-[11px] text-slate-500 font-mono">
-                  Target Table: tbl_{activeTab}
+                <div className="text-[11px] text-slate-500 font-mono capitalize">
+                  Configuration: {activeTab.replace(/_/g, " ")}
                 </div>
               </div>
               <button
@@ -1192,7 +1189,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 </div>
               )}
 
-              {/* Property Range Fields (tbl_property_range) */}
+              {/* Property Range Fields */}
               {activeTab === "property_range" && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
@@ -1365,7 +1362,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 </div>
               )}
 
-              {/* Company Fields (tbl_company) */}
+              {/* Company Fields */}
               {activeTab === "company" && (
                 <div className="space-y-3">
                   <div>
@@ -1431,12 +1428,12 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 </div>
               )}
 
-              {/* Application Setting Fields (tbl_appication_setting) */}
+              {/* Application Setting Fields */}
               {activeTab === "application_setting" && (
                 <div className="space-y-3">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Associated Company Entity (tbl_company reference)
+                      Associated Company Entity
                     </label>
                     <select
                       value={formData.company_id || 1}
@@ -1453,7 +1450,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Default Fiscal Year (tbl_fiscal_year)
+                        Default Fiscal Year
                       </label>
                       <select
                         value={formData.fiscal_year_id || 2}
@@ -1469,7 +1466,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     </div>
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Default Measuring Unit (tbl_unit)
+                        Default Measuring Unit
                       </label>
                       <select
                         value={formData.unit_type_id || 3}
@@ -1566,8 +1563,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
               {/* Permanently Visible Docked Modal Footer with Save Button */}
               <div className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/95 shrink-0 z-10">
-                <div className="text-[11px] text-slate-500 font-mono">
-                  {editingItem ? `Updating record #${editingItem.id}` : `New record for tbl_${activeTab}`}
+                <div className="text-[11px] text-slate-500 font-mono capitalize">
+                  {editingItem ? `Updating record #${editingItem.id}` : `New record for ${activeTab.replace(/_/g, " ")}`}
                 </div>
                 <div className="flex items-center gap-3">
                   <button
