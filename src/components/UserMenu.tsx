@@ -235,9 +235,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                     <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
                     <div className="text-left">
                       <div className="leading-tight">Language JSON (DB Column Mapping)</div>
-                      <div className="text-[10px] text-indigo-500/80 dark:text-indigo-400/70 font-normal">
-                        Dynamic JSON mapping for English, Nepali, Hindi
-                      </div>
+                    
                     </div>
                   </div>
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 shrink-0">
@@ -289,18 +287,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
             {/* 3. Redis Cache & Live Database Synchronization Action */}
             <div className="p-3 bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 rounded-xl border border-amber-200/80 dark:border-amber-900/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 uppercase tracking-wide">
-                  <RefreshCw className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${syncingCache ? "animate-spin" : ""}`} />
-                  <span>Redis Cache Engine</span>
-                </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300">
-                  DB ↔ REDIS
-                </span>
-              </div>
-              <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
-                Clear Redis cache, query direct from PostgreSQL live database, re-warm Redis server, and return fresh response from Redis.
-              </p>
+              
+             
               <button
                 type="button"
                 onClick={handleClearCacheAndSync}
@@ -313,20 +301,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             </div>
 
             {/* User Permissions & Security Details */}
-            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-indigo-500" />
-                  <span>Security & Rights</span>
-                </span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400 text-[10px]">
-                  RBAC Active
-                </span>
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Authorized for Taxpayer Master, Property Valuation (Land, House, Floor), and Rate Matrices.
-              </div>
-            </div>
+          
           </div>
 
           {/* Footer Action: Sign Out */}
