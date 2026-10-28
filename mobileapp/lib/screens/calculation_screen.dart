@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/localization_service.dart';
 import '../models/taxpayer.dart';
+import 'login_screen.dart';
 
 class CalculationScreen extends StatefulWidget {
   final int? initialTaxpayerId;
@@ -185,6 +186,54 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
   }
 
   Future<void> _handleSaveCalculation(Map<String, dynamic> calc) async {
+    if (_api.currentSession.isGuest) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.lock_outline, color: Color(0xFF1E3A8A), size: 22),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Staff Authentication Required",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "You are currently in Public Citizen / Guest mode. Tax calculation and rate viewing are unrestricted, but saving official municipal assessments to the municipal ledger requires authorized staff login.",
+            style: TextStyle(fontSize: 12, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Keep Calculating as Guest"),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.login, size: 16),
+              label: const Text("Staff Login", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen(isModal: true)),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     final payload = {
       'taxpayer_id': _selectedTaxpayerId,

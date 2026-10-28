@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/localization_service.dart';
+import '../models/auth_session.dart';
 import 'taxpayer_list_screen.dart';
 import 'registration_wizard_screen.dart';
 import 'ai_assistant_screen.dart';
 import 'calculation_screen.dart';
+import 'login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Function(int) onNavigateTab;
@@ -60,6 +62,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          ValueListenableBuilder<AuthSession>(
+            valueListenable: _api.sessionNotifier,
+            builder: (context, session, _) {
+              return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen(isModal: true)),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: session.isGuest ? Colors.white.withOpacity(0.18) : const Color(0xFF10B981).withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: session.isGuest ? Colors.white54 : const Color(0xFF34D399),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        session.isGuest ? Icons.person_outline : Icons.verified_user,
+                        size: 13,
+                        color: session.isGuest ? Colors.white : const Color(0xFF34D399),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        session.isGuest ? "GUEST" : session.role.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: session.isGuest ? Colors.white : const Color(0xFF34D399),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
@@ -79,6 +126,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Dynamic User Identity & Access Banner
+                    ValueListenableBuilder<AuthSession>(
+                      valueListenable: _api.sessionNotifier,
+                      builder: (context, session, _) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: session.isGuest ? const Color(0xFFEFF6FF) : const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: session.isGuest ? const Color(0xFFBFDBFE) : const Color(0xFFBBF7D0),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: session.isGuest ? const Color(0xFF3B82F6) : const Color(0xFF16A34A),
+                                child: Icon(
+                                  session.isGuest ? Icons.person : Icons.badge,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      session.isGuest ? "Namaste, Citizen! (सार्वजनिक नागरिक)" : "Namaste, ${session.fullname}",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: session.isGuest ? const Color(0xFF1E3A8A) : const Color(0xFF14532D),
+                                      ),
+                                    ),
+                                    Text(
+                                      session.isGuest
+                                          ? "Public Mode • Unrestricted tax calculators & rate search"
+                                          : "${session.roleDisplayName} • Official Municipal Access",
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: session.isGuest ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LoginScreen(isModal: true)),
+                                  );
+                                },
+                                child: Text(
+                                  session.isGuest ? "Staff Login" : "Switch",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: session.isGuest ? const Color(0xFF1D4ED8) : const Color(0xFF15803D),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                     // System Topology Status Banner
                     Container(
                       padding: const EdgeInsets.all(12),

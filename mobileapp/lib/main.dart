@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'config/app_config.dart';
+import 'services/api_service.dart';
 import 'services/localization_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/taxpayer_list_screen.dart';
 import 'screens/ai_assistant_screen.dart';
 import 'screens/hybrid_web_screen.dart';
 import 'screens/settings_screen.dart';
-
 import 'screens/calculation_screen.dart';
 
 void main() {
@@ -25,11 +25,13 @@ class GtaxMobileApp extends StatefulWidget {
 
 class _GtaxMobileAppState extends State<GtaxMobileApp> {
   final LocalizationService _localeService = LocalizationService();
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _localeService.addListener(_onLocaleChanged);
+    _apiService.initSession();
   }
 
   @override

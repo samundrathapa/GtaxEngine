@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/localization_service.dart';
+import '../models/auth_session.dart';
 import '../config/app_config.dart';
+import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -48,9 +50,153 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text("Mobile Settings & Diagnostics"),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: ValueListenableBuilder<AuthSession>(
+        valueListenable: _api.sessionNotifier,
+        builder: (context, session, _) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // User Account & Authentication Status Card
+              Card(
+                elevation: 1,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: session.isGuest
+                                ? Colors.blue.shade100
+                                : const Color(0xFF1E3A8A),
+                            child: Icon(
+                              session.isGuest ? Icons.person_outline : Icons.badge_outlined,
+                              color: session.isGuest ? Colors.blue.shade800 : Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  session.fullname,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: session.isGuest ? Colors.blue.shade50 : const Color(0xFFEEF2FF),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: session.isGuest ? Colors.blue.shade200 : const Color(0xFFC7D2FE),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        session.roleDisplayName.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: session.isGuest ? Colors.blue.shade800 : const Color(0xFF4338CA),
+                                        ),
+                                      ),
+                                    ),
+                                    if (session.employeeId.isNotEmpty && !session.isGuest) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "ID: ${session.employeeId}",
+                                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        session.isGuest
+                            ? "Public Citizen Mode: Unauthorized access allows complete tax calculations, rate lookup, and AI queries without login."
+                            : "Authenticated with municipal enterprise credentials. Authorized to save property valuations & taxpayer dossiers.",
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade700, height: 1.3),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          if (session.isGuest) ...[
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                                icon: const Icon(Icons.login, size: 18),
+                                label: const Text("Staff Login (कर्मचारी लगइन)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LoginScreen(isModal: true)),
+                                  );
+                                },
+                              ),
+                            ),
+                          ] else ...[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red.shade700,
+                                  side: BorderSide(color: Colors.red.shade300),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.logout, size: 16),
+                                label: const Text("Sign Out to Guest", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: () async {
+                                  await _api.logout();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Signed out. Switched to Public Citizen mode.")),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E3A8A),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.swap_horiz, size: 16),
+                                label: const Text("Switch User", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LoginScreen(isModal: true)),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
           // Single Common Entry Point Server
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -191,8 +337,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 
   Widget _buildTierRow(String tier, String desc, IconData icon) {
