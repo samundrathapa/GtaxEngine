@@ -9,3 +9,4 @@ coverage/
 /mobileapp/.dart_tool
 /mobileapp/.idea
 /mobileapp/.flutter-plugins-dependencies
+/mobileapp/android/.gradle
