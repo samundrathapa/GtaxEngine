@@ -217,7 +217,7 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Tax calculation for ${_dossier?.taxpayer.fullname ?? 'Taxpayer'} saved to DB!"),
-        backgroundColor: Colors.emerald,
+        backgroundColor: Colors.green,
       ),
     );
   }
@@ -522,7 +522,7 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
                   children: [
                     Text("Base Tax: NPR ${calc['baseTax'].toStringAsFixed(0)}", style: const TextStyle(color: Colors.white70, fontSize: 11)),
                     if (calc['rebateAmount'] > 0)
-                      Text("Rebate: -NPR ${calc['rebateAmount'].toStringAsFixed(0)}", style: const TextStyle(color: Colors.emeraldAccent, fontSize: 11)),
+                      Text("Rebate: -NPR ${calc['rebateAmount'].toStringAsFixed(0)}", style: const TextStyle(color: Colors.greenAccent, fontSize: 11)),
                     if (calc['fineAmount'] > 0)
                       Text("Fine: +NPR ${calc['fineAmount'].toStringAsFixed(0)}", style: const TextStyle(color: Colors.amberAccent, fontSize: 11)),
                   ],
@@ -632,7 +632,7 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
                     Text("Date: ${item['calculate_date_bs'] ?? '2081-07-02'}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
                     Text(
                       "NPR ${item['total_tax'] ?? 0}",
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.emerald),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green),
                     ),
                   ],
                 ),

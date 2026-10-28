@@ -113,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.emerald?.shade100 ?? Colors.green.shade100,
+                              color: Colors.green.shade100,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Text(

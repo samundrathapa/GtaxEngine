@@ -288,18 +288,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.emerald.shade50,
+                              color: Colors.green.shade50,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.emerald.shade200),
+                              border: Border.all(color: Colors.green.shade200),
                             ),
                             child: const Row(
                               children: [
-                                Icon(Icons.check_circle, color: Colors.emerald, size: 16),
+                                Icon(Icons.check_circle, color: Colors.green, size: 16),
                                 SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     "Rate ready for real-time land valuation & assessment",
-                                    style: TextStyle(fontSize: 10, color: Colors.emerald, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],

@@ -371,7 +371,7 @@ class ApiService {
   Future<Map<String, dynamic>> submitOneDoorRegistration(Map<String, dynamic> payload) async {
     try {
       final res = await http.post(
-        Uri.parse('$_baseUrl$apiPrefix/property/taxpayers'),
+        Uri.parse('$_baseUrl${AppConfig.apiPrefix}/property/taxpayers'),
         headers: _headers,
         body: jsonEncode(payload),
       ).timeout(const Duration(seconds: 6));
