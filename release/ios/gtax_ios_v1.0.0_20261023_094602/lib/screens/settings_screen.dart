@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   padding: const EdgeInsets.symmetric(vertical: 10),
                                 ),
                                 icon: const Icon(Icons.login, size: 18),
-                                label: const Text("Staff Login (कर्मचारी लगइन)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                label: const Text("Sign In (लगइन)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 onPressed: () {
                                   Navigator.push(
                                     context,

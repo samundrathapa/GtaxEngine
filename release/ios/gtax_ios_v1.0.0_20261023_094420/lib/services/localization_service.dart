@@ -18,9 +18,9 @@ class LocalizationService extends ChangeNotifier {
   // Common UI dictionaries matching db_column_mapping.json
   static const Map<String, Map<String, String>> _translations = {
     'app_title': {
-      'eng': 'gtax Municipal Tax Mobile',
-      'nep': 'जि-ट्याक्स नगरपालिका कर मोबाइल',
-      'ind': 'जी-टैक्स नगर पालिका कर मोबाइल',
+      'eng': 'Gtax Municipal',
+      'nep': 'जि-ट्याक्स नगरपालिका',
+      'ind': 'जी-टैक्स नगर पालिका',
     },
     'dashboard': {
       'eng': 'Dashboard',
@@ -38,9 +38,9 @@ class LocalizationService extends ChangeNotifier {
       'ind': 'एकल खिड़की पंजीकरण',
     },
     'ai_assistant': {
-      'eng': 'AI Tax Advisor',
-      'nep': 'एआई कर सल्लाहकार',
-      'ind': 'एआई कर सलाहकार',
+      'eng': 'AI Advisor',
+      'nep': 'एआई सल्लाहकार',
+      'ind': 'एआई सलाहकार',
     },
     'portal_web': {
       'eng': 'Full Portal (Web)',

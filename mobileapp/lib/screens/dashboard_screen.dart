@@ -94,7 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        session.isGuest ? "GUEST" : session.role.toUpperCase(),
+                        session.isGuest ? "GUEST" : "LOGGED IN",
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -167,7 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     Text(
                                       session.isGuest
                                           ? "Public Mode • Unrestricted tax calculators & rate search"
-                                          : "${session.roleDisplayName} • Official Municipal Access",
+                                          : "Authenticated Municipal Access",
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: session.isGuest ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
