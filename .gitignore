@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+/mobileapp/.dart_tool
+/mobileapp/.idea
+/mobileapp/.flutter-plugins-dependencies
