@@ -70,19 +70,23 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
 
     // 2. Intent: "calculate tax" / "open calculation"
     if (lower.contains("calculate") || lower.contains("गणना") || lower.contains("valuation")) {
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 200));
       if (mounted) {
         setState(() {
           _messages.add({
             "role": "assistant",
-            "text": "Launching the Frontend & Manual Property Tax Calculation Engine!",
+            "text": "Launching the Property Tax Calculation Engine!",
             "action": "opened_calc"
           });
           _isSending = false;
         });
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CalculationScreen()),
-        );
+        if (widget.onNavigateTab != null) {
+          widget.onNavigateTab!(2);
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CalculationScreen()),
+          );
+        }
       }
       return;
     }
@@ -163,7 +167,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           children: [
             Icon(Icons.smart_toy, size: 20),
             SizedBox(width: 8),
-            Text("AI Tax Assistant (Voice & Workflows)"),
+            Expanded(
+              child: Text(
+                "AI Tax Advisor",
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),

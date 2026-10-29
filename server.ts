@@ -309,11 +309,39 @@ app.post("/api/v1/property/taxpayers", async (req, res) => {
   res.status(201).json(ApiResponse.buildSuccess(tp, "Taxpayer master registered in database and synced to Redis", 201));
 });
 
-app.get("/api/v1/property/taxpayers/:id", (req, res) => {
-  const dossier = propertyDb.getTaxpayerCompleteRecord(Number(req.params.id));
-  if (!dossier) {
+app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer_master");
+  const masterTp = tpList.find((t: any) => Number(t.id) === id);
+
+  let dossier = propertyDb.getTaxpayerCompleteRecord(id);
+  if (!dossier && !masterTp) {
     return res.status(404).json(ApiResponse.buildFailure("Taxpayer not found", ["Not found"], {}, 404));
   }
+
+  if (!dossier && masterTp) {
+    dossier = {
+      taxpayer: masterTp,
+      lands: [],
+      houses: [],
+      floors: [],
+      valuationSummary: {
+        totalLandValuation: 0,
+        totalHouseValuation: 0,
+        combinedTotalValuation: 0,
+        calculatedTaxLiability: 0,
+        rebateApplied: 0,
+        netPayableTax: 0,
+        currency: "NPR / INR"
+      }
+    };
+  } else if (dossier && masterTp) {
+    dossier.taxpayer = {
+      ...dossier.taxpayer,
+      ...masterTp
+    };
+  }
+
   res.json(ApiResponse.buildSuccess(dossier, "Taxpayer property assessment dossier"));
 });
 

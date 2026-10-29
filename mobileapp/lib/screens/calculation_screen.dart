@@ -336,17 +336,32 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
-                  value: _selectedTaxpayerId,
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down_circle_outlined, color: Color(0xFF1E3A8A), size: 22),
+                  iconSize: 22,
+                  iconEnabledColor: const Color(0xFF1E3A8A),
+                  value: _taxpayers.any((tp) => tp['id'] == _selectedTaxpayerId)
+                      ? _selectedTaxpayerId
+                      : (_taxpayers.isNotEmpty ? _taxpayers.first['id'] as int : null),
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
                   ),
                   items: _taxpayers.map((tp) {
                     return DropdownMenuItem<int>(
                       value: tp['id'] as int,
                       child: Text(
                         "${tp['fullanme'] ?? tp['fullname']} (${tp['code']})",
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     );
@@ -425,7 +440,15 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text("Structure Standard:", style: TextStyle(fontSize: 12)),
-                  Text("RCC Frame (NPR 2,800/sqft)", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      "RCC Frame (NPR 2,800/sqft)",
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -475,16 +498,24 @@ class _CalculationScreenState extends State<CalculationScreen> with SingleTicker
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Applied Tax Rate: ${calc['appliedTaxRate']}%",
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal.shade900),
+                  Expanded(
+                    child: Text(
+                      "Applied Tax Rate: ${calc['appliedTaxRate']}%",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal.shade900),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Text("Override", style: TextStyle(fontSize: 10)),
-                      Switch(
-                        value: _overrideAutoTaxRate,
-                        onChanged: (v) => setState(() => _overrideAutoTaxRate = v),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        height: 24,
+                        child: Switch(
+                          value: _overrideAutoTaxRate,
+                          onChanged: (v) => setState(() => _overrideAutoTaxRate = v),
+                        ),
                       ),
                     ],
                   ),
