@@ -94,7 +94,7 @@ flutter build appbundle --release
 #### Signing (Optional for production store upload)
 1. Generate keystore:
    ```bash
-   keytool -genkey -v -keystore ~/gtax-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias gtax
+   keytool -genkey -v -keystore ./android/app/gtax-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias gtax
    ```
 2. Reference keystore in `android/key.properties` and `android/app/build.gradle`.
 

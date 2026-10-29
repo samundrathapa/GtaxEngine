@@ -12,6 +12,13 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -23,7 +30,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.gtax.enterprise"
+    namespace "com.netcoreint.gtax"
     compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
@@ -41,17 +48,29 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.gtax.enterprise"
+        applicationId "com.netcoreint.gtax"
         minSdkVersion flutter.minSdkVersion
-        targetSdkVersion 34
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
     }
-
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+    }
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+        }
+        prod {
+            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
         }

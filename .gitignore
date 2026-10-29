@@ -10,3 +10,6 @@ coverage/
 /mobileapp/.idea
 /mobileapp/.flutter-plugins-dependencies
 /mobileapp/android/.gradle
+/.idea
+/mobileapp/android/app/gtax-release-key.jks
+/mobileapp/android/key.properties
