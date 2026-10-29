@@ -335,7 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ),
+          ),
+          const SizedBox(height: 16),
 
               // Legal & Data Protection Card
               Card(
