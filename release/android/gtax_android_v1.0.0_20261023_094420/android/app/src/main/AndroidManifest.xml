@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.gtax.enterprise">
+    package="com.netcoreint.gtax">
 
     <!-- Permissions for Single Common Entry Point API, WebSockets, Voice Commands, and Camera/OCR -->
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
 
     <application
-        android:label="gtax Municipal Tax"
+        android:label="Gtax Municipal"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

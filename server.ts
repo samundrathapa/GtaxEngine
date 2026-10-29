@@ -127,6 +127,68 @@ app.get("/api/v1/auth/logs", (req, res) => {
   res.json(ApiResponse.buildSuccess(logs, "Security and session audit logs"));
 });
 
+// Privacy Policy endpoint for Google Play Store / Android Compliance
+app.get("/privacy", (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Policy - Gtax Municipal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1e293b; background: #f8fafc; }
+    .card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+    h1 { color: #1e3a8a; margin-top: 0; }
+    h2 { color: #0f172a; margin-top: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.2rem; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Privacy Policy & Citizen Data Protection</h1>
+    <p class="meta">App: <strong>Gtax Municipal (com.netcoreint.gtax)</strong> • Effective: Fiscal Year 2081/82</p>
+    
+    <h2>1. Overview</h2>
+    <p>Netcore International and the Municipal Revenue Administration operate the Gtax Municipal platform. This policy outlines how we handle personal data, property valuation records, and device permissions.</p>
+
+    <h2>2. Data Collection & Usage</h2>
+    <p>The app collects taxpayer data (Name, PAN, Ward, Phone, Property plot numbers, and Floor areas) exclusively for municipal tax assessment and revenue administration. We never sell or monetize citizen data.</p>
+
+    <h2>3. Device Permissions</h2>
+    <ul>
+      <li><strong>Camera (CAMERA):</strong> Used solely for document/receipt scanning or QR code authentication.</li>
+      <li><strong>Audio (RECORD_AUDIO):</strong> Used optionally for voice-assisted tax calculations and query dictation.</li>
+      <li><strong>Internet (INTERNET):</strong> Required for connecting to the municipal revenue server.</li>
+    </ul>
+
+    <h2>4. Public Citizen / Guest Mode</h2>
+    <p>Unauthorized public citizens can calculate property taxes, browse approved circle rates, and interact with the AI assistant without logging in or providing personal information.</p>
+
+    <h2>5. Contact Information</h2>
+    <p>For data protection inquiries or official verification: <strong>privacy@gtax.enterprise</strong> or <strong>support@netcoreint.com</strong>.</p>
+  </div>
+</body>
+</html>`);
+});
+
+app.get("/api/v1/privacy", (req, res) => {
+  res.json({
+    status: 200,
+    success: true,
+    data: {
+      appName: "Gtax Municipal",
+      applicationId: "com.netcoreint.gtax",
+      effectiveDate: "2026-10-29",
+      contact: "privacy@gtax.enterprise",
+      guestModeAllowed: true,
+      permissions: ["CAMERA", "RECORD_AUDIO", "INTERNET", "ACCESS_NETWORK_STATE"]
+    }
+  });
+});
+
+
 // ==========================================
 // ==========================================
 // Taxpayer Property & Valuation Endpoints (Redis Cache-First & Live PostgreSQL DB)

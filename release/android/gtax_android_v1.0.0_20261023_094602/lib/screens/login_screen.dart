@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/auth_session.dart';
+import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool isModal;
@@ -308,6 +309,32 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       onPressed: _continueAsGuest,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Center(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                        );
+                      },
+                      child: const Text(
+                        "Privacy Policy & Data Protection",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF94A3B8),
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
                   ),
                 ],

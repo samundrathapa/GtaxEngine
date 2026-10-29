@@ -4,6 +4,7 @@ import '../services/localization_service.dart';
 import '../models/auth_session.dart';
 import '../config/app_config.dart';
 import 'login_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -334,10 +335,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      );
+              const SizedBox(height: 16),
+
+              // Legal & Data Protection Card
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFEFF6FF),
+                    child: Icon(Icons.privacy_tip_outlined, color: Color(0xFF1E3A8A)),
+                  ),
+                  title: const Text(
+                    "Privacy Policy & Data Protection",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  subtitle: const Text(
+                    "Municipal statutory compliance, permissions & citizen rights",
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
     },
   ),
 );
