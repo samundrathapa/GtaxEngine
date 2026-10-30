@@ -217,11 +217,9 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
         }
       }
 
-      if (selectedTaxpayerId) {
-        const dosRes = await ApiController.getTaxpayerDossier(selectedTaxpayerId);
-        if (dosRes.success && dosRes.data) {
-          setTaxpayerDossier(dosRes.data);
-        }
+      const targetId = selectedTaxpayerId || (tpRes.data && tpRes.data.length > 0 ? tpRes.data[0].id : null);
+      if (targetId) {
+        await loadTaxpayerDossier(Number(targetId), tpRes.data || undefined);
       }
     } catch (e) {
       console.warn("Failed to load property data", e);
@@ -230,8 +228,37 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     }
   };
 
+  const loadTaxpayerDossier = async (tpId: number | string, currentList?: any[]) => {
+    try {
+      const dosRes = await ApiController.getTaxpayerDossier(Number(tpId));
+      if (dosRes.success && dosRes.data) {
+        const listToUse = currentList || taxpayers;
+        const matchingTp = listToUse.find(t => Number(t.id) === Number(tpId));
+        if (matchingTp && dosRes.data.taxpayer) {
+          dosRes.data.taxpayer = {
+            ...dosRes.data.taxpayer,
+            fullanme: matchingTp.fullanme,
+            code: matchingTp.code,
+            mobile_no: matchingTp.mobile_no,
+            ward_no: matchingTp.ward_no,
+            citizenship_no: matchingTp.citizenship_no || dosRes.data.taxpayer.citizenship_no,
+            pan_vat_no: matchingTp.pan_vat_no || dosRes.data.taxpayer.pan_vat_no,
+            email: matchingTp.email || dosRes.data.taxpayer.email
+          };
+        }
+        setTaxpayerDossier(dosRes.data);
+      }
+    } catch (e) {
+      console.warn("Failed to load property dossier", e);
+    }
+  };
+
   useEffect(() => {
-    loadAllData();
+    if (selectedTaxpayerId) {
+      loadTaxpayerDossier(selectedTaxpayerId);
+    } else {
+      loadAllData();
+    }
   }, [selectedTaxpayerId]);
 
   // Land Handlers
@@ -791,7 +818,10 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                   filteredTaxpayers.map((tp) => (
                     <tr
                       key={tp.id}
-                      onClick={() => setSelectedTaxpayerId(tp.id)}
+                      onClick={() => {
+                        setSelectedTaxpayerId(tp.id);
+                        loadTaxpayerDossier(tp.id);
+                      }}
                       className={`transition-all cursor-pointer ${
                         selectedTaxpayerId === tp.id
                           ? "bg-indigo-50/90 dark:bg-indigo-950/70 border-l-4 border-indigo-600 shadow-2xs font-semibold"
@@ -920,26 +950,29 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       {/* ========================================================= */}
       {/* 1. OVERVIEW: UNIFIED COMMON TAXPAYER DOSSIER & ASSESSMENT */}
       {/* ========================================================= */}
-      {subView === "overview" && taxpayerDossier && (
+      {subView === "overview" && taxpayerDossier && (() => {
+        const activeTaxpayer = taxpayers.find(tp => Number(tp.id) === Number(selectedTaxpayerId)) || taxpayerDossier.taxpayer;
+        const tpDisplay = { ...taxpayerDossier.taxpayer, ...(activeTaxpayer || {}) };
+        return (
         <div className="space-y-5 animate-in fade-in duration-150">
           {/* Active Taxpayer Header & Quick Actions */}
           <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-indigo-600/20">
-                  {taxpayerDossier.taxpayer.fullanme.charAt(0)}
+                  {(tpDisplay.fullanme || "T").charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {taxpayerDossier.taxpayer.fullanme}
+                      {tpDisplay.fullanme}
                     </h3>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                       Active Taxpayer Record
                     </span>
                   </div>
                   <div className="text-xs text-slate-500 font-mono mt-0.5">
-                    Code: <span className="font-bold text-indigo-600 dark:text-indigo-400">{taxpayerDossier.taxpayer.code}</span> · Ward: #{taxpayerDossier.taxpayer.ward_no} · Mobile: {taxpayerDossier.taxpayer.mobile_no}
+                    Code: <span className="font-bold text-indigo-600 dark:text-indigo-400">{tpDisplay.code}</span> · Ward: #{tpDisplay.ward_no} · Mobile: {tpDisplay.mobile_no}
                   </div>
                 </div>
               </div>
@@ -963,7 +996,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                   <span>{t.printBill || "Print Bill"}</span>
                 </button>
                 <button
-                  onClick={() => handleOpenEditTaxpayer(taxpayerDossier.taxpayer)}
+                  onClick={() => handleOpenEditTaxpayer(tpDisplay)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -976,19 +1009,19 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 uppercase font-sans">Citizenship No</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200">{taxpayerDossier.taxpayer.citizenship_no || "N/A"}</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">{tpDisplay.citizenship_no || "N/A"}</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 uppercase font-sans">PAN / VAT</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200">{taxpayerDossier.taxpayer.pan_vat_no || "N/A"}</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">{tpDisplay.pan_vat_no || "N/A"}</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 uppercase font-sans">Email Address</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{taxpayerDossier.taxpayer.email || "N/A"}</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{tpDisplay.email || "N/A"}</div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 uppercase font-sans">Municipal Zone</div>
-                <div className="font-bold text-indigo-600 dark:text-indigo-400">Ward #{taxpayerDossier.taxpayer.ward_no} · Commercial/Res</div>
+                <div className="font-bold text-indigo-600 dark:text-indigo-400">Ward #{tpDisplay.ward_no} · Commercial/Res</div>
               </div>
             </div>
           </div>
@@ -1387,7 +1420,8 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================= */}
       {/* 2. LAND MANAGEMENT: List, Add, and EDIT EACH LAND         */}
