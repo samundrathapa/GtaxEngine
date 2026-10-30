@@ -129,7 +129,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total Taxpayers */}
         <div
           onClick={() => onNavigate("taxpayer")}
@@ -194,31 +194,10 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
             <span>{stats.collectionRate} collection efficiency</span>
           </div>
         </div>
-
-        {/* Master Tables & Rates */}
-        <div
-          onClick={() => onNavigate("masters")}
-          className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-cyan-500/40 transition cursor-pointer group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Master Matrices
-            </span>
-            <div className="p-2.5 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform">
-              <Sliders className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
-            18 Tables
-          </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Rates, fiscal years, units, slabs
-          </div>
-        </div>
       </div>
 
-      {/* Main 5 Core Action Hubs */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3.5">
+      {/* Main Core Action Hubs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <button
           onClick={() => onNavigate("taxpayer")}
           className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 shadow-xs text-left transition group"
@@ -242,17 +221,6 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         </button>
 
         <button
-          onClick={() => onNavigate("rate")}
-          className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-xs text-left transition group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-white">Rates Master</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Land, Malpot & Construction Rates</div>
-        </button>
-
-        <button
           onClick={() => onNavigate("masters")}
           className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500 dark:hover:border-cyan-500 shadow-xs text-left transition group"
         >
@@ -260,7 +228,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
             <Sliders className="w-5 h-5" />
           </div>
           <div className="font-bold text-sm text-slate-900 dark:text-white">Master</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Fiscal Year, Units & System Tables</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Fiscal Year, Rates & System Tables</div>
         </button>
 
         <button
