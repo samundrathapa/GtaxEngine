@@ -96,17 +96,12 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
               <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 rounded-full border border-indigo-400/30">
                 FY {stats.activeFiscalYear} Live
               </span>
-              <span className="px-2.5 py-1 text-[11px] font-bold bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                PostgreSQL Engine Active
-              </span>
+             
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Municipal Property Tax Administration
             </h1>
-            <p className="text-sm text-indigo-200/80 mt-1 max-w-2xl">
-              Unified portal for citizen taxpayer registration, land & structure asset dossiers, multi-tier valuation calculations, and system rate masters.
-            </p>
+           
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -250,9 +245,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
             <h3 className="font-bold text-base text-slate-900 dark:text-white">
               Recent Municipal Property Assessments
             </h3>
-            <p className="text-xs text-slate-500">
-              Verified taxpayer dossiers and tax liability records in the current fiscal year
-            </p>
+           
           </div>
           <button
             onClick={() => onNavigate("taxpayer")}
