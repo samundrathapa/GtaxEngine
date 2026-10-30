@@ -63,23 +63,142 @@ type NavigationTab =
   | "reports"
   | "security_logs";
 
+const parseRouteFromLocation = (): {
+  tab: NavigationTab;
+  subView?: TaxpayerSubView;
+  rateTab?: RateTab;
+  mastersTab?: RateTab;
+  rbacTab?: RateTab;
+} => {
+  try {
+    // 1. Try URL hash e.g. #/calculation, #/taxpayer, #/taxpayer/multi_year_calc, #/masters, #/rate, #/users, #/dashboard
+    const hash = window.location.hash.replace(/^#\/?/, "").toLowerCase().trim();
+    if (hash) {
+      const parts = hash.split("/").map((p) => p.trim());
+      const mainSegment = parts[0];
+      const validTabs: NavigationTab[] = [
+        "dashboard",
+        "taxpayer",
+        "calculation",
+        "rate",
+        "masters",
+        "rbac",
+        "architecture",
+        "tax_calc",
+        "ai_agent",
+        "realtime_sync",
+        "jurisdictions",
+        "users",
+        "reports",
+        "security_logs"
+      ];
+      if (validTabs.includes(mainSegment as NavigationTab)) {
+        const result: any = { tab: mainSegment as NavigationTab };
+        if (mainSegment === "taxpayer" && parts[1]) {
+          result.subView = parts[1] === "multi_year_calc" ? "multi_year_calc" : "overview";
+        }
+        if (mainSegment === "masters" && parts[1]) {
+          result.mastersTab = parts[1] as RateTab;
+        }
+        if (mainSegment === "rate" && parts[1]) {
+          result.rateTab = parts[1] as RateTab;
+        }
+        if (mainSegment === "rbac" && parts[1]) {
+          result.rbacTab = parts[1] as RateTab;
+        }
+        return result;
+      }
+    }
+
+    // 2. Try URL search params e.g. ?tab=calculation
+    const params = new URLSearchParams(window.location.search);
+    const paramTab = params.get("tab")?.toLowerCase().trim();
+    if (paramTab) {
+      return { tab: paramTab as NavigationTab };
+    }
+
+    // 3. Fallback to localStorage e.g. "gtax_active_tab"
+    const saved = localStorage.getItem("gtax_active_tab")?.toLowerCase().trim();
+    if (saved) {
+      const savedSubView = localStorage.getItem("gtax_taxpayer_subview") as TaxpayerSubView;
+      return {
+        tab: saved as NavigationTab,
+        subView: savedSubView || "overview"
+      };
+    }
+  } catch (err) {
+    console.warn("Routing parse error:", err);
+  }
+
+  return { tab: "dashboard" };
+};
+
 export default function App() {
+  const initialRoute = parseRouteFromLocation();
   const [session, setSession] = useState<AuthSessionState | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [activeTab, setActiveTab] = useState<NavigationTab>("dashboard");
-  const [taxpayerSubView, setTaxpayerSubView] = useState<TaxpayerSubView>("overview");
-  const [taxpayerSubMenuOpen, setTaxpayerSubMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<NavigationTab>(initialRoute.tab);
+  const [taxpayerSubView, setTaxpayerSubView] = useState<TaxpayerSubView>(initialRoute.subView || "overview");
+  const [taxpayerSubMenuOpen, setTaxpayerSubMenuOpen] = useState(initialRoute.tab === "taxpayer");
 
   // Rate & Masters Navigation Submenus
-  const [rateSubTab, setRateSubTab] = useState<RateTab>("land_rate");
-  const [rateSubMenuOpen, setRateSubMenuOpen] = useState(false);
-  const [mastersSubTab, setMastersSubTab] = useState<RateTab>("fiscal_year");
-  const [mastersSubMenuOpen, setMastersSubMenuOpen] = useState(false);
-  const [rbacSubTab, setRbacSubTab] = useState<RateTab>("company");
-  const [rbacSubMenuOpen, setRbacSubMenuOpen] = useState(false);
+  const [rateSubTab, setRateSubTab] = useState<RateTab>(initialRoute.rateTab || "land_rate");
+  const [rateSubMenuOpen, setRateSubMenuOpen] = useState(initialRoute.tab === "rate");
+  const [mastersSubTab, setMastersSubTab] = useState<RateTab>(initialRoute.mastersTab || "fiscal_year");
+  const [mastersSubMenuOpen, setMastersSubMenuOpen] = useState(initialRoute.tab === "masters");
+  const [rbacSubTab, setRbacSubTab] = useState<RateTab>(initialRoute.rbacTab || "company");
+  const [rbacSubMenuOpen, setRbacSubMenuOpen] = useState(initialRoute.tab === "users" || initialRoute.tab === "rbac");
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Synchronize route to URL hash and localStorage whenever activeTab or subviews change
+  useEffect(() => {
+    try {
+      let hashString = `#/${activeTab}`;
+      if (activeTab === "taxpayer" && taxpayerSubView) {
+        hashString = `#/${activeTab}/${taxpayerSubView}`;
+      } else if (activeTab === "masters" && mastersSubTab) {
+        hashString = `#/${activeTab}/${mastersSubTab}`;
+      } else if (activeTab === "rate" && rateSubTab) {
+        hashString = `#/${activeTab}/${rateSubTab}`;
+      }
+
+      if (window.location.hash !== hashString) {
+        window.history.replaceState(null, "", hashString);
+      }
+      localStorage.setItem("gtax_active_tab", activeTab);
+      if (activeTab === "taxpayer") {
+        localStorage.setItem("gtax_taxpayer_subview", taxpayerSubView);
+      }
+    } catch (_) {}
+  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab]);
+
+  // Handle browser back/forward buttons and external hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const route = parseRouteFromLocation();
+      if (route.tab && route.tab !== activeTab) {
+        setActiveTab(route.tab);
+      }
+      if (route.subView && route.subView !== taxpayerSubView) {
+        setTaxpayerSubView(route.subView);
+      }
+      if (route.mastersTab && route.mastersTab !== mastersSubTab) {
+        setMastersSubTab(route.mastersTab);
+      }
+      if (route.rateTab && route.rateTab !== rateSubTab) {
+        setRateSubTab(route.rateTab);
+      }
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
+    };
+  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab]);
 
   // Global Taxpayer Selection & AI Chatbot State
   const [selectedTaxpayerId, setSelectedTaxpayerId] = useState<number>(1);

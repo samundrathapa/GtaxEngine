@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ApiController } from "../../api/controller.ts";
 import { translations, SupportedLang, tCol } from "../../utils/i18n.ts";
 import { MultiYearTaxEngine } from "../TaxCalculation/MultiYearTaxEngine.tsx";
@@ -201,32 +201,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     }
   }, [openNewTaxpayerTrigger]);
 
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      const mastersRes = await ApiController.getPropertyMasters();
-      if (mastersRes.success && mastersRes.data) {
-        setMasters(mastersRes.data);
-      }
-
-      const tpRes = await ApiController.getTaxpayers();
-      if (tpRes.success && tpRes.data) {
-        setTaxpayers(tpRes.data);
-        if (tpRes.data.length > 0 && !selectedTaxpayerId) {
-          setSelectedTaxpayerId(tpRes.data[0].id);
-        }
-      }
-
-      const targetId = selectedTaxpayerId || (tpRes.data && tpRes.data.length > 0 ? tpRes.data[0].id : null);
-      if (targetId) {
-        await loadTaxpayerDossier(Number(targetId), tpRes.data || undefined);
-      }
-    } catch (e) {
-      console.warn("Failed to load property data", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isInitialMountRef = useRef(true);
 
   const loadTaxpayerDossier = async (tpId: number | string, currentList?: any[]) => {
     try {
@@ -253,11 +228,45 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     }
   };
 
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      const mastersRes = await ApiController.getPropertyMasters();
+      if (mastersRes.success && mastersRes.data) {
+        setMasters(mastersRes.data);
+      }
+
+      const tpRes = await ApiController.getTaxpayers();
+      if (tpRes.success && tpRes.data) {
+        setTaxpayers(tpRes.data);
+        const targetId = selectedTaxpayerId || (tpRes.data.length > 0 ? tpRes.data[0].id : 1);
+        if (targetId) {
+          if (!selectedTaxpayerId) {
+            setSelectedTaxpayerId(targetId);
+          }
+          await loadTaxpayerDossier(Number(targetId), tpRes.data);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load property data", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Always load taxpayers and masters on initial mount
   useEffect(() => {
+    loadAllData();
+  }, []);
+
+  // When selectedTaxpayerId changes subsequently, fetch the matching dossier
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
     if (selectedTaxpayerId) {
       loadTaxpayerDossier(selectedTaxpayerId);
-    } else {
-      loadAllData();
     }
   }, [selectedTaxpayerId]);
 
