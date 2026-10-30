@@ -19,7 +19,9 @@ import { GlobalTaxpayerSearch } from "./components/GlobalTaxpayerSearch.tsx";
 import { AiTaxChatbotModal } from "./components/AiTaxChatbotModal.tsx";
 import { DbColumnLanguageModal } from "./components/DbColumnLanguageModal.tsx";
 import { FlutterMobileAppSimulator } from "./components/FlutterMobileAppSimulator.tsx";
+import { MunicipalDashboardPanel } from "./components/MunicipalDashboardPanel.tsx";
 import {
+  LayoutDashboard,
   Layers,
   Calculator,
   Bot,
@@ -46,6 +48,7 @@ import {
 } from "lucide-react";
 
 type NavigationTab =
+  | "dashboard"
   | "taxpayer"
   | "rate"
   | "masters"
@@ -63,7 +66,7 @@ type NavigationTab =
 export default function App() {
   const [session, setSession] = useState<AuthSessionState | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [activeTab, setActiveTab] = useState<NavigationTab>("taxpayer");
+  const [activeTab, setActiveTab] = useState<NavigationTab>("dashboard");
   const [taxpayerSubView, setTaxpayerSubView] = useState<TaxpayerSubView>("overview");
   const [taxpayerSubMenuOpen, setTaxpayerSubMenuOpen] = useState(false);
 
@@ -355,47 +358,65 @@ export default function App() {
             </button>
           </div>
 
-          {/* Navigation Items */}
-          <nav className="space-y-1 text-xs">
-            {/* 1. Taxpayer Hub (Common Registry, Dossier & Assessment) */}
+          {/* Navigation Items - 5 Core Hubs with Middle-Sized Icons (w-5 h-5) */}
+          <nav className="space-y-1.5 text-xs">
+            {/* 1. Dashboard */}
+            <div>
+              <button
+                onClick={() => {
+                  setActiveTab("dashboard");
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 font-bold rounded-xl transition-all ${
+                  activeTab === "dashboard"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "hover:bg-white/5 text-slate-300"
+                }`}
+              >
+                <LayoutDashboard className="w-5 h-5 text-indigo-400 shrink-0" />
+                <span className="text-sm">Dashboard</span>
+              </button>
+            </div>
+
+            {/* 2. Taxpayer */}
             <div>
               <button
                 onClick={() => {
                   setActiveTab("taxpayer");
                   setTaxpayerSubMenuOpen(!taxpayerSubMenuOpen);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 font-bold rounded-xl transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 font-bold rounded-xl transition-all ${
                   activeTab === "taxpayer"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "hover:bg-white/5 text-slate-300"
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 text-indigo-400" />
-                  <span>Taxpayer & Dossier</span>
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span className="text-sm">Taxpayer</span>
                 </div>
                 {taxpayerSubMenuOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 )}
               </button>
 
               {taxpayerSubMenuOpen && (
-                <div className="pl-3 pt-1 space-y-1">
+                <div className="pl-4 pt-1 space-y-1">
                   <button
                     onClick={() => {
                       setActiveTab("taxpayer");
                       setTaxpayerSubView("overview");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       activeTab === "taxpayer" && taxpayerSubView === "overview"
                         ? "bg-white/15 text-white font-bold"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <span>Registry, Dossier & Assessment</span>
+                    <span>Registry & Dossier</span>
                   </button>
 
                   <button
@@ -404,7 +425,7 @@ export default function App() {
                       setTaxpayerSubView("multi_year_calc");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       activeTab === "taxpayer" && taxpayerSubView === "multi_year_calc"
                         ? "bg-white/15 text-white font-bold"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
@@ -416,81 +437,79 @@ export default function App() {
               )}
             </div>
 
-            {/* 2. Calculation Window */}
+            {/* 3. Calculation */}
             <div>
               <button
                 onClick={() => {
                   setActiveTab("calculation");
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 font-bold rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 font-bold rounded-xl transition-all ${
                   activeTab === "calculation"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "hover:bg-white/5 text-slate-300"
                 }`}
               >
-                <Calculator className="w-4 h-4 text-amber-400" />
-                <span>Tax Calculation</span>
+                <Calculator className="w-5 h-5 text-amber-400 shrink-0" />
+                <span className="text-sm">Calculation</span>
               </button>
             </div>
 
-            {/* 3. Rate Master */}
-            <div>
-              <button
-                onClick={() => {
-                  setActiveTab("rate");
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 font-bold rounded-xl transition-all ${
-                  activeTab === "rate"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "hover:bg-white/5 text-slate-300"
-                }`}
-              >
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                <span>Rate Masters</span>
-              </button>
-            </div>
-
-            {/* 4. System Masters (Expands ONLY on click) */}
+            {/* 4. Master */}
             <div>
               <button
                 onClick={() => {
                   setActiveTab("masters");
                   setMastersSubMenuOpen(!mastersSubMenuOpen);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 font-bold rounded-xl transition-all ${
-                  activeTab === "masters"
+                className={`w-full flex items-center justify-between px-3 py-2.5 font-bold rounded-xl transition-all ${
+                  activeTab === "masters" || activeTab === "rate"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "hover:bg-white/5 text-slate-300"
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <Sliders className="w-4 h-4 text-cyan-400" />
-                  <span>System Masters</span>
+                <div className="flex items-center gap-3">
+                  <Sliders className="w-5 h-5 text-cyan-400 shrink-0" />
+                  <span className="text-sm">Master</span>
                 </div>
                 {mastersSubMenuOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 )}
               </button>
 
               {mastersSubMenuOpen && (
-                <div className="pl-3 pt-1 space-y-1">
+                <div className="pl-4 pt-1 space-y-1">
+                  <button
+                    onClick={() => {
+                      setActiveTab("rate");
+                      setRateSubTab("land_rate");
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "rate"
+                        ? "bg-white/15 text-white font-bold"
+                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    <span>Rate Masters</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setActiveTab("masters");
                       setMastersSubTab("fiscal_year");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       activeTab === "masters" && mastersSubTab === "fiscal_year"
                         ? "bg-white/15 text-white font-bold"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                    <Calendar className="w-4 h-4 text-blue-400" />
                     <span>Fiscal Year</span>
                   </button>
 
@@ -500,13 +519,13 @@ export default function App() {
                       setMastersSubTab("construction_type");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       activeTab === "masters" && mastersSubTab === "construction_type"
                         ? "bg-white/15 text-white font-bold"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <Building className="w-3.5 h-3.5 text-purple-400" />
+                    <Building className="w-4 h-4 text-purple-400" />
                     <span>Construction Types</span>
                   </button>
 
@@ -516,153 +535,93 @@ export default function App() {
                       setMastersSubTab("unit");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                       activeTab === "masters" && mastersSubTab === "unit"
                         ? "bg-white/15 text-white font-bold"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+                    <Sliders className="w-4 h-4 text-cyan-400" />
                     <span>Measurement Unit</span>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* 5. Real-time Sync */}
+            {/* 5. User */}
             <div>
               <button
                 onClick={() => {
-                  setActiveTab("realtime_sync");
-                  setSidebarOpen(false);
+                  setActiveTab("users");
+                  setRbacSubMenuOpen(!rbacSubMenuOpen);
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 font-bold rounded-xl transition-all ${
-                  activeTab === "realtime_sync"
+                className={`w-full flex items-center justify-between px-3 py-2.5 font-bold rounded-xl transition-all ${
+                  activeTab === "users" || activeTab === "rbac" || activeTab === "security_logs"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "hover:bg-white/5 text-slate-300"
                 }`}
               >
-                <Radio className="w-4 h-4 text-sky-400" />
-                <span>Real-time Sync</span>
-              </button>
-            </div>
-
-            {/* 6. Reports */}
-            <div>
-              <button
-                onClick={() => {
-                  setActiveTab("reports");
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 font-bold rounded-xl transition-all ${
-                  activeTab === "reports"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "hover:bg-white/5 text-slate-300"
-                }`}
-              >
-                <FileSpreadsheet className="w-4 h-4 text-teal-400" />
-                <span>Reports & Exports</span>
-              </button>
-            </div>
-
-            {/* 7. RBAC & Security (Expands ONLY on click) */}
-            {Boolean(
-              !session ||
-              (session?.user as any)?.role_id === 1 ||
-              session?.role?.role_name?.toLowerCase().includes("superadmin") ||
-              session?.role?.role_name?.toLowerCase().includes("admin") ||
-              session?.user?.email?.toLowerCase().includes("superadmin")
-            ) && (
-              <div>
-                <button
-                  onClick={() => {
-                    setActiveTab("users");
-                    setRbacSubMenuOpen(!rbacSubMenuOpen);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 font-bold rounded-xl transition-all ${
-                    activeTab === "users" || activeTab === "rbac" || activeTab === "security_logs"
-                      ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                      : "hover:bg-white/5 text-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Shield className="w-4 h-4 text-rose-400" />
-                    <span>Security & RBAC</span>
-                  </div>
-                  {rbacSubMenuOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                  )}
-                </button>
-
-                {rbacSubMenuOpen && (
-                  <div className="pl-3 pt-1 space-y-1">
-                    <button
-                      onClick={() => {
-                        setActiveTab("users");
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                        activeTab === "users"
-                          ? "bg-white/15 text-white font-bold"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <Users className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Users & Roles</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveTab("rbac");
-                        setRbacSubTab("company");
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                        activeTab === "rbac" && rbacSubTab === "company"
-                          ? "bg-white/15 text-white font-bold"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <Landmark className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Company Profile</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveTab("rbac");
-                        setRbacSubTab("application_setting");
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                        activeTab === "rbac" && rbacSubTab === "application_setting"
-                          ? "bg-white/15 text-white font-bold"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <Settings className="w-3.5 h-3.5 text-teal-400" />
-                      <span>Application Settings</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setActiveTab("security_logs");
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                        activeTab === "security_logs"
-                          ? "bg-white/15 text-white font-bold"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      <Activity className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Audit Logs</span>
-                    </button>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <Shield className="w-5 h-5 text-rose-400 shrink-0" />
+                  <span className="text-sm">User</span>
+                </div>
+                {rbacSubMenuOpen ? (
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 )}
-              </div>
-            )}
+              </button>
+
+              {rbacSubMenuOpen && (
+                <div className="pl-4 pt-1 space-y-1">
+                  <button
+                    onClick={() => {
+                      setActiveTab("users");
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "users"
+                        ? "bg-white/15 text-white font-bold"
+                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <Users className="w-4 h-4 text-indigo-400" />
+                    <span>Users & Roles</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("rbac");
+                      setRbacSubTab("company");
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "rbac" && rbacSubTab === "company"
+                        ? "bg-white/15 text-white font-bold"
+                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <Landmark className="w-4 h-4 text-amber-400" />
+                    <span>Company Profile</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("security_logs");
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "security_logs"
+                        ? "bg-white/15 text-white font-bold"
+                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <Activity className="w-4 h-4 text-rose-400" />
+                    <span>Audit Logs</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
 
@@ -698,7 +657,7 @@ export default function App() {
                 <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">Gtax Municipal</span>
                 <span className="hidden sm:inline-block text-slate-400 dark:text-slate-600 text-xs">/</span>
                 <span className="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 capitalize truncate max-w-[120px] sm:max-w-none">
-                  {activeTab === "taxpayer" ? `Taxpayer > ${taxpayerSubView}` : activeTab === "calculation" ? "Frontend & Manual Calculation Window" : activeTab}
+                  {activeTab === "dashboard" ? "Municipal Dashboard" : activeTab === "taxpayer" ? `Taxpayer > ${taxpayerSubView}` : activeTab === "calculation" ? "Frontend & Manual Calculation Window" : activeTab === "masters" ? "System Masters" : activeTab === "rate" ? "Rate Masters" : activeTab === "users" ? "Users & RBAC" : activeTab}
                 </span>
               </div>
               <div className="hidden md:flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
@@ -779,6 +738,20 @@ export default function App() {
 
         {/* Main Panel Content Render Area */}
         <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto">
+          {activeTab === "dashboard" && (
+            <MunicipalDashboardPanel
+              onNavigate={(tab) => {
+                setActiveTab(tab as any);
+              }}
+              onOpenNewTaxpayer={() => {
+                setActiveTab("taxpayer");
+                setTaxpayerSubView("overview");
+                setOpenNewTaxpayerTrigger((prev) => prev + 1);
+              }}
+              currentLang={currentLang}
+            />
+          )}
+
           {activeTab === "taxpayer" && (
             <TaxpayerWorkflowPanel
               initialSubView={taxpayerSubView}

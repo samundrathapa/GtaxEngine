@@ -570,7 +570,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                         <div className="space-y-1.5">
                           <div className="p-2 bg-slate-900/80 rounded-lg flex items-center justify-between border border-slate-800">
                             <div>
-                              <div className="font-semibold text-white text-[11px]">Govinda Prasad Sharma</div>
+                              <div className="font-semibold text-white text-[11px]">Ram Bahadur Thapa</div>
                               <div className="text-[9px] text-slate-400">Ward #1 • Kitta २४९ (249)</div>
                             </div>
                             <span className="px-1.5 py-0.5 text-[9px] bg-emerald-500/20 text-emerald-300 rounded font-mono">
@@ -644,7 +644,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                               onChange={e => setCalcTaxpayerId(Number(e.target.value))}
                               className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-white focus:outline-none"
                             >
-                              <option value={1}>Govinda Prasad Sharma (TP-2081-0001)</option>
+                              <option value={1}>Ram Bahadur Thapa (TP-2081-0001)</option>
                               <option value={3}>Ramesh Kumar Thapa (TP-2081-0003)</option>
                             </select>
                           </div>
@@ -850,9 +850,9 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
 
                       <div className="space-y-1.5">
                         {[
-                          { name: "Govinda Prasad Sharma", code: "TP-2081-0001", ward: 1, tax: "12,220" },
+                          { name: "Ram Bahadur Thapa", code: "TP-2081-0001", ward: 1, tax: "12,220" },
                           { name: "Ramesh Kumar Thapa", code: "TP-2081-0003", ward: 1, tax: "23,800" },
-                          { name: "Sita Devi Sharma", code: "TP-2081-0002", ward: 5, tax: "14,200" }
+                          { name: "Sita Maya Shrestha", code: "TP-2081-0002", ward: 5, tax: "14,200" }
                         ]
                           .filter(t => !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.code.toLowerCase().includes(searchQuery.toLowerCase()))
                           .map((t, idx) => (

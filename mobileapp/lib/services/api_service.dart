@@ -424,7 +424,7 @@ class ApiService {
       taxpayer: Taxpayer(
         id: id,
         code: 'TP-2081-${id.toString().padLeft(4, '0')}',
-        fullname: id == 3 ? 'Ramesh Kumar Thapa' : 'Govinda Prasad Sharma',
+        fullname: id == 3 ? 'Himalayan Trading Syndicate Ltd' : (id == 2 ? 'Sita Maya Shrestha' : 'Ram Bahadur Thapa'),
         mobileNo: id == 3 ? '+977-9860112233' : '+977-9851029384',
         wardNo: 1,
         taxTypeId: 1,
@@ -531,7 +531,7 @@ class ApiService {
       {
         'id': 1,
         'taxpayer_id': 1,
-        'taxpayer_name': 'Govinda Prasad Sharma (गोविन्द प्रसाद शर्मा)',
+        'taxpayer_name': 'Ram Bahadur Thapa (राम बहादुर थापा)',
         'fiscal_year_name': 'Fiscal Year 2081/2082 BS',
         'total_tax': 12220,
         'calculate_date_bs': '2081-07-02',
