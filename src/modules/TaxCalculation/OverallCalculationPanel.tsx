@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
 import { TaxLiabilityComparisonChart } from "../../components/TaxLiabilityComparisonChart.tsx";
+import { MultiYearTaxEngine } from "./MultiYearTaxEngine.tsx";
 import {
   Calculator,
   Search,
@@ -27,12 +28,39 @@ import {
   ShieldCheck
 } from "lucide-react";
 
-export const OverallCalculationPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"calculator" | "history" | "comparison">("calculator");
+export interface OverallCalculationPanelProps {
+  initialTab?: "calculator" | "multi_year" | "history" | "comparison";
+  onTabChange?: (tab: "calculator" | "multi_year" | "history" | "comparison") => void;
+  selectedTaxpayerIdProp?: number;
+}
+
+export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = ({
+  initialTab = "calculator",
+  onTabChange,
+  selectedTaxpayerIdProp
+}) => {
+  const [activeTab, setActiveTab] = useState<"calculator" | "multi_year" | "history" | "comparison">(initialTab);
   const [loading, setLoading] = useState(false);
   const [taxpayers, setTaxpayers] = useState<any[]>([]);
   const [filteredTaxpayers, setFilteredTaxpayers] = useState<any[]>([]);
-  const [selectedTaxpayerId, setSelectedTaxpayerId] = useState<number>(1);
+  const [selectedTaxpayerId, setSelectedTaxpayerId] = useState<number>(selectedTaxpayerIdProp || 1);
+
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (selectedTaxpayerIdProp && selectedTaxpayerIdProp !== selectedTaxpayerId) {
+      setSelectedTaxpayerId(selectedTaxpayerIdProp);
+    }
+  }, [selectedTaxpayerIdProp]);
+
+  const switchTab = (tab: "calculator" | "multi_year" | "history" | "comparison") => {
+    setActiveTab(tab);
+    if (onTabChange) onTabChange(tab);
+  };
   const [dossier, setDossier] = useState<any>(null);
   const [masters, setMasters] = useState<any>({
     fiscalYears: [],
@@ -414,66 +442,123 @@ export const OverallCalculationPanel: React.FC = () => {
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const currentTaxpayer = taxpayers.find((tp) => tp.id === selectedTaxpayerId);
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Gtax Municipal Platform</span>
-            <span>·</span>
-            <span className="font-semibold text-indigo-600">Tax Calculation Master Engine</span>
+      {/* Elevated Top Header & Context Banner */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1.5">
+              <span>Municipal Revenue & Tax Administration</span>
+              <span>/</span>
+              <span className="text-indigo-600 font-bold">Property Tax Assessment</span>
+              <span>/</span>
+              <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold">
+                {activeTab === "calculator" ? "Live Calculation Studio" : activeTab === "multi_year" ? "Multi-Year Arrears Engine" : activeTab === "history" ? "calc_master Registry" : "Cross-Year Analytics"}
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-sm">
+                <Calculator className="w-4 h-4" />
+              </span>
+              <span>Tax Calculation & Assessment Studio</span>
+            </h1>
+            <p className="text-xs text-slate-500 max-w-2xl mt-1">
+              Live algorithmic tax assessment workbench supporting progressive valuation slabs, statutory building depreciation, and multi-year arrears across 66 fiscal years (2021/22 - 2086/87 BS).
+            </p>
           </div>
-        
+
+          {/* Quick Context Status Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>66 Fiscal Years Active (2021-2086 BS)</span>
+            </div>
+
+            {currentTaxpayer && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-semibold">
+                <span className="font-bold">Active:</span>
+                <span className="truncate max-w-[150px]">{currentTaxpayer.fullanme}</span>
+                <span className="font-mono text-[10px] text-indigo-600">({currentTaxpayer.code})</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+        {/* Tab Toggle Navigation Bar */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
           <button
-            onClick={() => setActiveTab("calculator")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => switchTab("calculator")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "calculator"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
             }`}
           >
-            <Calculator className="w-3.5 h-3.5" />
+            <Calculator className={`w-4 h-4 ${activeTab === "calculator" ? "text-amber-300" : "text-amber-500"}`} />
             <span>Calculation Studio</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "calculator" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+              Live
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("history")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => switchTab("multi_year")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "multi_year"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+            }`}
+          >
+            <TrendingUp className={`w-4 h-4 ${activeTab === "multi_year" ? "text-emerald-300" : "text-emerald-500"}`} />
+            <span>Multi-Year Engine</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "multi_year" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"}`}>
+              2021-2086 BS
+            </span>
+          </button>
+
+          <button
+            onClick={() => switchTab("history")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "history"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Saved Records (calc_master)</span>
+            <FileText className={`w-4 h-4 ${activeTab === "history" ? "text-blue-300" : "text-blue-500"}`} />
+            <span>Saved Records</span>
+            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "history" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+              calc_master
+            </span>
           </button>
+
           <button
-            onClick={() => setActiveTab("comparison")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            onClick={() => switchTab("comparison")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "comparison"
-                ? "bg-white text-indigo-600 shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
+            <BarChart3 className={`w-4 h-4 ${activeTab === "comparison" ? "text-purple-300" : "text-purple-500"}`} />
             <span>Cross-Year Visualization</span>
           </button>
         </div>
       </div>
 
       {saveSuccessMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{saveSuccessMsg}</span>
           </div>
-          <span className="font-mono text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+          <span className="font-mono text-[11px] text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200">
             calc_master · calc_land · calc_house · calc_floor · calc_additional
           </span>
         </div>
@@ -728,14 +813,25 @@ export const OverallCalculationPanel: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleSaveCalculation}
-                  disabled={savingCalc}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{savingCalc ? "Saving Calculation..." : "Save Calculation to Database"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrint}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-2xs transition-all"
+                    title="Print Assessment Receipt"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Print Slip</span>
+                  </button>
+
+                  <button
+                    onClick={handleSaveCalculation}
+                    disabled={savingCalc}
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{savingCalc ? "Saving..." : "Save Calculation to Database"}</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -978,7 +1074,14 @@ export const OverallCalculationPanel: React.FC = () => {
         </div>
       )}
 
-      {/* VIEW 2: SAVED CALCULATION RECORDS (calc_master History) */}
+      {/* VIEW 2: MULTI-YEAR LIABILITY ENGINE */}
+      {activeTab === "multi_year" && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+          <MultiYearTaxEngine currentLang="nep" initialTaxpayerId={selectedTaxpayerId} />
+        </div>
+      )}
+
+      {/* VIEW 3: SAVED CALCULATION RECORDS (calc_master History) */}
       {activeTab === "history" && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs space-y-4 p-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">

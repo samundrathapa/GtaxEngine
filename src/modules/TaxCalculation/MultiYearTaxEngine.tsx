@@ -67,10 +67,12 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
         if (fys.length >= 2) {
           // Sort chronologically
           const sorted = [...fys].sort((a: any, b: any) =>
-            a.date_from_bs?.localeCompare(b.date_from_bs)
+            (a.date_from_bs || a.code || "").localeCompare(b.date_from_bs || b.code || "")
           );
-          setFromFiscalYearId(sorted[0]?.id || 1);
-          setToFiscalYearId(sorted[sorted.length - 1]?.id || 2);
+          const currentFy = sorted.find((f: any) => f.code === "2081/82") || sorted[sorted.length - 1];
+          const defaultFromFy = sorted.find((f: any) => f.code === "2079/80") || sorted[0];
+          setFromFiscalYearId(defaultFromFy?.id || 3);
+          setToFiscalYearId(currentFy?.id || 2);
         }
       }
     } catch (e) {

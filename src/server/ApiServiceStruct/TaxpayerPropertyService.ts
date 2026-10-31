@@ -1,5 +1,6 @@
 import { AuditFields } from "../BaseFrame/repo/BaseRepo.ts";
 import { ApiResponse, IApiResponse } from "../BaseFrame/response/ApiResponse.ts";
+import { generateFiscalYears2021To2086 } from "../db/fiscalYearSeeds.ts";
 
 export interface TblFiscalYear extends AuditFields {
   id: number;
@@ -414,96 +415,27 @@ class TaxpayerPropertyDatabase {
     const now = new Date().toISOString();
     const sys = "SYSTEM_SEED";
 
-    // 1. Fiscal Years
-    this.fiscalYears.set(1, {
-      id: 1,
-      code: "2080/81",
-      fullname: "Fiscal Year 2080/2081 BS (आर्थिक वर्ष २०८०/८१)",
-      date_from_bs: "2080-04-01",
-      date_from_ad: "2023-07-17",
-      date_to_ad: "2024-07-15",
-      date_to_bs: "2081-03-31",
-      is_deleted: false,
-      insert_by: sys,
-      insert_on: now,
-      update_by: sys,
-      update_on: now,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    this.fiscalYears.set(2, {
-      id: 2,
-      code: "2081/82",
-      fullname: "Fiscal Year 2081/2082 BS (आर्थिक वर्ष २०८१/८२) [Current]",
-      date_from_bs: "2081-04-01",
-      date_from_ad: "2024-07-16",
-      date_to_ad: "2025-07-15",
-      date_to_bs: "2082-03-31",
-      is_deleted: false,
-      insert_by: sys,
-      insert_on: now,
-      update_by: sys,
-      update_on: now,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    this.fiscalYears.set(3, {
-      id: 3,
-      code: "2079/80",
-      fullname: "Fiscal Year 2079/2080 BS (आर्थिक वर्ष २०७९/८०)",
-      date_from_bs: "2079-04-01",
-      date_from_ad: "2022-07-17",
-      date_to_ad: "2023-07-16",
-      date_to_bs: "2080-03-31",
-      is_deleted: false,
-      insert_by: sys,
-      insert_on: now,
-      update_by: sys,
-      update_on: now,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    this.fiscalYears.set(4, {
-      id: 4,
-      code: "2078/79",
-      fullname: "Fiscal Year 2078/2079 BS (आर्थिक वर्ष २०७८/७९)",
-      date_from_bs: "2078-04-01",
-      date_from_ad: "2021-07-16",
-      date_to_ad: "2022-07-16",
-      date_to_bs: "2079-03-31",
-      is_deleted: false,
-      insert_by: sys,
-      insert_on: now,
-      update_by: sys,
-      update_on: now,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    this.fiscalYears.set(5, {
-      id: 5,
-      code: "2082/83",
-      fullname: "Fiscal Year 2082/2083 BS (आर्थिक वर्ष २०८२/८३) [Projected]",
-      date_from_bs: "2082-04-01",
-      date_from_ad: "2025-07-16",
-      date_to_ad: "2026-07-15",
-      date_to_bs: "2083-03-31",
-      is_deleted: false,
-      insert_by: sys,
-      insert_on: now,
-      update_by: sys,
-      update_on: now,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
+    // 1. Fiscal Years (Complete official master from year 2021 to 2086 BS)
+    const seedFys = generateFiscalYears2021To2086();
+    for (const fy of seedFys) {
+      this.fiscalYears.set(fy.id, {
+        id: fy.id,
+        code: fy.code,
+        fullname: fy.fullname,
+        date_from_bs: fy.date_from_bs,
+        date_from_ad: fy.date_from_ad,
+        date_to_ad: fy.date_to_ad,
+        date_to_bs: fy.date_to_bs,
+        is_deleted: false,
+        insert_by: sys,
+        insert_on: now,
+        update_by: sys,
+        update_on: now,
+        delete_by: null,
+        deleted_on: null,
+        is_active: true
+      });
+    }
 
     // 2. Measuring Units
     const defaultUnits: { id: number; code: string; name: string; val: number }[] = [

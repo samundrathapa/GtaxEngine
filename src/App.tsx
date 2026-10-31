@@ -40,11 +40,16 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   DollarSign,
   Calendar,
   Building,
   Sliders,
-  Settings
+  Settings,
+  TrendingUp,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelLeft
 } from "lucide-react";
 
 type NavigationTab =
@@ -66,12 +71,13 @@ type NavigationTab =
 const parseRouteFromLocation = (): {
   tab: NavigationTab;
   subView?: TaxpayerSubView;
+  calculationTab?: "calculator" | "multi_year" | "history" | "comparison";
   rateTab?: RateTab;
   mastersTab?: RateTab;
   rbacTab?: RateTab;
 } => {
   try {
-    // 1. Try URL hash e.g. #/calculation, #/taxpayer, #/taxpayer/multi_year_calc, #/masters, #/rate, #/users, #/dashboard
+    // 1. Try URL hash e.g. #/calculation, #/calculation/multi_year, #/taxpayer, #/masters, #/dashboard
     const hash = window.location.hash.replace(/^#\/?/, "").toLowerCase().trim();
     if (hash) {
       const parts = hash.split("/").map((p) => p.trim());
@@ -94,8 +100,11 @@ const parseRouteFromLocation = (): {
       ];
       if (validTabs.includes(mainSegment as NavigationTab)) {
         const result: any = { tab: mainSegment as NavigationTab };
-        if (mainSegment === "taxpayer" && parts[1]) {
-          result.subView = parts[1] === "multi_year_calc" ? "multi_year_calc" : "overview";
+        if (mainSegment === "taxpayer") {
+          result.subView = "overview";
+        }
+        if (mainSegment === "calculation" && parts[1]) {
+          result.calculationTab = parts[1] === "multi_year" ? "multi_year" : "calculator";
         }
         if (mainSegment === "masters" && parts[1]) {
           result.mastersTab = parts[1] as RateTab;
@@ -120,10 +129,11 @@ const parseRouteFromLocation = (): {
     // 3. Fallback to localStorage e.g. "gtax_active_tab"
     const saved = localStorage.getItem("gtax_active_tab")?.toLowerCase().trim();
     if (saved) {
-      const savedSubView = localStorage.getItem("gtax_taxpayer_subview") as TaxpayerSubView;
+      const savedCalcTab = localStorage.getItem("gtax_calculation_tab") as any;
       return {
         tab: saved as NavigationTab,
-        subView: savedSubView || "overview"
+        subView: "overview",
+        calculationTab: savedCalcTab || "calculator"
       };
     }
   } catch (err) {
@@ -139,7 +149,8 @@ export default function App() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [activeTab, setActiveTab] = useState<NavigationTab>(initialRoute.tab);
   const [taxpayerSubView, setTaxpayerSubView] = useState<TaxpayerSubView>(initialRoute.subView || "overview");
-  const [taxpayerSubMenuOpen, setTaxpayerSubMenuOpen] = useState(initialRoute.tab === "taxpayer");
+  const [calculationTab, setCalculationTab] = useState<"calculator" | "multi_year" | "history" | "comparison">(initialRoute.calculationTab || "calculator");
+  const [calculationSubMenuOpen, setCalculationSubMenuOpen] = useState(initialRoute.tab === "calculation");
 
   // Rate & Masters Navigation Submenus
   const [rateSubTab, setRateSubTab] = useState<RateTab>(initialRoute.rateTab || "land_rate");
@@ -151,13 +162,30 @@ export default function App() {
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("gtax_sidebar_collapsed") === "true";
+    } catch (_) {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("gtax_sidebar_collapsed", String(next));
+      } catch (_) {}
+      return next;
+    });
+  };
 
   // Synchronize route to URL hash and localStorage whenever activeTab or subviews change
   useEffect(() => {
     try {
       let hashString = `#/${activeTab}`;
-      if (activeTab === "taxpayer" && taxpayerSubView) {
-        hashString = `#/${activeTab}/${taxpayerSubView}`;
+      if (activeTab === "calculation" && calculationTab) {
+        hashString = `#/${activeTab}/${calculationTab}`;
       } else if (activeTab === "masters" && mastersSubTab) {
         hashString = `#/${activeTab}/${mastersSubTab}`;
       } else if (activeTab === "rate" && rateSubTab) {
@@ -168,11 +196,11 @@ export default function App() {
         window.history.replaceState(null, "", hashString);
       }
       localStorage.setItem("gtax_active_tab", activeTab);
-      if (activeTab === "taxpayer") {
-        localStorage.setItem("gtax_taxpayer_subview", taxpayerSubView);
+      if (activeTab === "calculation") {
+        localStorage.setItem("gtax_calculation_tab", calculationTab);
       }
     } catch (_) {}
-  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab]);
+  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab, calculationTab]);
 
   // Handle browser back/forward buttons and external hash changes
   useEffect(() => {
@@ -180,6 +208,9 @@ export default function App() {
       const route = parseRouteFromLocation();
       if (route.tab && route.tab !== activeTab) {
         setActiveTab(route.tab);
+      }
+      if (route.calculationTab && route.calculationTab !== calculationTab) {
+        setCalculationTab(route.calculationTab);
       }
       if (route.subView && route.subView !== taxpayerSubView) {
         setTaxpayerSubView(route.subView);
@@ -449,9 +480,15 @@ export default function App() {
 
       {/* Main Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 flex flex-col justify-between p-3.5 border-r transition-transform duration-200 ${
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen flex flex-col justify-between border-r transition-all duration-300 ease-in-out ${
           themeStyle.sidebarBg
-        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        } ${
+          sidebarOpen
+            ? "translate-x-0 w-64 p-3.5 shadow-2xl"
+            : isSidebarCollapsed
+            ? "-translate-x-full lg:-translate-x-full w-0 p-0 overflow-hidden border-none pointer-events-none"
+            : "-translate-x-full lg:translate-x-0 w-64 p-3.5"
+        }`}
       >
         <div className="space-y-3.5 overflow-y-auto pr-1 no-scrollbar">
           {/* Brand Header */}
@@ -469,12 +506,28 @@ export default function App() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
-            >
-              <X className="w-4 h-4" />
-            </button>
+
+            <div className="flex items-center gap-1">
+              {/* Desktop Hide/Minimize Sidebar Button */}
+              <button
+                onClick={toggleSidebarCollapse}
+                className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                title="Hide / Minimize Sidebar"
+                aria-label="Minimize sidebar"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                title="Close sidebar"
+                aria-label="Close sidebar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Navigation Items - 5 Core Hubs with Middle-Sized Icons (w-5 h-5) */}
@@ -497,81 +550,84 @@ export default function App() {
               </button>
             </div>
 
-            {/* 2. Taxpayer */}
+            {/* 2. Taxpayer (Direct Register & Dossier Hub) */}
             <div>
               <button
                 onClick={() => {
                   setActiveTab("taxpayer");
-                  setTaxpayerSubMenuOpen(!taxpayerSubMenuOpen);
+                  setTaxpayerSubView("overview");
+                  setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 font-bold rounded-xl transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 font-bold rounded-xl transition-all ${
                   activeTab === "taxpayer"
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "hover:bg-white/5 text-slate-300"
                 }`}
               >
+                <Users className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-sm">Taxpayer</span>
+              </button>
+            </div>
+
+            {/* 3. Calculation (Calculation Studio & Multi-Year Engine) */}
+            <div>
+              <button
+                onClick={() => {
+                  setActiveTab("calculation");
+                  setCalculationSubMenuOpen(!calculationSubMenuOpen);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 font-bold rounded-xl transition-all ${
+                  activeTab === "calculation"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "hover:bg-white/5 text-slate-300"
+                }`}
+              >
                 <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <span className="text-sm">Taxpayer</span>
+                  <Calculator className="w-5 h-5 text-amber-400 shrink-0" />
+                  <span className="text-sm">Calculation</span>
                 </div>
-                {taxpayerSubMenuOpen ? (
+                {calculationSubMenuOpen ? (
                   <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 )}
               </button>
 
-              {taxpayerSubMenuOpen && (
+              {calculationSubMenuOpen && (
                 <div className="pl-4 pt-1 space-y-1">
                   <button
                     onClick={() => {
-                      setActiveTab("taxpayer");
-                      setTaxpayerSubView("overview");
+                      setActiveTab("calculation");
+                      setCalculationTab("calculator");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      activeTab === "taxpayer" && taxpayerSubView === "overview"
-                        ? "bg-white/15 text-white font-bold"
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "calculation" && calculationTab === "calculator"
+                        ? "bg-white/15 text-white font-bold shadow-xs"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
-                    <span>Registry & Dossier</span>
+                    <Calculator className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Calculation Studio</span>
                   </button>
 
                   <button
                     onClick={() => {
-                      setActiveTab("taxpayer");
-                      setTaxpayerSubView("multi_year_calc");
+                      setActiveTab("calculation");
+                      setCalculationTab("multi_year");
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      activeTab === "taxpayer" && taxpayerSubView === "multi_year_calc"
-                        ? "bg-white/15 text-white font-bold"
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === "calculation" && calculationTab === "multi_year"
+                        ? "bg-white/15 text-white font-bold shadow-xs"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                     }`}
                   >
+                    <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Multi-Year Engine</span>
                   </button>
                 </div>
               )}
-            </div>
-
-            {/* 3. Calculation */}
-            <div>
-              <button
-                onClick={() => {
-                  setActiveTab("calculation");
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 font-bold rounded-xl transition-all ${
-                  activeTab === "calculation"
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                    : "hover:bg-white/5 text-slate-300"
-                }`}
-              >
-                <Calculator className="w-5 h-5 text-amber-400 shrink-0" />
-                <span className="text-sm">Calculation</span>
-              </button>
             </div>
 
             {/* 4. Master */}
@@ -763,12 +819,39 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar with Global Taxpayer Search, AI Assistant, and UserMenu */}
         <header className={`sticky top-0 z-30 px-3 sm:px-6 py-2.5 border-b flex items-center justify-between gap-3 backdrop-blur-md ${themeStyle.headerBg}`}>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* Mobile Hamburger Menu Toggle */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-700"
+              title="Open Navigation Menu"
+              aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Desktop Show / Hide Sidebar Toggle Button */}
+            <button
+              onClick={toggleSidebarCollapse}
+              className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+                isSidebarCollapsed
+                  ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20 hover:bg-indigo-700"
+                  : "bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400"
+              }`}
+              title={isSidebarCollapsed ? "Show / Expand Sidebar" : "Hide / Minimize Sidebar"}
+              aria-label={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+            >
+              {isSidebarCollapsed ? (
+                <>
+                  <PanelLeftOpen className="w-4 h-4 text-white" />
+                  <span>Show Sidebar</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeftClose className="w-4 h-4 text-slate-500" />
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300">Hide Menu</span>
+                </>
+              )}
             </button>
 
             <div>
@@ -897,7 +980,13 @@ export default function App() {
           )}
 
           {/* CALCULATION WINDOW WITH FULL FRONTEND AND MANUAL CALCULATION DETAILS */}
-          {activeTab === "calculation" && <OverallCalculationPanel />}
+          {activeTab === "calculation" && (
+            <OverallCalculationPanel
+              initialTab={calculationTab}
+              onTabChange={(tab) => setCalculationTab(tab)}
+              selectedTaxpayerIdProp={selectedTaxpayerId}
+            />
+          )}
 
           {activeTab === "tax_calc" && <TaxCalculationPanel />}
           {activeTab === "reports" && <ReportsPanel />}
@@ -954,8 +1043,9 @@ export default function App() {
           setSelectedTaxpayerId(id);
         }}
         onOpenMultiYearTaxCalc={() => {
-          setActiveTab("taxpayer");
-          setTaxpayerSubView("multi_year_calc");
+          setActiveTab("calculation");
+          setCalculationTab("multi_year");
+          setCalculationSubMenuOpen(true);
         }}
         onOpenRatesMaster={(subTab) => {
           setActiveTab("rate");
@@ -979,6 +1069,18 @@ export default function App() {
         onClose={() => setIsFlutterMobileOpen(false)}
         lang={currentLang}
       />
+
+      {/* Floating Expand Sidebar Button when minimized on desktop */}
+      {isSidebarCollapsed && (
+        <button
+          onClick={toggleSidebarCollapse}
+          className="hidden lg:flex fixed left-4 bottom-5 z-40 items-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/30 text-xs font-bold transition-all hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-left duration-200"
+          title="Click to show sidebar menu"
+        >
+          <PanelLeftOpen className="w-4 h-4" />
+          <span>Expand Sidebar</span>
+        </button>
+      )}
     </div>
   );
 }

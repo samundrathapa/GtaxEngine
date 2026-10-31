@@ -22,6 +22,7 @@
 import { PostgresPoolManager } from "./postgresPool.ts";
 import { RedisCacheManager } from "../BaseFrame/cache/RedisCacheManager.ts";
 import { DatabaseSchemaBootstrap } from "./databaseSchemaBootstrap.ts";
+import { generateFiscalYears2021To2086 } from "./fiscalYearSeeds.ts";
 
 export const ALL_26_TABLES = [
   "tbl_role",
@@ -377,11 +378,7 @@ export class TableCacheDbSyncService {
       { id: 4, fullname: "Julian Keller (Tax Analyst)", email: "user@gtax.enterprise", mobile: "+1 (555) 042-9918", employee_id: "EMP-USR-004", role: "user", insert_by: "1", update_by: "1", is_active: true, is_deleted: false }
     ]);
 
-    this.inMemoryStores.set("tbl_fiscal_year", [
-      { id: 1, code: "2080/81", fullname: "Fiscal Year 2080/2081 BS (आर्थिक वर्ष २०८०/८१)", date_from_bs: "2080-04-01", date_from_ad: "2023-07-17", date_to_ad: "2024-07-15", date_to_bs: "2081-03-31", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, code: "2081/82", fullname: "Fiscal Year 2081/2082 BS (आर्थिक वर्ष २०८१/८२) [Current]", date_from_bs: "2081-04-01", date_from_ad: "2024-07-16", date_to_ad: "2025-07-15", date_to_bs: "2082-03-31", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, code: "2079/80", fullname: "Fiscal Year 2079/2080 BS (आर्थिक वर्ष २०७९/८०)", date_from_bs: "2079-04-01", date_from_ad: "2022-07-17", date_to_ad: "2023-07-16", date_to_bs: "2080-03-31", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
-    ]);
+    this.inMemoryStores.set("tbl_fiscal_year", generateFiscalYears2021To2086());
 
     this.inMemoryStores.set("tbl_unit", [
       { id: 1, code: "AANA", fullanme: "Aana (आना) - 342.25 Sq.Ft", unit_value: 342.25, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },

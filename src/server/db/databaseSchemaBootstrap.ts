@@ -8,6 +8,7 @@
  */
 
 import { PostgresPoolManager } from "./postgresPool.ts";
+import { generateFiscalYears2021To2086 } from "./fiscalYearSeeds.ts";
 
 export class DatabaseSchemaBootstrap {
   private static bootstrapped = false;
@@ -682,14 +683,25 @@ export class DatabaseSchemaBootstrap {
         ON CONFLICT DO NOTHING;
       `);
 
-      // 7. Fiscal Years
+      // 7. Fiscal Years (Complete official master from year 2021 to 2086 BS)
+      const allSeedFy = generateFiscalYears2021To2086();
+      const fyValues = allSeedFy
+        .map(
+          (fy) =>
+            `(${fy.id}, '${fy.code}', '${fy.fullname.replace(/'/g, "''")}', '${fy.date_from_bs}', '${fy.date_from_ad}', '${fy.date_to_ad}', '${fy.date_to_bs}', false, '1', '1')`
+        )
+        .join(",\n        ");
+
       await PostgresPoolManager.query(`
         INSERT INTO tbl_fiscal_year (id, code, fullname, date_from_bs, date_from_ad, date_to_ad, date_to_bs, is_deleted, insert_by, update_by) VALUES
-        (1, '2080/81', 'Fiscal Year 2080/2081 BS (आर्थिक वर्ष २०८०/८१)', '2080-04-01', '2023-07-17', '2024-07-15', '2081-03-31', false, '1', '1'),
-        (2, '2081/82', 'Fiscal Year 2081/2082 BS (आर्थिक वर्ष २०८१/८२) [Current]', '2081-04-01', '2024-07-16', '2025-07-15', '2082-03-31', false, '1', '1'),
-        (3, '2079/80', 'Fiscal Year 2079/2080 BS (आर्थिक वर्ष २०७९/८०)', '2079-04-01', '2022-07-17', '2023-07-16', '2080-03-31', false, '1', '1')
+        ${fyValues}
         ON CONFLICT (id) DO NOTHING;
       `);
+      try {
+        await PostgresPoolManager.query(`
+          SELECT setval(pg_get_serial_sequence('tbl_fiscal_year', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM tbl_fiscal_year), 0), 1));
+        `);
+      } catch (_) {}
 
       // 8. Units
       await PostgresPoolManager.query(`
