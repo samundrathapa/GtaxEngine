@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { DomainRegistry } from "./src/server/StartDomain/DomainRegistry.ts";
@@ -767,22 +768,47 @@ app.post("/api/v1/reports/export", async (req, res) => {
   }
 });
 
-// Mount Vite middleware in development
+// Mount Vite middleware in development or serve dist in production
 const isProduction = process.env.NODE_ENV === "production";
-if (!isProduction) {
+const distIndexPath = path.resolve(__dirname, "dist", "index.html");
+
+if (isProduction && fs.existsSync(distIndexPath)) {
+  console.log(`[gtax] Serving production build from ${path.resolve(__dirname, "dist")}`);
+  app.use(express.static(path.resolve(__dirname, "dist")));
+  app.get("*", (req, res, next) => {
+    if (req.originalUrl.startsWith("/api")) return next();
+    res.sendFile(distIndexPath);
+  });
+} else {
+  if (isProduction && !fs.existsSync(distIndexPath)) {
+    console.warn(`[gtax] Notice: NODE_ENV is production, but 'dist/index.html' was not found.`);
+    console.warn(`[gtax] Falling back to Vite development middleware... (Run 'npm run build' for production)`);
+  }
   const { createServer } = await import("vite");
   const vite = await createServer({
     server: { middlewareMode: true },
     appType: "spa"
   });
   app.use(vite.middlewares);
-} else {
-  app.use(express.static(path.resolve(__dirname, "dist")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "dist", "index.html"));
+
+  // Catch-all SPA handler to guarantee index.html is always transformed and served
+  app.use("*", async (req, res, next) => {
+    if (req.originalUrl.startsWith("/api")) return next();
+    try {
+      const rootIndex = path.resolve(__dirname, "index.html");
+      if (fs.existsSync(rootIndex)) {
+        let template = fs.readFileSync(rootIndex, "utf-8");
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+        return res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      }
+      next();
+    } catch (err) {
+      vite.ssrFixStacktrace(err as Error);
+      next(err);
+    }
   });
 }
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[gtax] Full-stack engine running on http://0.0.0.0:${PORT}`);
+  console.log(`[gtax] Full-stack engine running on http://localhost:${PORT} (and http://127.0.0.1:${PORT})`);
 });

@@ -183,6 +183,13 @@ async function run() {
 
     // Copy dist/
     copyRecursiveSync(distPath, path.join(winDir, 'dist'));
+    // Also copy dist/index.html and dist/assets to winDir root for direct IIS serving
+    if (fs.existsSync(path.join(distPath, 'index.html'))) {
+      fs.copyFileSync(path.join(distPath, 'index.html'), path.join(winDir, 'index.html'));
+    }
+    if (fs.existsSync(path.join(distPath, 'assets'))) {
+      copyRecursiveSync(path.join(distPath, 'assets'), path.join(winDir, 'assets'));
+    }
 
     // Copy IIS & operational scripts
     const filesToCopy = [
