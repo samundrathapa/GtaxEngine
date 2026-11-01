@@ -22,7 +22,9 @@ import {
   Trees,
   Building2,
   Settings,
-  Landmark
+  Landmark,
+  Copy,
+  ArrowRight
 } from "lucide-react";
 
 export type RateTab =
@@ -95,6 +97,14 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [formData, setFormData] = useState<any>({});
 
+  // Copy Rate Modal State
+  const [isCopyRateModalOpen, setIsCopyRateModalOpen] = useState(false);
+  const [copySourceFy, setCopySourceFy] = useState<string>("null");
+  const [copyTargetFy, setCopyTargetFy] = useState<number>(2);
+  const [copyCategory, setCopyCategory] = useState<string>("all");
+  const [isCopying, setIsCopying] = useState<boolean>(false);
+  const [filterFiscalYear, setFilterFiscalYear] = useState<string>("all");
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -105,6 +115,10 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
           ...res.data,
           propertyRanges: (res.data as any).propertyRanges || prev.propertyRanges || []
         }));
+        const defFy = res.data.applicationSettings?.[0]?.fiscal_year_id;
+        if (defFy) {
+          setCopyTargetFy(defFy);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -171,10 +185,10 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
   const handleOpenAdd = () => {
     setEditingItem(null);
-    // Setup sensible defaults per activeTab
+    // Setup sensible defaults per activeTab - rate tables default to null fiscal_year_id (Universal Default)
     switch (activeTab) {
       case "property_range":
-        setFormData({ FiscalYearId: masters.fiscalYears[0]?.id || 2, Sn: 1, value_from: 0, value_to: 1000000, is_percent: true, tax_percent: 0.10, amount_from: 0, amount_to: 1000, above_then: 0, min_tax_amount: 300, per_unit_amount: 0, per_unit_rate: 0, is_cumuliatative: false });
+        setFormData({ FiscalYearId: null, fiscal_year_id: null, Sn: 1, value_from: 0, value_to: 1000000, is_percent: true, tax_percent: 0.10, amount_from: 0, amount_to: 1000, above_then: 0, min_tax_amount: 300, per_unit_amount: 0, per_unit_rate: 0, is_cumuliatative: false });
         break;
       case "fiscal_year":
         setFormData({ code: "2082/83", fullname: "Fiscal Year 2082/2083 BS", date_from_bs: "2082-04-01", date_to_bs: "2083-03-31", is_active: true });
@@ -183,22 +197,22 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         setFormData({ code: "NEW_UNIT", fullanme: "New Unit", unit_value: 100, is_active: true });
         break;
       case "land_rate":
-        setFormData({ code: "LR-NEW", fullanme: "New Land Rate", fiscal_year_id: masters.fiscalYears[0]?.id || 1, unit_id: 3, rate_per_unit: 1000000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "LR-NEW", fullanme: "New Land Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 1000000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
         break;
       case "malpot_rate":
-        setFormData({ code: "MR-NEW", fullanme: "New Malpot Rate", fiscal_year_id: masters.fiscalYears[0]?.id || 1, unit_id: 3, rate_per_unit: 500000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "MR-NEW", fullanme: "New Malpot Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 500000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
         break;
       case "construction_type":
         setFormData({ code: "NEW_CONST", fullanme: "Timber & Brick Composite" });
         break;
       case "construction_rate":
-        setFormData({ code: "CR-NEW", fullanme: "Standard Construction Rate", fiscal_year_id: masters.fiscalYears[0]?.id || 1, const_type_id: 1, unit_id: 1, rate_per_unit: 2800, parent_id: null, area_per_unit: 1, area_upto: 5000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "CR-NEW", fullanme: "Standard Construction Rate", fiscal_year_id: null, const_type_id: 1, unit_id: 1, rate_per_unit: 2800, parent_id: null, area_per_unit: 1, area_upto: 5000, ward_no_ids: "1,2,3" });
         break;
       case "depreciation":
-        setFormData({ code: "DEP-NEW", fullanme: "Depreciation Slab 5-10 Yrs", fiscal_year_id: masters.fiscalYears[0]?.id || 1, const_type_id: 1, construction_type_id: 1, sn: 2, year_from: 6, year_to: 10, percent: 10 });
+        setFormData({ code: "DEP-NEW", fullanme: "Depreciation Slab 5-10 Yrs", fiscal_year_id: null, const_type_id: 1, construction_type_id: 1, sn: 2, year_from: 6, year_to: 10, percent: 10 });
         break;
       case "fine_rebate":
-        setFormData({ fiscal_year_id: masters.fiscalYears[0]?.id || 1, tax_type_id: 1, ratesn: 1, years: 0, month: 3, calcpercent: 10, ratepercent: 10, flatrate: 0, isfine: false, days: 90 });
+        setFormData({ fiscal_year_id: null, tax_type_id: 1, ratesn: 1, years: 0, month: 3, calcpercent: 10, ratepercent: 10, flatrate: 0, isfine: false, days: 90 });
         break;
       case "land_nature":
         setFormData({ code: "INDUSTRIAL", fullanme: "Industrial Zone (औद्योगिक क्षेत्र)" });
@@ -248,7 +262,42 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     }
   };
 
+  const handleExecuteCopyRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCopying(true);
+    try {
+      const res = await ApiController.copyRates({
+        source_fiscal_year_id: copySourceFy === "null" ? null : Number(copySourceFy),
+        target_fiscal_year_id: Number(copyTargetFy),
+        category: copyCategory
+      });
+      if (res.success) {
+        setStatusMsg(res.data?.message || "Rates copied successfully!");
+        setIsCopyRateModalOpen(false);
+        await loadData();
+        setTimeout(() => setStatusMsg(null), 4000);
+      } else {
+        setStatusMsg(`Failed to copy rates: ${(res as any).error || res.message || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setStatusMsg(`Error copying rates: ${err.message || "Failed"}`);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  const isRateCategory = ["land_rate", "malpot_rate", "construction_rate", "depreciation", "fine_rebate", "property_range"].includes(activeTab);
+
   const currentList = getCurrentList().filter((item: any) => {
+    if (isRateCategory && filterFiscalYear !== "all") {
+      const itemFy = item.fiscal_year_id ?? item.FiscalYearId;
+      if (filterFiscalYear === "null") {
+        if (itemFy !== null && itemFy !== undefined && itemFy !== "") return false;
+      } else {
+        if (String(itemFy) !== String(filterFiscalYear)) return false;
+      }
+    }
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -278,6 +327,22 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {["land_rate", "malpot_rate", "construction_rate", "depreciation", "fine_rebate", "property_range"].includes(activeTab) && (
+            <button
+              onClick={() => {
+                const defFy = masters.applicationSettings[0]?.fiscal_year_id || 2;
+                setCopyTargetFy(defFy);
+                setCopySourceFy("null");
+                setCopyCategory(activeTab);
+                setIsCopyRateModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
+              title="Copy rates from Universal Default (Null) or another Fiscal Year"
+            >
+              <Copy className="w-4 h-4" />
+              <span>Copy Rate (दररेट प्रतिलिपि)</span>
+            </button>
+          )}
           <button
             onClick={loadData}
             className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
@@ -339,22 +404,44 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         })}
       </div>
 
-      {/* Search Bar & Table Header */}
+      {/* Search Bar, FY Filter & Table Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            placeholder={`Search ${activeTab.replace("_", " ")}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder={`Search ${activeTab.replace("_", " ")}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {isRateCategory && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500">Fiscal Year:</span>
+              <select
+                value={filterFiscalYear}
+                onChange={(e) => setFilterFiscalYear(e.target.value)}
+                className="text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
+              >
+                <option value="all">All Fiscal Years</option>
+                <option value="null">Universal Default (Null FY)</option>
+                {masters.fiscalYears.map((fy: any) => (
+                  <option key={fy.id} value={String(fy.id)}>
+                    {fy.code} - {fy.fullname} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "(App Default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 self-start sm:self-center">
-          {/* <FileCheck2 className="w-4 h-4 text-emerald-500" /> */}
-          
+          <span className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+            Showing {currentList.length} records
+          </span>
         </div>
       </div>
 
@@ -364,7 +451,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
               <tr>
-                <th className="p-3.5">ID / Code</th>
+                <th className="p-3.5 w-14 text-center">R.Num</th>
                 <th className="p-3.5">Name / Description</th>
                 {activeTab === "fiscal_year" && (
                   <>
@@ -436,25 +523,25 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     <th className="p-3.5">Default Unit / Wards</th>
                   </>
                 )}
-                <th className="p-3.5">Audit Stamp</th>
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {currentList.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">
+                  <td colSpan={10} className="p-8 text-center text-slate-400">
                     No rate records found for this category or filter.
                   </td>
                 </tr>
               ) : (
-                currentList.map((item: any) => (
+                currentList.map((item: any, idx: number) => (
                   <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      {item.code || `ID-${item.id}`}
+                    <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                      {idx + 1}
                     </td>
                     <td className="p-3.5 font-medium text-slate-900 dark:text-white">
-                      {item.fullanme || item.fullname || (item.isfine ? "Fine Rule" : "Rebate Policy")}
+                      <div>{item.fullanme || item.fullname || (item.isfine ? "Fine Rule" : "Rebate Policy")}</div>
+                      {item.code && <div className="text-[10px] font-mono text-slate-400">{item.code}</div>}
                     </td>
 
                     {/* Fiscal Year Columns */}
@@ -479,8 +566,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Land / Malpot Rate Columns */}
                     {(activeTab === "land_rate" || activeTab === "malpot_rate") && (
                       <>
-                        <td className="p-3.5 font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                          {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id || 1}`}
+                        <td className="p-3.5 font-mono">
+                          {item.fiscal_year_id ? (
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id}`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Universal Default (Null)
+                            </span>
+                          )}
                         </td>
                         <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-white">
                           Rs. {Number(item.rate_per_unit).toLocaleString()}
@@ -505,8 +600,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Construction Rate Columns */}
                     {activeTab === "construction_rate" && (
                       <>
-                        <td className="p-3.5 font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                          {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id || 1}`}
+                        <td className="p-3.5 font-mono">
+                          {item.fiscal_year_id ? (
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id}`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Universal Default (Null)
+                            </span>
+                          )}
                         </td>
                         <td className="p-3.5 font-mono">
                           {masters.units.find((u: any) => u.id === item.unit_id)?.fullanme || `Unit #${item.unit_id || 1}`}
@@ -533,8 +636,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Depreciation Columns */}
                     {activeTab === "depreciation" && (
                       <>
-                        <td className="p-3.5 font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                          {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id || 1}`}
+                        <td className="p-3.5 font-mono">
+                          {item.fiscal_year_id ? (
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id}`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Universal Default (Null)
+                            </span>
+                          )}
                         </td>
                         <td className="p-3.5">
                           {masters.constructionTypes.find((c) => c.id === (item.construction_type_id || item.const_type_id))?.fullanme || item.construction_type || `Type #${item.construction_type_id || item.const_type_id || 1}`}
@@ -551,8 +662,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Fine / Rebate Columns */}
                     {activeTab === "fine_rebate" && (
                       <>
-                        <td className="p-3.5 font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                          {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id || 1}`}
+                        <td className="p-3.5 font-mono">
+                          {item.fiscal_year_id ? (
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {masters.fiscalYears.find((f: any) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id}`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Universal Default (Null)
+                            </span>
+                          )}
                         </td>
                         <td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
                           {item.tax_type_id === 1 ? "Sampati Kar (सम्पत्ति कर)" : item.tax_type_id === 2 ? "Malpot Kar (मालपोत)" : item.tax_type_id === 3 ? "Bhumikar (भूमिकर)" : `Tax Type #${item.tax_type_id}`}
@@ -581,8 +700,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Property Range Columns */}
                     {activeTab === "property_range" && (
                       <>
-                        <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {masters.fiscalYears.find((f: any) => f.id === (item.FiscalYearId || item.fiscal_year_id))?.code || `FY #${item.FiscalYearId || item.fiscal_year_id}`}
+                        <td className="p-3.5 font-mono">
+                          {(item.FiscalYearId || item.fiscal_year_id) ? (
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                              {masters.fiscalYears.find((f: any) => f.id === (item.FiscalYearId || item.fiscal_year_id))?.code || `FY #${item.FiscalYearId || item.fiscal_year_id}`}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                              Universal Default (Null)
+                            </span>
+                          )}
                         </td>
                         <td className="p-3.5 font-mono text-slate-800 dark:text-slate-200">
                           Rs. {Number(item.value_from ?? item.ValueFrom ?? 0).toLocaleString()} – {Number(item.value_to ?? item.ValueTo ?? 0) > 0 ? `Rs. ${Number(item.value_to ?? item.ValueTo).toLocaleString()}` : "Above (No Ceiling)"}
@@ -634,12 +761,6 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         </td>
                       </>
                     )}
-
-                    {/* Audit Stamp */}
-                    <td className="p-3.5 text-[10px] font-mono text-slate-400">
-                      <div>Upd: {item.update_by || "SYSTEM"}</div>
-                      <div>{item.update_on ? new Date(item.update_on).toLocaleDateString() : "Active"}</div>
-                    </td>
 
                     {/* Actions: Edit & Delete */}
                     <td className="p-3.5 text-right whitespace-nowrap">
@@ -777,10 +898,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         Fiscal Year (fiscal_year)
                       </label>
                       <select
-                        value={formData.fiscal_year_id || masters.fiscalYears[0]?.id || 1}
-                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: Number(e.target.value) })}
+                        value={formData.fiscal_year_id ?? ""}
+                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: e.target.value ? Number(e.target.value) : null })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
+                        <option value="">Universal Default (fiscal_year_id: null)</option>
                         {masters.fiscalYears.map((fy) => (
                           <option key={fy.id} value={fy.id}>
                             {fy.code} - {fy.fullname}
@@ -888,10 +1010,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         Fiscal Year (fiscal_year)
                       </label>
                       <select
-                        value={formData.fiscal_year_id || masters.fiscalYears[0]?.id || 1}
-                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: Number(e.target.value) })}
+                        value={formData.fiscal_year_id ?? ""}
+                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: e.target.value ? Number(e.target.value) : null })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
+                        <option value="">Universal Default (fiscal_year_id: null)</option>
                         {masters.fiscalYears.map((fy) => (
                           <option key={fy.id} value={fy.id}>
                             {fy.code} - {fy.fullname}
@@ -1013,10 +1136,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         Fiscal Year (fiscal_year)
                       </label>
                       <select
-                        value={formData.fiscal_year_id || masters.fiscalYears[0]?.id || 1}
-                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: Number(e.target.value) })}
+                        value={formData.fiscal_year_id ?? ""}
+                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: e.target.value ? Number(e.target.value) : null })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
+                        <option value="">Universal Default (fiscal_year_id: null)</option>
                         {masters.fiscalYears.map((fy) => (
                           <option key={fy.id} value={fy.id}>
                             {fy.code} - {fy.fullname}
@@ -1094,10 +1218,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         Fiscal Year (fiscal_year)
                       </label>
                       <select
-                        value={formData.fiscal_year_id || masters.fiscalYears[0]?.id || 1}
-                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: Number(e.target.value) })}
+                        value={formData.fiscal_year_id ?? ""}
+                        onChange={(e) => setFormData({ ...formData, fiscal_year_id: e.target.value ? Number(e.target.value) : null })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
+                        <option value="">Universal Default (fiscal_year_id: null)</option>
                         {masters.fiscalYears.map((fy) => (
                           <option key={fy.id} value={fy.id}>
                             {fy.code} - {fy.fullname}
@@ -1198,10 +1323,14 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         Fiscal Year (FiscalYearId)
                       </label>
                       <select
-                        value={formData.FiscalYearId || formData.fiscal_year_id || 2}
-                        onChange={(e) => setFormData({ ...formData, FiscalYearId: Number(e.target.value), fiscal_year_id: Number(e.target.value) })}
+                        value={formData.FiscalYearId ?? formData.fiscal_year_id ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value ? Number(e.target.value) : null;
+                          setFormData({ ...formData, FiscalYearId: val, fiscal_year_id: val });
+                        }}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
+                        <option value="">Universal Default (FiscalYearId: null)</option>
                         {masters.fiscalYears.map((f: any) => (
                           <option key={f.id} value={f.id}>
                             {f.code} - {f.fullname}
@@ -1582,6 +1711,138 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     <span>{editingItem ? "Save Changes" : "Save Record"}</span>
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Rate (दररेट प्रतिलिपि) Modal */}
+      {isCopyRateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                  <Copy className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Copy Rate Matrix (दररेट प्रतिलिपि)
+                  </h3>
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    Clone universal default (Null) or specific FY rates into a target FY
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCopyRateModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleExecuteCopyRate} className="p-6 space-y-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-900 dark:text-amber-200">
+                <span className="font-bold">Rate Cloning Policy:</span> Universal rates where <code className="font-mono bg-amber-100 dark:bg-amber-900/40 px-1 rounded">fiscal_year_id</code> is null represent the base standard. This action will clone and upsert them into the selected target fiscal year.
+              </div>
+
+              {/* Source Fiscal Year */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Source Rate Source (स्रोत आर्थिक वर्ष / बेस दर)
+                </label>
+                <select
+                  value={copySourceFy}
+                  onChange={(e) => setCopySourceFy(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
+                >
+                  <option value="null">Universal Default (fiscal_year_id IS NULL)</option>
+                  {masters.fiscalYears.map((fy: any) => (
+                    <option key={fy.id} value={String(fy.id)}>
+                      {fy.code} - {fy.fullname} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "(Active Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Direction Indicator */}
+              <div className="flex items-center justify-center text-slate-400">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                  <span>Copy From</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Apply To</span>
+                </div>
+              </div>
+
+              {/* Target Fiscal Year */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Target Fiscal Year (प्रतिलिपि गरिने आर्थिक वर्ष)
+                </label>
+                <select
+                  value={copyTargetFy}
+                  onChange={(e) => setCopyTargetFy(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/40 dark:bg-indigo-950/30 font-bold text-indigo-900 dark:text-indigo-200"
+                >
+                  {masters.fiscalYears.map((fy: any) => (
+                    <option key={fy.id} value={fy.id}>
+                      {fy.code} - {fy.fullname} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "★ (Active App Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Default selected from Application Settings active fiscal year.
+                </p>
+              </div>
+
+              {/* Rate Table Scope */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Rate Matrix Scope (दररेट विधा)
+                </label>
+                <select
+                  value={copyCategory}
+                  onChange={(e) => setCopyCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
+                >
+                  <option value="all">All Rate Categories (सबै दररेट सूचीहरू - All 6 Matrices)</option>
+                  <option value="land_rate">Land Rate (जग्गाको दररेट - tbl_land_rate)</option>
+                  <option value="malpot_rate">Malpot Rate (सरकारी मूल्यांकन - tbl_malpot_rates)</option>
+                  <option value="construction_rate">Construction Rate (संरचना दररेट - tbl_construction_rates)</option>
+                  <option value="depreciation">Depreciation Schedule (ह्रासकट्टी - tbl_depreciation)</option>
+                  <option value="fine_rebate">Fine & Rebate Policy (जरिवाना तथा छुट - tbl_fine_rebate)</option>
+                  <option value="property_range">Property Range Slabs (कर स्ल्याब - tbl_property_range)</option>
+                </select>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCopyRateModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCopying}
+                  className="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl shadow-md shadow-indigo-600/20 transition-all"
+                >
+                  {isCopying ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Copying Rates...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy & Apply Rates</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>

@@ -272,7 +272,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             code VARCHAR(32) NOT NULL,
             fullanme VARCHAR(200) NOT NULL,
-            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
             is_parent BOOLEAN DEFAULT FALSE NOT NULL,
             parent_id INT REFERENCES tbl_land_rate(id) DEFAULT NULL,
             unit_id INT REFERENCES tbl_unit(id) NOT NULL,
@@ -297,7 +297,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             code VARCHAR(32) NOT NULL,
             fullanme VARCHAR(200) NOT NULL,
-            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
             is_parent BOOLEAN DEFAULT FALSE NOT NULL,
             parent_id INT REFERENCES tbl_malpot_rates(id) DEFAULT NULL,
             unit_id INT REFERENCES tbl_unit(id) NOT NULL,
@@ -322,7 +322,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             code VARCHAR(32) NOT NULL,
             fullanme VARCHAR(200) NOT NULL,
-            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
             is_parent BOOLEAN DEFAULT FALSE NOT NULL,
             parent_id INT REFERENCES tbl_construction_rates(id) DEFAULT NULL,
             const_type_id INT REFERENCES tbl_construction_type(id) NOT NULL,
@@ -348,7 +348,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             code VARCHAR(32) NOT NULL,
             fullanme VARCHAR(200) NOT NULL,
-            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
             is_parent BOOLEAN DEFAULT FALSE NOT NULL,
             parent_id INT REFERENCES tbl_depreciation(id) DEFAULT NULL,
             sn INT NOT NULL,
@@ -370,7 +370,7 @@ export class DatabaseSchemaBootstrap {
       await PostgresPoolManager.query(`
         CREATE TABLE IF NOT EXISTS tbl_fine_rebate (
             id SERIAL PRIMARY KEY,
-            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
             tax_type_id INT DEFAULT 1,
             ratesn INT NOT NULL,
             years INT DEFAULT 0,
@@ -614,6 +614,17 @@ export class DatabaseSchemaBootstrap {
             is_active BOOLEAN DEFAULT TRUE NOT NULL
         );
       `);
+
+      // Ensure fiscal_year_id allows NULL in rate tables for universal default rates
+      try {
+        await PostgresPoolManager.query(`
+          ALTER TABLE tbl_land_rate ALTER COLUMN fiscal_year_id DROP NOT NULL;
+          ALTER TABLE tbl_malpot_rates ALTER COLUMN fiscal_year_id DROP NOT NULL;
+          ALTER TABLE tbl_construction_rates ALTER COLUMN fiscal_year_id DROP NOT NULL;
+          ALTER TABLE tbl_depreciation ALTER COLUMN fiscal_year_id DROP NOT NULL;
+          ALTER TABLE tbl_fine_rebate ALTER COLUMN fiscal_year_id DROP NOT NULL;
+        `);
+      } catch (_) {}
 
       // ==========================================
       // SEED DEFAULT RECORDS ACROSS ALL TABLES

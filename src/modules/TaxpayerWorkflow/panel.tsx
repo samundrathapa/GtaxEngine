@@ -234,6 +234,11 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       const mastersRes = await ApiController.getPropertyMasters();
       if (mastersRes.success && mastersRes.data) {
         setMasters(mastersRes.data);
+        const defFy = mastersRes.data.applicationSettings?.[0]?.fiscal_year_id;
+        if (defFy) {
+          setCalcFiscalYearId(defFy);
+          setNewLandAcquisitionFyId(defFy);
+        }
       }
 
       const tpRes = await ApiController.getTaxpayers();
@@ -807,6 +812,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
                 <tr>
+                  <th className="p-3.5 w-14 text-center">R.Num</th>
                   <th className="p-3.5">{tCol("fullname", currentLang)}</th>
                   <th className="p-3.5">{tCol("taxpayer_code", currentLang)}</th>
                   <th className="p-3.5">{tCol("ward_no", currentLang)}</th>
@@ -819,12 +825,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredTaxpayers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-400">
+                    <td colSpan={8} className="p-8 text-center text-slate-400">
                       No taxpayers found matching criteria. Click "New Taxpayer" to create one.
                     </td>
                   </tr>
                 ) : (
-                  filteredTaxpayers.map((tp) => (
+                  filteredTaxpayers.map((tp, idx) => (
                     <tr
                       key={tp.id}
                       onClick={() => {
@@ -837,6 +843,9 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                           : "hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
                       }`}
                     >
+                      <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                        {idx + 1}
+                      </td>
                       <td className="p-3.5 text-slate-900 dark:text-white">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${
@@ -1249,6 +1258,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
                       <tr>
+                        <th className="py-2.5 px-3.5 w-12 text-center">R.Num</th>
                         <th className="py-2.5 px-3.5">Kitta / Moth</th>
                         <th className="py-2.5 px-3.5">Area (Sq.Ft)</th>
                         <th className="py-2.5 px-3.5">Ward</th>
@@ -1260,13 +1270,16 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {taxpayerDossier.lands.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-6 text-center text-slate-400">
+                          <td colSpan={7} className="p-6 text-center text-slate-400">
                             No land parcels registered. Click "Add Land Parcel" above to register one.
                           </td>
                         </tr>
                       ) : (
-                        taxpayerDossier.lands.map((land: any) => (
+                        taxpayerDossier.lands.map((land: any, idx: number) => (
                           <tr key={land.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                            <td className="py-2.5 px-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                              {idx + 1}
+                            </td>
                             <td className="py-2.5 px-3.5 font-bold text-slate-900 dark:text-white font-mono">
                               Kitta #{land.kitta_number} (Moth #{land.moth_number})
                             </td>
@@ -1461,6 +1474,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
+                    <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">Kitta / Moth</th>
                     <th className="p-3.5">Area (Sq.Ft)</th>
                     <th className="p-3.5">Unit (unit_id)</th>
@@ -1475,12 +1489,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {(!taxpayerDossier?.lands || taxpayerDossier.lands.length === 0) ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                      <td colSpan={10} className="p-8 text-center text-slate-400">
                         No land parcels registered for this taxpayer. Click "Add Land Parcel" above.
                       </td>
                     </tr>
                   ) : (
-                    taxpayerDossier.lands.map((l: any) => {
+                    taxpayerDossier.lands.map((l: any, idx: number) => {
                       const landRate = masters.landRates.find((r: any) => r.id === l.land_rate_id);
                       const malpotRate = masters.malpotRates.find((r: any) => r.id === l.malpot_rate_id);
                       const acqFy = masters.fiscalYears.find((fy: any) => fy.id === (l.acquisition_fy_id || 2));
@@ -1497,6 +1511,9 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
                       return (
                         <tr key={l.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                            {idx + 1}
+                          </td>
                           <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-white">
                             <div>Kitta #{l.kitta_number}</div>
                             <div className="text-[11px] text-slate-400 font-normal">Moth #{l.moth_number}</div>
@@ -1585,6 +1602,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
+                    <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">House Number (घर नं.)</th>
                     <th className="p-3.5">Plinth Area & Total</th>
                     <th className="p-3.5">Floors Count</th>
@@ -1597,15 +1615,18 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {(!taxpayerDossier?.houses || taxpayerDossier.houses.length === 0) ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                      <td colSpan={8} className="p-8 text-center text-slate-400">
                         No houses registered for this taxpayer. Click "Add House Structure" above.
                       </td>
                     </tr>
                   ) : (
-                    taxpayerDossier.houses.map((h: any) => {
+                    taxpayerDossier.houses.map((h: any, idx: number) => {
                       const constType = masters.constructionTypes.find((c: any) => c.id === h.construction_type_id);
                       return (
                         <tr key={h.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                            {idx + 1}
+                          </td>
                           <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-white">
                             {h.house_no}
                           </td>
@@ -1694,6 +1715,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
                   <tr>
+                    <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">Floor Level</th>
                     <th className="p-3.5">House (house_id)</th>
                     <th className="p-3.5">Area (area_sqfeet)</th>
@@ -1708,17 +1730,20 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {(!taxpayerDossier?.floors || taxpayerDossier.floors.length === 0) ? (
                     <tr>
-                      <td colSpan={9} className="p-8 text-center text-slate-400">
+                      <td colSpan={10} className="p-8 text-center text-slate-400">
                         No floors registered. Add a house and floor slabs.
                       </td>
                     </tr>
                   ) : (
-                    taxpayerDossier.floors.map((fl: any) => {
+                    taxpayerDossier.floors.map((fl: any, idx: number) => {
                       const house = taxpayerDossier.houses.find((h: any) => h.id === fl.house_id);
                       const cr = masters.constructionRates.find((c: any) => c.id === fl.rate_id);
                       const cType = masters.constructionTypes.find((ct: any) => ct.id === fl.construction_type_id);
                       return (
                         <tr key={fl.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
+                            {idx + 1}
+                          </td>
                           <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                             Floor #{fl.floor_no} {fl.floor_no === 0 ? "(Ground)" : fl.floor_no === 1 ? "(1st)" : ""}
                             <div className="text-[11px] text-slate-400 font-normal font-sans">{fl.remarks}</div>
