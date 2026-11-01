@@ -878,9 +878,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         <MapPin className="w-4 h-4 text-emerald-600" />
                         <span>Registered Land Parcels (जग्गा कित्ता विवरण)</span>
                       </h3>
-                      <p className="text-xs text-slate-500">
-                        View land parcels, area, measuring units, and valuation rates.
-                      </p>
+                   
                     </div>
 
                     <button
@@ -1360,9 +1358,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                           Land Parcels & Bracket Measurement Logic
                         </h4>
-                        <p className="text-xs text-slate-500">
-                          Displays rate_per_unit, area_per_unit, unit_id. Multiplications can be verified or updated manually.
-                        </p>
+                       
                       </div>
 
                       <button
@@ -1637,9 +1633,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                           Per-Floor Slab Engineering Calculation & Formula Parameters
                         </h4>
-                        <p className="text-xs text-slate-500">
-                          Edit built area, construction rate, depreciation %, or level modifier. Values recalculate instantly.
-                        </p>
+                       
                       </div>
 
                       <span className="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400">

@@ -126,7 +126,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
-            <span>Official Municipal Revenue Portal • FY 2081/82</span>
+            <span>Official Municipal Revenue Portal</span>
           </div>
         </div>
 
@@ -238,7 +238,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
           </div>
 
           {/* Bottom Bar: Clean User Registration Link */}
-          <div className="mt-8 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          {/* <div className="mt-8 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
             <span className="text-slate-400">
               Need a new operator account?
             </span>
@@ -249,7 +249,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
               <UserPlus className="w-3.5 h-3.5" />
               <span>Register New User</span>
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
