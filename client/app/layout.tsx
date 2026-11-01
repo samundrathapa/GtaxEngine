@@ -7,8 +7,8 @@ import React from "react";
 import { NextLayoutProps } from "../types.ts";
 
 export const metadata = {
-  title: "gtax Enterprise - Municipal Property & Tax Liabilities Engine",
-  description: "Next.js & React 19 Client Tier for Multi-Jurisdiction Municipal Property Valuation and Tax Engine",
+  title: "Gtax Enterprise - Municipal Property & Tax Liabilities Engine",
+  description: "Multi-Jurisdiction Municipal Property Valuation and Tax Engine",
 };
 
 export default function RootLayout({ children }: NextLayoutProps) {

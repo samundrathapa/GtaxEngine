@@ -861,7 +861,7 @@ export default function App() {
           {/* Right Header Actions: Live DB Status Chip + Voice + AI Assistant + Mobile App + User Menu */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Live DB Connection Badge / Inspector Button */}
-            <button
+            {/* <button
               onClick={() => setIsDbStatusModalOpen(true)}
               className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs group"
               title={`PostgreSQL Database: ${dbStatus?.user || "gtax_user"}@${dbStatus?.host || "127.0.0.1"}:${dbStatus?.port || 5432}/${dbStatus?.database || "gtax_db"} (${dbStatus?.connected ? "Live Connected" : "Disconnected"}). Click to inspect exact parameters & test connection.`}
@@ -875,7 +875,7 @@ export default function App() {
               <span className="xl:hidden font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 {dbStatus?.database || "DB"}
               </span>
-            </button>
+            </button> */}
 
             {/* Quick Voice Command - Icon Only */}
             <button
