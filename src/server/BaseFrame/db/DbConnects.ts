@@ -17,13 +17,14 @@ export class DbConnects {
 
   static getPoolStats() {
     const status = PostgresPoolManager.getStatus();
+    const config = PostgresPoolManager.getConfig();
     return {
       totalCount: 20,
       idleCount: 15,
       waitingCount: 0,
-      dbName: status.config.database,
-      status: status.connected ? "POSTGRESQL_CONNECTED" : "IN_MEMORY_SIMULATION",
-      config: status.config,
+      dbName: status.database,
+      status: status.connected ? "POSTGRESQL_CONNECTED" : "OFFLINE_NO_CONNECTION",
+      config: config,
     };
   }
 

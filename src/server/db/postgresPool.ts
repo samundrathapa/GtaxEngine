@@ -188,9 +188,13 @@ export class PostgresPoolManager {
   private static pool: PgPool | null = null;
   private static isConnected: boolean = false;
   private static initialized: boolean = false;
-  private static noticeMessage: string = "In-memory simulation store initialized.";
+  private static noticeMessage: string = "Connecting to PostgreSQL database...";
+  private static activeHost: string = "127.0.0.1";
+  private static activePort: number = 5432;
   private static activeDatabase: string = "gtax_db";
   private static activeUser: string = "gtax_user";
+  private static serverVersion: string = "";
+  private static lastError: string | null = null;
 
   /**
    * Resolves connection configuration dynamically from environment variables
@@ -198,8 +202,8 @@ export class PostgresPoolManager {
   public static getConfig(): DatabaseConfigInfo {
     const resolved = resolveDynamicConfig();
     return {
-      host: resolved.host,
-      port: resolved.port,
+      host: this.isConnected ? this.activeHost : resolved.host,
+      port: this.isConnected ? this.activePort : resolved.port,
       database: this.isConnected ? this.activeDatabase : resolved.database,
       user: this.isConnected ? this.activeUser : resolved.user,
       passwordMasked: "******",
@@ -209,38 +213,22 @@ export class PostgresPoolManager {
   }
 
   /**
-   * Initializes the PostgreSQL connection pool dynamically
+   * Initializes the PostgreSQL connection pool dynamically using .env configuration
    * @param force - If true, re-initializes even if already connected
    */
   public static async initialize(force = false): Promise<boolean> {
-    if (this.initialized && !force) {
+    if (this.initialized && !force && this.isConnected) {
       return this.isConnected;
     }
 
     const resolved = resolveDynamicConfig();
-    const { host, port, database, user, password, ssl, connectionString } = resolved;
+    const { host, port, database, user, password, ssl } = resolved;
+    this.activeHost = host;
+    this.activePort = port;
+    this.activeDatabase = database;
+    this.activeUser = user;
 
-    // Fast check: If pointing to localhost / 127.0.0.1 probe port first
-    const isLocalhostTarget = host === "localhost" || host === "127.0.0.1" || host === "::1";
-    if (isLocalhostTarget) {
-      const portOpen = await isPortReachable(host, port, 500);
-      if (!portOpen) {
-        this.isConnected = false;
-        this.initialized = true;
-        this.noticeMessage = `PostgreSQL port ${port} on ${host} is inactive. System operating in in-memory simulation mode.`;
-        console.log(`[gtax:Database] ${this.noticeMessage}`);
-        return false;
-      }
-    } else {
-      const reachable = await isPortReachable(host, port, 1200);
-      if (!reachable) {
-        this.isConnected = false;
-        this.initialized = true;
-        this.noticeMessage = `Database target ${host}:${port} is currently unreachable. System operating in in-memory simulation mode.`;
-        console.log(`[gtax:Database] ${this.noticeMessage}`);
-        return false;
-      }
-    }
+    console.log(`[gtax:Postgres] Connecting to DB server -> Host: ${host}, Port: ${port}, Database: ${database}, User: ${user}, SSL: ${ssl}`);
 
     const poolConfig: PoolConfig = {
       host,
@@ -251,7 +239,7 @@ export class PostgresPoolManager {
       ssl: ssl ? { rejectUnauthorized: false } : false,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 3500,
+      connectionTimeoutMillis: 6000,
     };
 
     try {
@@ -262,36 +250,39 @@ export class PostgresPoolManager {
 
       this.pool = new Pool(poolConfig);
 
-      // Register silent error listener to prevent unhandled pool error events
-      this.pool.on("error", () => {
-        // Handled silently; queries fall back to in-memory store
+      this.pool.on("error", (err: any) => {
+        console.warn(`[gtax:Postgres] Unexpected idle client warning:`, err?.message || err);
       });
 
-      // Verify connection with query
+      // Verify connection with query directly on PostgreSQL server
       const client = await this.pool.connect();
-      const res = await client.query("SELECT current_database(), current_user, version()");
+      const res = await client.query("SELECT current_database(), current_user, version();");
       client.release();
 
-      this.activeDatabase = res.rows[0].current_database || database;
-      this.activeUser = res.rows[0].current_user || user;
+      const row = res.rows[0];
+      this.activeDatabase = row.current_database || database;
+      this.activeUser = row.current_user || user;
+      this.serverVersion = row.version || "PostgreSQL";
       this.isConnected = true;
       this.initialized = true;
-      this.noticeMessage = `Connected to PostgreSQL database '${this.activeDatabase}' as '${this.activeUser}'`;
-      console.log(`[gtax:Postgres] ${this.noticeMessage}`);
+      this.lastError = null;
+      this.noticeMessage = `Connected to PostgreSQL database '${this.activeDatabase}' on ${this.activeHost}:${this.activePort} as '${this.activeUser}'`;
+      console.log(`[gtax:Postgres] SUCCESS: ${this.noticeMessage}`);
 
-      // Automatically ensure core schema, default seed data, and synced sequences in the target database
+      // Ensure tables exist in target database
       await this.ensureCoreDatabase();
 
       return true;
-    } catch {
+    } catch (err: any) {
       if (this.pool) {
         await this.pool.end().catch(() => {});
         this.pool = null;
       }
       this.isConnected = false;
       this.initialized = true;
-      this.noticeMessage = "PostgreSQL service offline or not configured. System operating in in-memory simulation mode.";
-      console.log(`[gtax:Database] ${this.noticeMessage}`);
+      this.lastError = err?.message || String(err);
+      this.noticeMessage = `Failed to connect to PostgreSQL at ${host}:${port}/${database}: ${this.lastError}`;
+      console.error(`[gtax:Postgres] CONNECTION FAILED: ${this.noticeMessage}`);
       return false;
     }
   }
@@ -378,37 +369,40 @@ export class PostgresPoolManager {
     try {
       const result = await this.pool.query(text, params);
       return result.rows as T[];
-    } catch {
-      // Return empty array on failure
+    } catch (err: any) {
+      console.warn(`[gtax:Postgres] Query warning:`, err?.message || err);
       return [];
     }
   }
 
   /**
-   * Health and status inspector
+   * Health and status inspector - returns exact database host, port, user, db, and live connection status
    */
   public static getStatus() {
     const config = this.getConfig();
     return {
       connected: this.isConnected,
-      mode: this.isConnected ? "POSTGRESQL_LIVE" : "IN_MEMORY_SIMULATION",
-      config: {
-        host: config.host,
-        port: config.port,
-        database: config.database,
-        user: config.user,
-        password: config.passwordMasked,
-        connectionString: config.connectionStringMasked,
-      },
+      mode: this.isConnected ? "POSTGRESQL_LIVE_SERVER" : "OFFLINE_NO_CONNECTION",
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      user: config.user,
+      ssl: config.ssl,
+      serverVersion: this.serverVersion || "Unknown",
+      activeDatabase: this.activeDatabase,
+      activeUser: this.activeUser,
+      activeHost: this.activeHost,
+      activePort: this.activePort,
       message: this.noticeMessage,
-      lastError: null,
+      lastError: this.lastError,
+      connectionStringMasked: config.connectionStringMasked,
       setupHelp: {
-        sqlCreateScript: "database/01_create_database_and_user.sql",
-        schemaInitScript: "database/02_init_gtax_schema.sql",
-        allInOneScript: "database/setup_gtax_db.sql",
-        navicatScript: "database/navicat_setup_gtax_db.sql",
+        sqlCreateScript: "backend/DbMigration/01_create_database_and_user.sql",
+        schemaInitScript: "backend/DbMigration/02_init_gtax_schema.sql",
+        allInOneScript: "backend/DbMigration/setup_gtax_db.sql",
+        navicatScript: "backend/DbMigration/navicat_setup_gtax_db.sql",
         migrationBatchScript: "run_migrations.bat",
-        docsFile: "docs/DATABASE_CONFIGURATION.md",
+        migrationFolder: "backend/DbMigration",
       },
     };
   }

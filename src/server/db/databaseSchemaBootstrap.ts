@@ -786,78 +786,8 @@ export class DatabaseSchemaBootstrap {
         ON CONFLICT (id) DO NOTHING;
       `);
 
-      // 16. Taxpayers (tbl_taxpayer & tbl_taxpayer_master)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_taxpayer_master (id, code, fullanme, mobile_no, tax_type_id, email, ward_no, pan_vat_no, citizenship_no, is_deleted, insert_by, update_by) VALUES
-        (1, 'TP-2081-0001', 'Ram Bahadur Thapa (राम बहादुर थापा)', '9841234567', 1, 'ram.thapa@gmail.com', 3, '600123456', '27-01-70-12345', false, '1', '1'),
-        (2, 'TP-2081-0002', 'Sita Maya Shrestha (सीता माया श्रेष्ठ)', '9851098765', 1, 'sita.shrestha@gmail.com', 4, '600987654', '27-01-72-98765', false, '1', '1'),
-        (3, 'TP-2081-0003', 'Himalayan Trading Syndicate Ltd', '9801122334', 2, 'accounts@himalayantrading.com.np', 1, '300554433', 'CO-REG-9871', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-
-        INSERT INTO tbl_taxpayer (id, taxpayer_code, full_name, pan_number, citizenship_number, phone_number, ward_no, tole_village, insert_by, update_by) VALUES
-        (1, 'TP-2081-0001', 'Ram Bahadur Thapa', '600123456', '27-01-70-12345', '9841234567', 3, 'Resunga Marg', '1', '1'),
-        (2, 'TP-2081-0002', 'Sita Maya Shrestha', '600987654', '27-01-72-98765', '9851098765', 4, 'Bhanu Chowk', '1', '1'),
-        (3, 'TP-2081-0003', 'Himalayan Trading Syndicate Ltd', '300554433', 'CO-REG-9871', '9801122334', 1, 'New Road Commercial Area', '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
-
-      // 17. Land (tbl_land)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_land (id, taxpayer_id, kitta_number, moth_number, ward_no, area_sqfeet, include_in_evaluation, land_measuring_unit_id, nature_id, land_rate_id, malpot_rate_id, assessed_valuation, is_deleted, insert_by, update_by) VALUES
-        (1, 1, '1042', 'MOTH-89A', 3, 2738.00, true, 1, 2, 1, 1, 12000000.00, false, '1', '1'),
-        (2, 2, '2105', 'MOTH-12B', 4, 1800.00, true, 1, 1, 2, 2, 7500000.00, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
-
-      // 18. House (tbl_house)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_house (id, taxpayer_id, land_id, secondary_land_id, kitta_numbers, land_ids, house_no, area_sqfeet, acquisition_date_bs, acquisition_date_ad, plinth_area, floor_no, include_in_evaluation, measuring_unit_id, construction_type_id, assessed_valuation, is_deleted, insert_by, update_by) VALUES
-        (1, 1, 1, null, '1042', '1', 'H-1042-A', 2400.00, '2075-01-10', '2018-04-23', 1200.00, 2, true, 7, 1, 7680000.00, false, '1', '1'),
-        (2, 2, 2, null, '2105', '2', 'H-2105-B', 1500.00, '2077-03-15', '2020-06-29', 800.00, 2, true, 7, 2, 3600000.00, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
-
-      // 19. Floors (tbl_floor)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_floor (id, house_id, floor_no, construction_date_ad, construction_date_bs, construction_type_id, area_sqfeet, include_in_evaluation, rate_id, remarks, measuring_unit_id, depreciation_percent, floor_assessed_valuation, is_deleted, insert_by, update_by) VALUES
-        (1, 1, 0, '2018-04-23', '2075-01-10', 1, 1200.00, true, 1, 'Ground floor residential unit', 7, 5.0000, 3648000.00, false, '1', '1'),
-        (2, 1, 1, '2018-04-23', '2075-01-10', 1, 1200.00, true, 1, 'First floor residential unit', 7, 5.0000, 3648000.00, false, '1', '1'),
-        (3, 2, 0, '2020-06-29', '2077-03-15', 2, 800.00, true, 2, 'Ground floor shop', 7, 0.0000, 1920000.00, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
-
-      // 20. Tax Jurisdictions
-      await PostgresPoolManager.query(`
-        INSERT INTO tax_jurisdictions (jurisdiction_id, jurisdiction_code, jurisdiction_name, country_iso, jurisdiction_level, default_rate_pct, insert_by, update_by) VALUES
-        ('JUR_NP_MUNI', 'NP-KTM', 'Kathmandu Metropolitan Tax Authority', 'NPL', 'city', 10.0000, '1', '1'),
-        ('JUR_US_FED', 'US-FED', 'United States Internal Revenue Service', 'USA', 'federal', 0.0000, '1', '1'),
-        ('JUR_US_CA', 'US-CA', 'California Department of Tax & Fee Administration', 'USA', 'state', 7.2500, '1', '1'),
-        ('JUR_EU_VAT', 'EU-VAT', 'European Union Cross-Border VAT Regime', 'DEU', 'vat_zone', 19.0000, '1', '1')
-        ON CONFLICT (jurisdiction_id) DO NOTHING;
-      `);
-
-      // 21. Tax Rules Matrix
-      await PostgresPoolManager.query(`
-        INSERT INTO tax_rules_matrix (rule_id, jurisdiction_id, tax_type, product_tax_code, rate_percentage, effective_from, is_cumulative_compounded, insert_by, update_by) VALUES
-        ('RULE_MUNI_PROPERTY', 'JUR_NP_MUNI', 'property_tax', 'MUNICIPAL_PROPERTY', 1.5000, '2024-07-16', false, '1', '1'),
-        ('RULE_MUNI_RENTAL', 'JUR_NP_MUNI', 'rental_tax', 'MUNICIPAL_RENTAL', 10.0000, '2024-07-16', false, '1', '1'),
-        ('RULE_CA_SAAS', 'JUR_US_CA', 'sales_tax', 'DIGITAL_SAAS', 7.2500, '2024-01-01', false, '1', '1'),
-        ('RULE_EU_DIGITAL', 'JUR_EU_VAT', 'vat', 'DIGITAL_SERVICES', 19.0000, '2024-01-01', false, '1', '1')
-        ON CONFLICT (rule_id) DO NOTHING;
-      `);
-
-      // 22. Tax Transactions & Liability Breakdown
-      await PostgresPoolManager.query(`
-        INSERT INTO tax_transactions (transaction_id, org_id, customer_id, invoice_number, transaction_date, origin_country, destination_country, gross_amount, taxable_amount, total_tax_amount, sync_status, insert_by, update_by) VALUES
-        ('TX-2081-0001', 'ORG_GLOBAL_CORP', 'TP-2081-0001', 'INV-2081-001', NOW(), 'NPL', 'NPL', 150000.00, 150000.00, 2250.00, 'SYNCED', '1', '1'),
-        ('TX-2081-0002', 'ORG_GLOBAL_CORP', 'TP-2081-0002', 'INV-2081-002', NOW(), 'NPL', 'NPL', 85000.00, 85000.00, 1275.00, 'SYNCED', '1', '1')
-        ON CONFLICT (transaction_id) DO NOTHING;
-
-        INSERT INTO tax_liability_breakdown (liability_id, transaction_id, jurisdiction_id, jurisdiction_type, applied_rate_pct, taxable_base, tax_amount, is_compounded, insert_by, update_by) VALUES
-        ('LIAB-001', 'TX-2081-0001', 'JUR_NP_MUNI', 'local', 1.5000, 150000.00, 2250.00, false, '1', '1'),
-        ('LIAB-002', 'TX-2081-0002', 'JUR_NP_MUNI', 'local', 1.5000, 85000.00, 1275.00, false, '1', '1')
-        ON CONFLICT (liability_id) DO NOTHING;
-      `);
+      // 16. System Masters Ready - No dummy taxpayers or properties are auto-injected.
+      // Database strictly holds genuine data created by the user or pre-existing in the DB server.
 
       // ==========================================
       // SYNCHRONIZE ALL POSTGRESQL SERIAL SEQUENCES

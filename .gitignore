@@ -13,4 +13,5 @@ coverage/
 /.idea
 /mobileapp/android/app/gtax-release-key.jks
 /mobileapp/android/key.properties
-/release
+release/
+release/**

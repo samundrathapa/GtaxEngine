@@ -20,6 +20,7 @@ import { AiTaxChatbotModal } from "./components/AiTaxChatbotModal.tsx";
 import { DbColumnLanguageModal } from "./components/DbColumnLanguageModal.tsx";
 import { FlutterMobileAppSimulator } from "./components/FlutterMobileAppSimulator.tsx";
 import { MunicipalDashboardPanel } from "./components/MunicipalDashboardPanel.tsx";
+import { DbStatusModal, DbStatusData } from "./components/DbStatusModal.tsx";
 import {
   LayoutDashboard,
   Layers,
@@ -230,6 +231,28 @@ export default function App() {
   const [isHeaderVoiceListening, setIsHeaderVoiceListening] = useState<boolean>(false);
   const [headerVoiceNotice, setHeaderVoiceNotice] = useState<string | null>(null);
   const headerRecognitionRef = useRef<any>(null);
+
+  // Live PostgreSQL Database Connection Inspector State
+  const [dbStatus, setDbStatus] = useState<DbStatusData | null>(null);
+  const [isDbStatusModalOpen, setIsDbStatusModalOpen] = useState<boolean>(false);
+
+  const fetchDbStatus = async () => {
+    try {
+      const res = await fetch("/api/v1/db/status");
+      const json = await res.json();
+      if (json && json.data) {
+        setDbStatus(json.data);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch database status:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchDbStatus();
+    const interval = setInterval(fetchDbStatus, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Theme & Language (Controlled via User Menu)
   const [currentLang, setCurrentLang] = useState<SupportedLang>("eng");
@@ -794,13 +817,13 @@ export default function App() {
 
       {/* Main Content Pane */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar with Global Taxpayer Search, AI Assistant, and UserMenu */}
-        <header className={`sticky top-0 z-30 px-3 sm:px-6 py-2.5 border-b flex items-center justify-between gap-3 backdrop-blur-md ${themeStyle.headerBg}`}>
-          <div className="flex items-center gap-2.5 shrink-0">
+        {/* Top Header Bar with Global Taxpayer Search, AI Assistant, DB Status Chip, and UserMenu */}
+        <header className={`sticky top-0 z-30 px-[3px] sm:px-3 py-1.5 sm:py-2 border-b flex items-center justify-between gap-2 sm:gap-3 backdrop-blur-md ${themeStyle.headerBg}`}>
+          <div className="flex items-center gap-2 shrink-0">
             {/* Navigation Menu Button (on click hides / shows sidebar) */}
             <button
               onClick={handleToggleNavigation}
-              className="p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center shadow-2xs"
+              className="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center shadow-2xs"
               title="Navigation Menu"
               aria-label="Navigation Menu"
             >
@@ -815,15 +838,11 @@ export default function App() {
                   {activeTab === "dashboard" ? "Municipal Dashboard" : activeTab === "taxpayer" ? `Taxpayer > ${taxpayerSubView}` : activeTab === "calculation" ? "Frontend & Manual Calculation Window" : activeTab === "masters" ? "System Masters" : activeTab === "rate" ? "Rate Masters" : activeTab === "users" ? "Users & RBAC" : activeTab}
                 </span>
               </div>
-              <div className="hidden md:flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                {/* <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span> */}
-                {/* <span>PostgreSQL DB Active · Multi-Jurisdiction Engine</span> */}
-              </div>
             </div>
           </div>
 
           {/* Global Taxpayer Search Bar (Name or Citizen / PAN ID) */}
-          <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md mx-1 sm:mx-3">
+          <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md mx-1 sm:mx-2">
             <GlobalTaxpayerSearch
               currentLang={currentLang}
               onSelectTaxpayer={(id) => {
@@ -839,17 +858,34 @@ export default function App() {
             />
           </div>
 
-          {/* Right Header Actions: Mic Voice Command + Icon-Only AI Assistant + Icon-Only Mobile App + User Menu */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Right Header Actions: Live DB Status Chip + Voice + AI Assistant + Mobile App + User Menu */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Live DB Connection Badge / Inspector Button */}
+            <button
+              onClick={() => setIsDbStatusModalOpen(true)}
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shadow-2xs group"
+              title={`PostgreSQL Database: ${dbStatus?.user || "gtax_user"}@${dbStatus?.host || "127.0.0.1"}:${dbStatus?.port || 5432}/${dbStatus?.database || "gtax_db"} (${dbStatus?.connected ? "Live Connected" : "Disconnected"}). Click to inspect exact parameters & test connection.`}
+              aria-label="Database Status Inspector"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${dbStatus?.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+              <Database className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors shrink-0" />
+              <span className="hidden xl:inline font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                {dbStatus ? `${dbStatus.user}@${dbStatus.host}:${dbStatus.port}/${dbStatus.database}` : "DB Connecting..."}
+              </span>
+              <span className="xl:hidden font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                {dbStatus?.database || "DB"}
+              </span>
+            </button>
+
             {/* Quick Voice Command - Icon Only */}
             <button
               onClick={handleToggleHeaderVoice}
-              className={`p-2 sm:p-2.5 rounded-xl border transition-all flex items-center justify-center group ${
+              className={`p-1.5 sm:p-2 rounded-xl border transition-all flex items-center justify-center group ${
                 isHeaderVoiceListening
                   ? "bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-500/30 animate-pulse"
                   : "bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700"
               }`}
-              title={isHeaderVoiceListening ? "Listening... click to stop" : "Voice Command (Say 'open taxpayer', 'list taxpayer today registered', 'add landrate 1', 'close chat')"}
+              title={isHeaderVoiceListening ? "Listening... click to stop" : "Voice Command"}
               aria-label="Voice Command"
             >
               <Mic className={`w-4 h-4 ${isHeaderVoiceListening ? "text-white animate-bounce" : "text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform"}`} />
@@ -861,7 +897,7 @@ export default function App() {
                 setInitialChatQuery("");
                 setIsAiChatbotOpen(true);
               }}
-              className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white shadow-xs transition-all border border-indigo-400/30 flex items-center justify-center group"
+              className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 text-white shadow-xs transition-all border border-indigo-400/30 flex items-center justify-center group"
               title="AI Tax Assistant (Voice & Text)"
               aria-label="AI Tax Assistant"
             >
@@ -871,7 +907,7 @@ export default function App() {
             {/* Mobile App - Icon Only */}
             <button
               onClick={() => setIsFlutterMobileOpen(true)}
-              className="p-2 sm:p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs border border-blue-500/30 transition-all flex items-center justify-center group"
+              className="p-1.5 sm:p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 shadow-2xs border border-blue-500/30 transition-all flex items-center justify-center group"
               title="Mobile App (Flutter iOS & Android Deployment Hub)"
               aria-label="Mobile App Deployment Hub"
             >
@@ -891,8 +927,8 @@ export default function App() {
           </div>
         </header>
 
-        {/* Main Panel Content Render Area */}
-        <main className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto">
+        {/* Main Panel Content Render Area - exactly 3px edge fit with zero horizontal gaps */}
+        <main className="flex-1 p-[3px] w-full min-w-0">
           {activeTab === "dashboard" && (
             <MunicipalDashboardPanel
               onNavigate={(tab) => {
@@ -1021,6 +1057,14 @@ export default function App() {
         isOpen={isFlutterMobileOpen}
         onClose={() => setIsFlutterMobileOpen(false)}
         lang={currentLang}
+      />
+
+      {/* Database Connection & Health Inspector Modal */}
+      <DbStatusModal
+        isOpen={isDbStatusModalOpen}
+        onClose={() => setIsDbStatusModalOpen(false)}
+        status={dbStatus}
+        onRefresh={fetchDbStatus}
       />
     </div>
   );

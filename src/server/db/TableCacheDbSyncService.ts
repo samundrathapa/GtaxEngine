@@ -129,12 +129,12 @@ export class TableCacheDbSyncService {
       }
     }
 
-    // If database returned empty or was offline, fallback to in-memory store
-    if (!rows || rows.length === 0) {
-      rows = (this.inMemoryStores.get(table) || []) as T[];
+    if (PostgresPoolManager.getStatus().connected) {
+      // Direct PostgreSQL query: Return genuine server database rows
+      this.inMemoryStores.set(table, rows || []);
     } else {
-      // Keep in-memory mirror up-to-date
-      this.inMemoryStores.set(table, rows);
+      // Database offline: Only fallback to in-memory store if DB is offline
+      rows = (this.inMemoryStores.get(table) || []) as T[];
     }
 
     // Write to Redis cache with 1-hour TTL
@@ -439,33 +439,12 @@ export class TableCacheDbSyncService {
       { id: 4, fiscal_year_id: 2, tax_type_id: 1, ratesn: 4, years: 2, month: 0, calcpercent: 25.0, ratepercent: 25.0, flatrate: 0.0, isfine: true, days: 730, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
     ]);
 
-    this.inMemoryStores.set("tbl_taxpayer_master", [
-      { id: 1, code: "TP-2081-0001", fullanme: "Ram Bahadur Thapa (राम बहादुर थापा)", mobile_no: "9841234567", tax_type_id: 1, email: "ram.thapa@gmail.com", ward_no: 3, pan_vat_no: "600123456", citizenship_no: "27-01-70-12345", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, code: "TP-2081-0002", fullanme: "Sita Maya Shrestha (सीता माया श्रेष्ठ)", mobile_no: "9851098765", tax_type_id: 1, email: "sita.shrestha@gmail.com", ward_no: 4, pan_vat_no: "600987654", citizenship_no: "27-01-72-98765", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, code: "TP-2081-0003", fullanme: "Himalayan Trading Syndicate Ltd", mobile_no: "9801122334", tax_type_id: 2, email: "accounts@himalayantrading.com.np", ward_no: 1, pan_vat_no: "300554433", citizenship_no: "CO-REG-9871", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
-    ]);
-
-    this.inMemoryStores.set("tbl_taxpayer", [
-      { id: 1, taxpayer_code: "TP-2081-0001", full_name: "Ram Bahadur Thapa", pan_number: "600123456", citizenship_number: "27-01-70-12345", phone_number: "9841234567", ward_no: 3, tole_village: "Resunga Marg", insert_by: "1", update_by: "1", is_active: true, is_deleted: false },
-      { id: 2, taxpayer_code: "TP-2081-0002", full_name: "Sita Maya Shrestha", pan_number: "600987654", citizenship_number: "27-01-72-98765", phone_number: "9851098765", ward_no: 4, tole_village: "Bhanu Chowk", insert_by: "1", update_by: "1", is_active: true, is_deleted: false },
-      { id: 3, taxpayer_code: "TP-2081-0003", full_name: "Himalayan Trading Syndicate Ltd", pan_number: "300554433", citizenship_number: "CO-REG-9871", phone_number: "9801122334", ward_no: 1, tole_village: "New Road Commercial Area", insert_by: "1", update_by: "1", is_active: true, is_deleted: false }
-    ]);
-
-    this.inMemoryStores.set("tbl_land", [
-      { id: 1, taxpayer_id: 1, kitta_number: "1042", moth_number: "MOTH-89A", ward_no: 3, area_sqfeet: 2738.0, include_in_evaluation: true, land_measuring_unit_id: 1, nature_id: 2, land_rate_id: 1, malpot_rate_id: 1, assessed_valuation: 12000000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, taxpayer_id: 2, kitta_number: "2105", moth_number: "MOTH-12B", ward_no: 4, area_sqfeet: 1800.0, include_in_evaluation: true, land_measuring_unit_id: 1, nature_id: 1, land_rate_id: 2, malpot_rate_id: 2, assessed_valuation: 7500000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
-    ]);
-
-    this.inMemoryStores.set("tbl_house", [
-      { id: 1, taxpayer_id: 1, land_id: 1, secondary_land_id: null, kitta_numbers: "1042", land_ids: [1], house_no: "H-1042-A", area_sqfeet: 2400.0, acquisition_date_bs: "2075-01-10", acquisition_date_ad: "2018-04-23", plinth_area: 1200.0, floor_no: 2, include_in_evaluation: true, measuring_unit_id: 7, construction_type_id: 1, assessed_valuation: 7680000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, taxpayer_id: 2, land_id: 2, secondary_land_id: null, kitta_numbers: "2105", land_ids: [2], house_no: "H-2105-B", area_sqfeet: 1500.0, acquisition_date_bs: "2077-03-15", acquisition_date_ad: "2020-06-29", plinth_area: 800.0, floor_no: 2, include_in_evaluation: true, measuring_unit_id: 7, construction_type_id: 2, assessed_valuation: 3600000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
-    ]);
-
-    this.inMemoryStores.set("tbl_floor", [
-      { id: 1, house_id: 1, floor_no: 0, construction_date_ad: "2018-04-23", construction_date_bs: "2075-01-10", construction_type_id: 1, area_sqfeet: 1200.0, include_in_evaluation: true, rate_id: 1, remarks: "Ground floor residential unit", measuring_unit_id: 7, depreciation_percent: 5.0, floor_assessed_valuation: 3648000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, house_id: 1, floor_no: 1, construction_date_ad: "2018-04-23", construction_date_bs: "2075-01-10", construction_type_id: 1, area_sqfeet: 1200.0, include_in_evaluation: true, rate_id: 1, remarks: "First floor residential unit", measuring_unit_id: 7, depreciation_percent: 5.0, floor_assessed_valuation: 3648000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, house_id: 2, floor_no: 0, construction_date_ad: "2020-06-29", construction_date_bs: "2077-03-15", construction_type_id: 2, area_sqfeet: 800.0, include_in_evaluation: true, rate_id: 2, remarks: "Ground floor shop", measuring_unit_id: 7, depreciation_percent: 0.0, floor_assessed_valuation: 1920000.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
-    ]);
+    // Taxpayers, lands, houses, and floors start empty - strictly populated from database server
+    this.inMemoryStores.set("tbl_taxpayer_master", []);
+    this.inMemoryStores.set("tbl_taxpayer", []);
+    this.inMemoryStores.set("tbl_land", []);
+    this.inMemoryStores.set("tbl_house", []);
+    this.inMemoryStores.set("tbl_floor", []);
 
     this.inMemoryStores.set("tax_jurisdictions", [
       { jurisdiction_id: "JUR_NP_MUNI", jurisdiction_code: "NP-KTM", jurisdiction_name: "Kathmandu Metropolitan Tax Authority", country_iso: "NPL", jurisdiction_level: "city", default_rate_pct: 10.0, insert_by: "1", update_by: "1", is_active: true, is_deleted: false },

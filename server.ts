@@ -53,9 +53,22 @@ app.get("/api/v1/architecture/status", (req, res) => {
   });
 });
 
-// Database Status & Configuration Inspector endpoint
+// Database Status, Configuration Inspector, and Live Ping endpoints
 app.get("/api/v1/db/status", (req, res) => {
   res.json(ApiResponse.buildSuccess(PostgresPoolManager.getStatus(), "Database connection status and configuration"));
+});
+
+app.get("/api/v1/db/config", (req, res) => {
+  res.json(ApiResponse.buildSuccess(PostgresPoolManager.getStatus(), "Active database configuration and server target"));
+});
+
+app.post("/api/v1/db/ping", async (req, res) => {
+  const connected = await PostgresPoolManager.initialize(true);
+  await TableCacheDbSyncService.warmUpCache();
+  res.json(ApiResponse.buildSuccess({
+    ...PostgresPoolManager.getStatus(),
+    pingSuccess: connected
+  }, connected ? "PostgreSQL database connected successfully" : `PostgreSQL connection error: ${PostgresPoolManager.getStatus().lastError}`));
 });
 
 // Initialize DomainRegistry, DbConnections, Redis Cache & Auto-Sync Engine

@@ -62,17 +62,10 @@ if not "%~1"=="" (
 )
 
 :: Locate Migration Folder
-set "MIGRATION_DIR=%~dp0dbmigration"
+set "MIGRATION_DIR=%~dp0backend\DbMigration"
 if not exist "%MIGRATION_DIR%" (
-    if exist "%~dp0backend\DbMigration" (
-        set "MIGRATION_DIR=%~dp0backend\DbMigration"
-    ) else (
-        if exist "%~dp0..\dbmigration" (
-            set "MIGRATION_DIR=%~dp0..\dbmigration"
-        ) else (
-            mkdir "%~dp0dbmigration"
-            set "MIGRATION_DIR=%~dp0dbmigration"
-        )
+    if exist "%~dp0..\backend\DbMigration" (
+        set "MIGRATION_DIR=%~dp0..\backend\DbMigration"
     )
 )
 

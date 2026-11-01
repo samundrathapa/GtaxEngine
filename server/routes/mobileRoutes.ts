@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { propertyDb } from "../../src/server/ApiServiceStruct/TaxpayerPropertyService.ts";
+import { TableCacheDbSyncService } from "../../src/server/db/TableCacheDbSyncService.ts";
 import { ApiResponse } from "../../src/server/BaseFrame/response/ApiResponse.ts";
 import { AuthSessionService } from "../../src/server/ApiServiceStruct/AuthSessionService.ts";
 
@@ -44,68 +45,64 @@ mobileRouter.get("/boot-config", (req, res) => {
 });
 
 /**
- * Quick search endpoint optimized for mobile autocomplete
+ * Quick search endpoint optimized for mobile autocomplete - queries database server
  */
-mobileRouter.get("/quick-search", (req, res) => {
+mobileRouter.get("/quick-search", async (req, res) => {
   const query = String(req.query.q || "").toLowerCase().trim();
-  const allTaxpayers = propertyDb.getAllTaxpayers();
+  const allTaxpayers = await TableCacheDbSyncService.getTableData("tbl_taxpayer_master");
 
   if (!query) {
-    const recents = allTaxpayers.slice(0, 5).map(tp => ({
+    const recents = allTaxpayers.slice(0, 5).map((tp: any) => ({
       id: tp.id,
       code: tp.code,
-      fullname: tp.fullanme,
-      mobile: tp.mobile_no,
+      fullname: tp.fullanme || tp.full_name,
+      mobile: tp.mobile_no || tp.phone_number,
       ward: tp.ward_no,
-      pan: tp.pan_vat_no || "N/A"
+      pan: tp.pan_vat_no || tp.pan_number || "N/A"
     }));
-    return res.json(ApiResponse.buildSuccess(recents, "Recent taxpayers"));
+    return res.json(ApiResponse.buildSuccess(recents, "Recent taxpayers from database server"));
   }
 
-  const results = allTaxpayers.filter(tp => 
-    tp.fullanme.toLowerCase().includes(query) ||
-    tp.code.toLowerCase().includes(query) ||
-    (tp.pan_vat_no && tp.pan_vat_no.toLowerCase().includes(query)) ||
-    (tp.citizenship_no && tp.citizenship_no.toLowerCase().includes(query)) ||
-    tp.mobile_no.includes(query)
-  ).slice(0, 15).map(tp => ({
+  const results = allTaxpayers.filter((tp: any) => {
+    const name = (tp.fullanme || tp.full_name || "").toLowerCase();
+    const code = (tp.code || tp.taxpayer_code || "").toLowerCase();
+    const pan = (tp.pan_vat_no || tp.pan_number || "").toLowerCase();
+    const ctz = (tp.citizenship_no || tp.citizenship_number || "").toLowerCase();
+    const mob = (tp.mobile_no || tp.phone_number || "");
+    return name.includes(query) || code.includes(query) || pan.includes(query) || ctz.includes(query) || mob.includes(query);
+  }).slice(0, 15).map((tp: any) => ({
     id: tp.id,
-    code: tp.code,
-    fullname: tp.fullanme,
-    mobile: tp.mobile_no,
+    code: tp.code || tp.taxpayer_code,
+    fullname: tp.fullanme || tp.full_name,
+    mobile: tp.mobile_no || tp.phone_number,
     ward: tp.ward_no,
-    pan: tp.pan_vat_no || "N/A",
-    citizenship: tp.citizenship_no || "N/A"
+    pan: tp.pan_vat_no || tp.pan_number || "N/A",
+    citizenship: tp.citizenship_no || tp.citizenship_number || "N/A"
   }));
 
-  res.json(ApiResponse.buildSuccess(results, `Found ${results.length} taxpayer(s)`));
+  res.json(ApiResponse.buildSuccess(results, `Found ${results.length} taxpayer(s) from database server`));
 });
 
 /**
- * Mobile dashboard summary counters
+ * Mobile dashboard summary counters directly from database server
  */
-mobileRouter.get("/dashboard-summary", (req, res) => {
-  const taxpayers = propertyDb.getAllTaxpayers();
-  const masterTables = propertyDb.getMasterTables();
-
-  let totalPropertiesCount = 0;
-  taxpayers.forEach(tp => {
-    const dossier = propertyDb.getTaxpayerDossier(tp.id);
-    if (dossier) {
-      totalPropertiesCount += (dossier.lands.length + dossier.houses.length);
-    }
-  });
+mobileRouter.get("/dashboard-summary", async (req, res) => {
+  const taxpayers = await TableCacheDbSyncService.getTableData("tbl_taxpayer_master");
+  const lands = await TableCacheDbSyncService.getTableData("tbl_land");
+  const houses = await TableCacheDbSyncService.getTableData("tbl_house");
+  const units = await TableCacheDbSyncService.getTableData("tbl_unit");
+  const landRates = await TableCacheDbSyncService.getTableData("tbl_land_rate");
 
   res.json(ApiResponse.buildSuccess({
     totalTaxpayers: taxpayers.length,
-    totalProperties: totalPropertiesCount,
+    totalProperties: lands.length + houses.length,
     currentFiscalYear: "2081/82",
-    pendingAssessments: Math.max(1, Math.floor(taxpayers.length * 0.3)),
+    pendingAssessments: Math.max(0, Math.floor(taxpayers.length * 0.3)),
     recentTaxpayersCount: Math.min(taxpayers.length, 10),
-    activeWards: Array.from(new Set(taxpayers.map(t => t.ward_no))).sort((a,b) => a-b),
-    unitCount: masterTables.units.length,
-    landRateTypes: masterTables.landRates.length
-  }, "Mobile dashboard summary retrieved"));
+    activeWards: Array.from(new Set(taxpayers.map((t: any) => t.ward_no))).sort((a: any, b: any) => a - b),
+    unitCount: units.length,
+    landRateTypes: landRates.length
+  }, "Mobile dashboard summary retrieved from database server"));
 });
 
 /**
