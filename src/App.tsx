@@ -46,10 +46,7 @@ import {
   Building,
   Sliders,
   Settings,
-  TrendingUp,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelLeft
+  TrendingUp
 } from "lucide-react";
 
 type NavigationTab =
@@ -162,22 +159,14 @@ export default function App() {
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("gtax_sidebar_collapsed") === "true";
-    } catch (_) {
-      return false;
-    }
-  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
-  const toggleSidebarCollapse = () => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("gtax_sidebar_collapsed", String(next));
-      } catch (_) {}
-      return next;
-    });
+  const handleToggleNavigation = () => {
+    if (window.innerWidth >= 1024) {
+      setIsSidebarCollapsed((prev) => !prev);
+    } else {
+      setSidebarOpen((prev) => !prev);
+    }
   };
 
   // Synchronize route to URL hash and localStorage whenever activeTab or subviews change
@@ -507,27 +496,15 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              {/* Desktop Hide/Minimize Sidebar Button */}
-              <button
-                onClick={toggleSidebarCollapse}
-                className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                title="Hide / Minimize Sidebar"
-                aria-label="Minimize sidebar"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
-
-              {/* Mobile Close Button */}
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
-                title="Close sidebar"
-                aria-label="Close sidebar"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            {/* Mobile Close Button */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              title="Close navigation menu"
+              aria-label="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Navigation Items - 5 Core Hubs with Middle-Sized Icons (w-5 h-5) */}
@@ -820,38 +797,14 @@ export default function App() {
         {/* Top Header Bar with Global Taxpayer Search, AI Assistant, and UserMenu */}
         <header className={`sticky top-0 z-30 px-3 sm:px-6 py-2.5 border-b flex items-center justify-between gap-3 backdrop-blur-md ${themeStyle.headerBg}`}>
           <div className="flex items-center gap-2.5 shrink-0">
-            {/* Mobile Hamburger Menu Toggle */}
+            {/* Navigation Menu Button (on click hides / shows sidebar) */}
             <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-700"
-              title="Open Navigation Menu"
-              aria-label="Open menu"
+              onClick={handleToggleNavigation}
+              className="p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center shadow-2xs"
+              title="Navigation Menu"
+              aria-label="Navigation Menu"
             >
               <Menu className="w-5 h-5" />
-            </button>
-
-            {/* Desktop Show / Hide Sidebar Toggle Button */}
-            <button
-              onClick={toggleSidebarCollapse}
-              className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                isSidebarCollapsed
-                  ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20 hover:bg-indigo-700"
-                  : "bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400"
-              }`}
-              title={isSidebarCollapsed ? "Show / Expand Sidebar" : "Hide / Minimize Sidebar"}
-              aria-label={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
-            >
-              {isSidebarCollapsed ? (
-                <>
-                  <PanelLeftOpen className="w-4 h-4 text-white" />
-                  <span>Show Sidebar</span>
-                </>
-              ) : (
-                <>
-                  <PanelLeftClose className="w-4 h-4 text-slate-500" />
-                  <span className="text-[11px] text-slate-600 dark:text-slate-300">Hide Menu</span>
-                </>
-              )}
             </button>
 
             <div>
@@ -1069,18 +1022,6 @@ export default function App() {
         onClose={() => setIsFlutterMobileOpen(false)}
         lang={currentLang}
       />
-
-      {/* Floating Expand Sidebar Button when minimized on desktop */}
-      {isSidebarCollapsed && (
-        <button
-          onClick={toggleSidebarCollapse}
-          className="hidden lg:flex fixed left-4 bottom-5 z-40 items-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl shadow-indigo-600/30 text-xs font-bold transition-all hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-left duration-200"
-          title="Click to show sidebar menu"
-        >
-          <PanelLeftOpen className="w-4 h-4" />
-          <span>Expand Sidebar</span>
-        </button>
-      )}
     </div>
   );
 }
