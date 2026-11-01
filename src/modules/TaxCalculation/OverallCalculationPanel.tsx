@@ -469,9 +469,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
               </span>
               <span>Tax Calculation & Assessment Studio</span>
             </h1>
-            <p className="text-xs text-slate-500 max-w-2xl mt-1">
-              Live algorithmic tax assessment workbench supporting progressive valuation slabs, statutory building depreciation, and multi-year arrears across 66 fiscal years (2021/22 - 2086/87 BS).
-            </p>
+
           </div>
 
           {/* Quick Context Status Badges */}
@@ -533,9 +531,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
           >
             <FileText className={`w-4 h-4 ${activeTab === "history" ? "text-blue-300" : "text-blue-500"}`} />
             <span>Saved Records</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "history" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
-              calc_master
-            </span>
+          
           </button>
 
           <button

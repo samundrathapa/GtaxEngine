@@ -155,21 +155,19 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>gtax Municipal Engine</span>
+          {/* <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span>Gtax Municipal Engine</span>
             <span>·</span>
             <span>बहु-आर्थिक वर्ष कर गणना प्रणाली</span>
             <span>·</span>
             <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
               Multi-Fiscal-Year Assessment
             </span>
-          </div>
+          </div> */}
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             Multi-Fiscal-Year Tax Liability Engine (आ.व. कर दायित्व गणना)
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Calculate progressive property tax liabilities, statutory depreciation, and fine/rebate across multiple fiscal years for consolidated taxpayers or individual properties.
-          </p>
+      
         </div>
 
         <div className="flex items-center gap-2">

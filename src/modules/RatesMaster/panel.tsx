@@ -353,8 +353,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         </div>
 
         <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 self-start sm:self-center">
-          <FileCheck2 className="w-4 h-4 text-emerald-500" />
-          <span>Mandatory BaseFrame Audit Columns: insert_by, insert_on, update_by, update_on</span>
+          {/* <FileCheck2 className="w-4 h-4 text-emerald-500" /> */}
+          
         </div>
       </div>
 
@@ -437,7 +437,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                   </>
                 )}
                 <th className="p-3.5">Audit Stamp</th>
-                <th className="p-3.5 text-right">Actions (Edit / Delete)</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

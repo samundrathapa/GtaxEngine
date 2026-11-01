@@ -1591,7 +1591,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                     <th className="p-3.5">Construction Type</th>
                     <th className="p-3.5">Built Date (BS / AD)</th>
                     <th className="p-3.5">Assessed Valuation</th>
-                    <th className="p-3.5 text-right">Actions (Edit / Delete)</th>
+                    <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
