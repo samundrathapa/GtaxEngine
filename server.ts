@@ -474,6 +474,37 @@ app.delete("/api/v1/property/floors/:id", async (req, res) => {
   res.json(ApiResponse.buildSuccess({ id: Number(req.params.id) }, "Floor deleted from database and synced to Redis"));
 });
 
+// Rate Copying & Fiscal Year Replication API (Mounted BEFORE :category parameterized route)
+app.post("/api/v1/property/rates/copy", async (req, res) => {
+  const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
+  const userId = session?.user?.id ? String(session.user.id) : "1";
+  const { sourceFiscalYearId, targetFiscalYearId, categories, overwrite } = req.body;
+
+  if (!targetFiscalYearId) {
+    return res.status(400).json(
+      ApiResponse.buildFailure("Target fiscal year is required", ["targetFiscalYearId is required"], {}, 400)
+    );
+  }
+
+  const result = propertyDb.copyRates({
+    sourceFiscalYearId:
+      sourceFiscalYearId === "" || sourceFiscalYearId === "null" || sourceFiscalYearId === 0
+        ? null
+        : sourceFiscalYearId !== undefined
+        ? Number(sourceFiscalYearId)
+        : null,
+    targetFiscalYearId: Number(targetFiscalYearId),
+    categories: categories || "all",
+    overwrite: overwrite !== undefined ? Boolean(overwrite) : true,
+    userId,
+  });
+
+  // Re-sync cache for table updates
+  await TableCacheDbSyncService.warmUpCache();
+
+  res.json(ApiResponse.buildSuccess(result, result.message));
+});
+
 // Rates Management CRUD Endpoints: Writes directly to PostgreSQL table (tbl_land_rate, tbl_malpot_rates, etc.)
 // Auto-interacts & synchronizes Redis cache, and returns response from Redis
 app.post("/api/v1/property/rates/:category", async (req, res) => {

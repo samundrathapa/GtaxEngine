@@ -198,6 +198,14 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
     loadDossier();
   }, [taxpayerId]);
 
+  useEffect(() => {
+    const appFy = masters?.applicationSettings?.[0]?.fiscal_year_id;
+    if (appFy) {
+      setCalcFiscalYearId(appFy);
+      setCalcToFiscalYearId(appFy);
+    }
+  }, [masters]);
+
   // Taxpayer update
   const handleSaveTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();

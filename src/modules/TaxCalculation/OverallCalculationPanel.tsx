@@ -122,6 +122,10 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
       if (mastersRes.success && mastersRes.data) {
         setMasters(mastersRes.data);
+        const defFy = mastersRes.data.applicationSettings?.[0]?.fiscal_year_id;
+        if (defFy) {
+          setSelectedFiscalYearId(defFy);
+        }
       }
       if (tpRes.success && tpRes.data) {
         setTaxpayers(tpRes.data);

@@ -40,7 +40,7 @@ export interface TblLandRate extends AuditFields {
   code: string;
   fullanme: string;
   rate_name?: string;
-  fiscal_year_id: number;
+  fiscal_year_id: number | null;
   is_parent: boolean;
   parent_id: number | null;
   unit_id: number;
@@ -56,7 +56,7 @@ export interface TblMalpotRate extends AuditFields {
   code: string;
   fullanme: string;
   rate_name?: string;
-  fiscal_year_id: number;
+  fiscal_year_id: number | null;
   is_parent: boolean;
   parent_id: number | null;
   unit_id: number;
@@ -72,7 +72,7 @@ export interface TblConstructionRate extends AuditFields {
   code: string;
   fullanme: string;
   rate_name?: string;
-  fiscal_year_id: number;
+  fiscal_year_id: number | null;
   is_parent: boolean;
   parent_id: number | null;
   const_type_id: number;
@@ -88,7 +88,7 @@ export interface TblDepreciation extends AuditFields {
   id: number;
   code: string;
   fullanme: string;
-  fiscal_year_id: number;
+  fiscal_year_id: number | null;
   construction_type_id?: number;
   construction_type?: string;
   is_parent: boolean;
@@ -102,7 +102,7 @@ export interface TblDepreciation extends AuditFields {
 
 export interface TblFineRebate extends AuditFields {
   id: number;
-  fiscal_year_id: number;
+  fiscal_year_id: number | null;
   tax_type_id: number;
   ratesn: number;
   years: number;
@@ -121,8 +121,8 @@ export interface TblFineRebate extends AuditFields {
 
 export interface TblPropertyRange extends AuditFields {
   id: number;
-  FiscalYearId: number;
-  fiscal_year_id?: number;
+  FiscalYearId: number | null;
+  fiscal_year_id?: number | null;
   Sn: number;
   sn?: number;
   value_from: number;
@@ -1611,6 +1611,12 @@ class TaxpayerPropertyDatabase {
     const now = new Date().toISOString();
     const itemId = id || this.nextId++;
 
+    const resolveFy = (val: any): number | null => {
+      if (val === undefined || val === null || val === "" || val === "null" || val === 0) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    };
+
     switch (category) {
       case "fiscal_year": {
         const item: TblFiscalYear = {
@@ -1656,7 +1662,7 @@ class TaxpayerPropertyDatabase {
           id: itemId,
           code: data.code || "",
           fullanme: data.fullanme || "",
-          fiscal_year_id: Number(data.fiscal_year_id || 1),
+          fiscal_year_id: resolveFy(data.fiscal_year_id),
           is_parent: Boolean(data.is_parent),
           parent_id: data.parent_id ? Number(data.parent_id) : null,
           unit_id: Number(data.unit_id || 1),
@@ -1681,7 +1687,7 @@ class TaxpayerPropertyDatabase {
           id: itemId,
           code: data.code || "",
           fullanme: data.fullanme || "",
-          fiscal_year_id: Number(data.fiscal_year_id || 1),
+          fiscal_year_id: resolveFy(data.fiscal_year_id),
           is_parent: Boolean(data.is_parent),
           parent_id: data.parent_id ? Number(data.parent_id) : null,
           unit_id: Number(data.unit_id || 1),
@@ -1723,7 +1729,7 @@ class TaxpayerPropertyDatabase {
           id: itemId,
           code: data.code || "",
           fullanme: data.fullanme || "",
-          fiscal_year_id: Number(data.fiscal_year_id || 1),
+          fiscal_year_id: resolveFy(data.fiscal_year_id),
           is_parent: Boolean(data.is_parent),
           parent_id: data.parent_id ? Number(data.parent_id) : null,
           const_type_id: Number(data.const_type_id || 1),
@@ -1749,7 +1755,7 @@ class TaxpayerPropertyDatabase {
           id: itemId,
           code: data.code || "",
           fullanme: data.fullanme || "",
-          fiscal_year_id: Number(data.fiscal_year_id || 1),
+          fiscal_year_id: resolveFy(data.fiscal_year_id),
           construction_type_id: Number(data.construction_type_id || data.const_type_id || 1),
           is_parent: Boolean(data.is_parent),
           parent_id: data.parent_id ? Number(data.parent_id) : null,
@@ -1772,7 +1778,7 @@ class TaxpayerPropertyDatabase {
       case "fine_rebate": {
         const item: TblFineRebate = {
           id: itemId,
-          fiscal_year_id: Number(data.fiscal_year_id || 1),
+          fiscal_year_id: resolveFy(data.fiscal_year_id),
           tax_type_id: Number(data.tax_type_id || 1),
           ratesn: Number(data.ratesn || 1),
           years: Number(data.years || 0),
@@ -1812,7 +1818,7 @@ class TaxpayerPropertyDatabase {
         return item;
       }
       case "property_range": {
-        const fyId = Number(data.FiscalYearId || data.fiscal_year_id || 1);
+        const fyId = resolveFy(data.FiscalYearId !== undefined ? data.FiscalYearId : data.fiscal_year_id);
         const item: TblPropertyRange = {
           id: itemId,
           FiscalYearId: fyId,
@@ -1868,6 +1874,315 @@ class TaxpayerPropertyDatabase {
     existing.deleted_on = new Date().toISOString();
     map.set(id, existing);
     return true;
+  }
+
+  /**
+   * Replicates / copies rates from a source fiscal year (or NULL universal default rates)
+   * into a target selected fiscal year, inserting or updating accordingly.
+   */
+  public copyRates(params: {
+    sourceFiscalYearId: number | null;
+    targetFiscalYearId: number;
+    categories: string[] | string;
+    overwrite?: boolean;
+    userId?: string;
+  }): {
+    success: boolean;
+    message: string;
+    targetFiscalYearId: number;
+    summary: Record<string, { copied: number; updated: number }>;
+    totalCopied: number;
+    totalUpdated: number;
+  } {
+    const userId = params.userId || "SYSTEM";
+    const now = new Date().toISOString();
+    const targetFy = Number(params.targetFiscalYearId);
+    const sourceFy =
+      params.sourceFiscalYearId === null ||
+      params.sourceFiscalYearId === undefined ||
+      (params.sourceFiscalYearId as any) === "" ||
+      (params.sourceFiscalYearId as any) === "null"
+        ? null
+        : Number(params.sourceFiscalYearId);
+
+    const targetCategories = Array.isArray(params.categories)
+      ? params.categories
+      : params.categories === "all"
+      ? ["land_rate", "malpot_rate", "construction_rate", "depreciation", "fine_rebate", "property_range"]
+      : [params.categories];
+
+    const summary: Record<string, { copied: number; updated: number }> = {};
+    let totalCopied = 0;
+    let totalUpdated = 0;
+
+    for (const cat of targetCategories) {
+      summary[cat] = { copied: 0, updated: 0 };
+
+      if (cat === "land_rate") {
+        const sourceItems = Array.from(this.landRates.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null || r.fiscal_year_id === undefined || (r.fiscal_year_id as any) === 0
+              : r.fiscal_year_id === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.landRates.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              r.fiscal_year_id === targetFy &&
+              (r.code === item.code || (r.ward_no_ids === item.ward_no_ids && r.unit_id === item.unit_id))
+          );
+          if (existing && params.overwrite !== false) {
+            existing.rate_per_unit = item.rate_per_unit;
+            existing.area_upto = item.area_upto;
+            existing.area_per_unit = item.area_per_unit;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.landRates.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblLandRate = {
+              ...item,
+              id: newId,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.landRates.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      } else if (cat === "malpot_rate") {
+        const sourceItems = Array.from(this.malpotRates.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null || r.fiscal_year_id === undefined || (r.fiscal_year_id as any) === 0
+              : r.fiscal_year_id === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.malpotRates.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              r.fiscal_year_id === targetFy &&
+              (r.code === item.code || (r.ward_no_ids === item.ward_no_ids && r.unit_id === item.unit_id))
+          );
+          if (existing && params.overwrite !== false) {
+            existing.rate_per_unit = item.rate_per_unit;
+            existing.area_upto = item.area_upto;
+            existing.area_per_unit = item.area_per_unit;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.malpotRates.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblMalpotRate = {
+              ...item,
+              id: newId,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.malpotRates.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      } else if (cat === "construction_rate") {
+        const sourceItems = Array.from(this.constructionRates.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null || r.fiscal_year_id === undefined || (r.fiscal_year_id as any) === 0
+              : r.fiscal_year_id === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.constructionRates.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              r.fiscal_year_id === targetFy &&
+              (r.code === item.code || (r.const_type_id === item.const_type_id && r.unit_id === item.unit_id))
+          );
+          if (existing && params.overwrite !== false) {
+            existing.rate_per_unit = item.rate_per_unit;
+            existing.area_upto = item.area_upto;
+            existing.area_per_unit = item.area_per_unit;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.constructionRates.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblConstructionRate = {
+              ...item,
+              id: newId,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.constructionRates.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      } else if (cat === "depreciation") {
+        const sourceItems = Array.from(this.depreciations.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null || r.fiscal_year_id === undefined || (r.fiscal_year_id as any) === 0
+              : r.fiscal_year_id === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.depreciations.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              r.fiscal_year_id === targetFy &&
+              (r.code === item.code || (r.sn === item.sn && r.year_from === item.year_from))
+          );
+          if (existing && params.overwrite !== false) {
+            existing.percent = item.percent;
+            existing.year_to = item.year_to;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.depreciations.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblDepreciation = {
+              ...item,
+              id: newId,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.depreciations.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      } else if (cat === "fine_rebate") {
+        const sourceItems = Array.from(this.fineRebates.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null || r.fiscal_year_id === undefined || (r.fiscal_year_id as any) === 0
+              : r.fiscal_year_id === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.fineRebates.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              r.fiscal_year_id === targetFy &&
+              r.ratesn === item.ratesn &&
+              r.month === item.month &&
+              r.isfine === item.isfine
+          );
+          if (existing && params.overwrite !== false) {
+            existing.calcpercent = item.calcpercent;
+            existing.ratepercent = item.ratepercent;
+            existing.flatrate = item.flatrate;
+            existing.days = item.days;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.fineRebates.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblFineRebate = {
+              ...item,
+              id: newId,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.fineRebates.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      } else if (cat === "property_range") {
+        const sourceItems = Array.from(this.propertyRanges.values()).filter(
+          (r) =>
+            !r.is_deleted &&
+            (sourceFy === null
+              ? r.fiscal_year_id === null ||
+                r.fiscal_year_id === undefined ||
+                (r.fiscal_year_id as any) === 0 ||
+                r.FiscalYearId === null ||
+                r.FiscalYearId === undefined ||
+                (r.FiscalYearId as any) === 0
+              : r.fiscal_year_id === sourceFy || r.FiscalYearId === sourceFy)
+        );
+        for (const item of sourceItems) {
+          const existing = Array.from(this.propertyRanges.values()).find(
+            (r) =>
+              !r.is_deleted &&
+              (r.fiscal_year_id === targetFy || r.FiscalYearId === targetFy) &&
+              (r.sn === item.sn || r.Sn === item.Sn)
+          );
+          if (existing && params.overwrite !== false) {
+            existing.tax_percent = item.tax_percent;
+            existing.TaxPercent = item.TaxPercent;
+            existing.min_tax_amount = item.min_tax_amount;
+            existing.MinimumTaxAmount = item.MinimumTaxAmount;
+            existing.update_by = userId;
+            existing.update_on = now;
+            this.propertyRanges.set(existing.id, existing);
+            summary[cat].updated++;
+            totalUpdated++;
+          } else if (!existing) {
+            const newId = this.nextId++;
+            const cloned: TblPropertyRange = {
+              ...item,
+              id: newId,
+              FiscalYearId: targetFy,
+              fiscal_year_id: targetFy,
+              insert_by: userId,
+              insert_on: now,
+              update_by: userId,
+              update_on: now,
+            };
+            this.propertyRanges.set(newId, cloned);
+            summary[cat].copied++;
+            totalCopied++;
+          }
+        }
+      }
+    }
+
+    const targetFyObj = this.fiscalYears.get(targetFy);
+    const targetFyName = targetFyObj ? targetFyObj.code : `FY #${targetFy}`;
+    const sourceDesc =
+      sourceFy === null ? "Default Universal Rates (fiscal_year_id: null)" : `Fiscal Year #${sourceFy}`;
+
+    return {
+      success: true,
+      message: `Successfully copied from ${sourceDesc} to ${targetFyName}: ${totalCopied} added, ${totalUpdated} updated.`,
+      targetFiscalYearId: targetFy,
+      summary,
+      totalCopied,
+      totalUpdated
+    };
   }
 
   public calculateMultiYearTaxAssessment(params: {

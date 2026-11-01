@@ -71,8 +71,9 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           );
           const currentFy = sorted.find((f: any) => f.code === "2081/82") || sorted[sorted.length - 1];
           const defaultFromFy = sorted.find((f: any) => f.code === "2079/80") || sorted[0];
+          const appFyId = mastersRes.data.applicationSettings?.[0]?.fiscal_year_id;
           setFromFiscalYearId(defaultFromFy?.id || 3);
-          setToFiscalYearId(currentFy?.id || 2);
+          setToFiscalYearId(appFyId || currentFy?.id || 2);
         }
       }
     } catch (e) {

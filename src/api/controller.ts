@@ -199,6 +199,27 @@ export class ApiController {
     });
   }
 
+  static async copyRates(payload: {
+    sourceFiscalYearId?: number | null;
+    source_fiscal_year_id?: number | null;
+    targetFiscalYearId?: number;
+    target_fiscal_year_id?: number;
+    categories?: string[] | string;
+    category?: string[] | string;
+    overwrite?: boolean;
+  }) {
+    const formatted = {
+      sourceFiscalYearId: payload.sourceFiscalYearId !== undefined ? payload.sourceFiscalYearId : (payload.source_fiscal_year_id ?? null),
+      targetFiscalYearId: payload.targetFiscalYearId || payload.target_fiscal_year_id || 2,
+      categories: payload.categories || payload.category || "all",
+      overwrite: payload.overwrite !== undefined ? payload.overwrite : true
+    };
+    return this.request("/property/rates/copy", {
+      method: "POST",
+      body: JSON.stringify(formatted)
+    });
+  }
+
   static async getCompanies() {
     return this.request("/property/companies");
   }
