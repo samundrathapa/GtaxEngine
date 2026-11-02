@@ -346,12 +346,12 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+          {/* <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <span>Gtax Enterprise Rate Architecture</span>
             <span aria-hidden="true">·</span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-indigo-600 font-semibold uppercase">{activeTab}</span>
-          </div>
+          </div> */}
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-indigo-600" />
             <span>Rate & Master Matrix Configuration (दररेट व्यवस्थापन)</span>

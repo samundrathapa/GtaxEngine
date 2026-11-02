@@ -473,7 +473,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1.5">
+            {/* <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1.5">
               <span>Municipal Revenue & Tax Administration</span>
               <span>/</span>
               <span className="text-indigo-600 font-bold">Property Tax Assessment</span>
@@ -481,7 +481,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
               <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold">
                 {activeTab === "calculator" ? "Live Calculation Studio" : activeTab === "multi_year" ? "Multi-Year Arrears Engine" : activeTab === "history" ? "calc_master Registry" : "Cross-Year Analytics"}
               </span>
-            </div>
+            </div> */}
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-sm">
                 <Calculator className="w-4 h-4" />

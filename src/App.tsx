@@ -886,13 +886,13 @@ export default function App() {
             </button>
 
             <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">Gtax Municipal</span>
                 <span className="hidden sm:inline-block text-slate-400 dark:text-slate-600 text-xs">/</span>
                 <span className="text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 capitalize truncate max-w-[120px] sm:max-w-none">
                   {activeTab === "dashboard" ? "Municipal Dashboard" : activeTab === "taxpayer" ? `Taxpayer > ${taxpayerSubView}` : activeTab === "calculation" ? "Frontend & Manual Calculation Window" : activeTab === "masters" ? "System Masters" : activeTab === "rate" ? "Rate Masters" : activeTab === "users" ? "Users & RBAC" : activeTab}
                 </span>
-              </div>
+              </div> */}
             </div>
 
             {/* Active Fiscal Year Topbar Display Pill */}

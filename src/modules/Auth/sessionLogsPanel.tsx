@@ -28,19 +28,19 @@ export const SessionLogsPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+          {/* <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <span>Security</span>
             <span aria-hidden="true">·</span>
             <span>Audit Trail</span>
             <span aria-hidden="true">·</span>
             <span className="font-semibold text-slate-700">User Activity & Sessions</span>
-          </div>
+          </div> */}
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             Active Sessions & User Security Audit Ledger
           </h2>
-          <p className="text-sm text-slate-500">
+          {/* <p className="text-sm text-slate-500">
             Real-time session tracker and tamper-evident event log with audit columns.
-          </p>
+          </p> */}
         </div>
 
         <button
