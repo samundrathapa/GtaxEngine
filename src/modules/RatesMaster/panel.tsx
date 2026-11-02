@@ -346,7 +346,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       case "company":
         return {
           title: "Company Profile (संस्था / पालिका विवरण)",
-          subtitle: "Municipal organization entity, registration numbers, contact information, and ward offices",
+          subtitle: "",
           icon: Landmark,
           iconColor: "text-amber-500",
           addLabel: "Add Company / Ward Profile"

@@ -939,7 +939,7 @@ export default function App() {
                     <span>Audit Logs</span>
                   </button>
 
-                  <button
+                  {/* <button
                     onClick={() => {
                       setActiveTab("privacy");
                       setSidebarOpen(false);
@@ -948,7 +948,7 @@ export default function App() {
                   >
                     <Shield className="w-4 h-4 text-emerald-400" />
                     <span>Privacy Policy</span>
-                  </button>
+                  </button> */}
                 </div>
               )}
             </div>
@@ -957,7 +957,7 @@ export default function App() {
 
         {/* Clean Sidebar Footer with Idle Session Timeout info */}
         <div className="pt-2 border-t border-white/10 space-y-1.5">
-          <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
+          {/* <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
             <span className="font-mono">Timeout: {idleTimeoutMinutes}m</span>
             <button
               onClick={() => {
@@ -968,7 +968,7 @@ export default function App() {
             >
               Privacy Policy
             </button>
-          </div>
+          </div> */}
           <button
             onClick={handleLogout}
             disabled={loggingOut}
