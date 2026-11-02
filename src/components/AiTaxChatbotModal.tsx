@@ -396,11 +396,14 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
           ? parseFloat(rateAmountMatch[1].replace(/,/g, ""))
           : 1200000;
 
+        const activeFyId = Number(localStorage.getItem("gtax_active_fy_id") || "2");
+        const activeFyCode = localStorage.getItem("gtax_active_fy_code") || "2081/82";
+
         const newLandRateData = {
           code: `LR-${rateIdentifier}`,
           fullanme: `Land Rate ${rateIdentifier} (जग्गा मुल्यांकन दर ${rateIdentifier}) - Municipal Sector`,
           rate_name: `Land Rate ${rateIdentifier}`,
-          fiscal_year_id: 2, // Current FY 2081/82
+          fiscal_year_id: activeFyId,
           unit_id: 3, // Aana
           rate_per_unit: parsedRateAmount,
           area_per_unit: 1.0,
@@ -418,7 +421,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
           const botMsg: ChatMessage = {
             id: `bot-${Date.now()}`,
             sender: "bot",
-            text: `✅ Land Rate ${rateIdentifier} has been automatically inserted into the database (Municipal Land Rates):\n• Code: ${res.data.code}\n• Rate per Aana: NPR ${Number(res.data.rate_per_unit || parsedRateAmount).toLocaleString()}\n• Ward Coverage: Wards ${res.data.ward_no_ids || "1,2,3"}\n• Fiscal Year: FY 2081/82`,
+            text: `✅ Land Rate ${rateIdentifier} has been automatically inserted into the database (Municipal Land Rates):\n• Code: ${res.data.code}\n• Rate per Aana: NPR ${Number(res.data.rate_per_unit || parsedRateAmount).toLocaleString()}\n• Ward Coverage: Wards ${res.data.ward_no_ids || "1,2,3"}\n• Fiscal Year: FY ${activeFyCode}`,
             actionTaken: "inserted_land_rate",
             landRateResult: res.data,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -711,7 +714,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
                       <div>
                         <span className="text-slate-500 block text-[10px]">Fiscal Year:</span>
                         <span className="font-medium text-slate-700 dark:text-slate-200">
-                          FY 2081/82 (Current)
+                          FY {localStorage.getItem("gtax_active_fy_code") || "Active"} (Current)
                         </span>
                       </div>
                     </div>

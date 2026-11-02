@@ -466,8 +466,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   // =========================================================================
   // STEP 5: CALCULATION DERIVATIONS WITH CLEAR EDITABLE FORMULAS
   // =========================================================================
-  const currentFiscalYear = masters.fiscalYears.find((f: any) => f.id === calcFiscalYearId) || masters.fiscalYears[0];
-  const fyCode = currentFiscalYear?.code || "2081/82";
+  const currentFiscalYear = masters.fiscalYears.find((f: any) => f.id === calcFiscalYearId) || masters.fiscalYears.find((f: any) => f.id === (masters as any).applicationSettings?.[0]?.fiscal_year_id) || masters.fiscalYears[0];
+  const fyCode = currentFiscalYear?.code || "Active FY";
 
   // Computed Lands with Clear Editable Formula Parameters
   const computedLands = lands.map((l: any) => {

@@ -153,13 +153,13 @@ export function getFloorEvaluationAmount(
  */
 export function getDepreciationAmount(
   depreciations: any[],
-  fiscalYearCode: string = "2081/82",
+  fiscalYearCode: string = (typeof localStorage !== "undefined" && localStorage.getItem("gtax_active_fy_code")) || "2081/82",
   calculatedAmount: number,
   constructionTypeId: number = 1,
   constructionDateBs: string = "2075-01-01"
 ): { depreciationRate: number; depreciationAmount: number } {
   // Extract construction year (BS)
-  const currentYearBs = parseInt(fiscalYearCode?.slice(0, 4) || "2081", 10);
+  const currentYearBs = parseInt(fiscalYearCode?.slice(0, 4) || (typeof localStorage !== "undefined" && localStorage.getItem("gtax_active_fy_code")?.slice(0, 4)) || "2081", 10);
   const constYearBs = parseInt(constructionDateBs?.slice(0, 4) || "2075", 10);
   const age = Math.max(0, currentYearBs - constYearBs);
 

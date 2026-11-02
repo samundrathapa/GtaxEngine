@@ -18,70 +18,147 @@ import {
   FileText
 } from "lucide-react";
 
+import { ApiController } from "../api/controller.ts";
+
 interface MunicipalDashboardPanelProps {
   onNavigate: (tab: "taxpayer" | "calculation" | "masters" | "rate" | "users") => void;
   onOpenNewTaxpayer?: () => void;
   currentLang?: "nep" | "ind" | "eng";
+  activeFiscalYearCode?: string;
+  activeFiscalYearId?: number;
 }
 
 export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = ({
   onNavigate,
   onOpenNewTaxpayer,
-  currentLang = "eng"
+  currentLang = "eng",
+  activeFiscalYearCode,
+  activeFiscalYearId
 }) => {
+  const initialFy = activeFiscalYearCode
+    ? (activeFiscalYearCode.endsWith("BS") ? activeFiscalYearCode : `${activeFiscalYearCode} BS`)
+    : (localStorage.getItem("gtax_active_fy_code") ? `${localStorage.getItem("gtax_active_fy_code")} BS` : "Active FY");
+
   const [stats, setStats] = useState({
     totalTaxpayers: 124,
     totalValuation: "Rs. 842.5M",
     collectedTax: "Rs. 18.42M",
     collectionRate: "84.6%",
     pendingAssessments: 12,
-    activeFiscalYear: "2081/2082 BS"
+    activeFiscalYear: initialFy
   });
+
+  const loadDashboardData = async () => {
+    try {
+      const [mastersRes, tpRes] = await Promise.all([
+        ApiController.getPropertyMasters(),
+        ApiController.getTaxpayers()
+      ]);
+
+      if (mastersRes.success && mastersRes.data) {
+        const appSetting = mastersRes.data.applicationSettings?.[0];
+        const fyId = appSetting?.fiscal_year_id;
+        const fys = mastersRes.data.fiscalYears || [];
+        const matchedFy = (fyId ? fys.find((f: any) => f.id === fyId) : null)
+          || (activeFiscalYearCode ? fys.find((f: any) => f.code === activeFiscalYearCode) : null)
+          || fys.find((f: any) => f.is_active)
+          || fys[0];
+
+        const fyCode = matchedFy?.code || activeFiscalYearCode || "2081/82";
+        const formattedFy = fyCode.endsWith("BS") ? fyCode : `${fyCode} BS`;
+
+        const tpCount = tpRes.success && Array.isArray(tpRes.data) ? tpRes.data.length : 124;
+
+        setStats((prev) => ({
+          ...prev,
+          totalTaxpayers: tpCount > 0 ? tpCount : prev.totalTaxpayers,
+          activeFiscalYear: formattedFy
+        }));
+      }
+    } catch (err) {
+      console.warn("Failed to load dynamic dashboard statistics:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+
+    const handleUpdate = (e?: any) => {
+      if (e?.detail?.fiscalYearCode) {
+        const code = e.detail.fiscalYearCode;
+        setStats((prev) => ({
+          ...prev,
+          activeFiscalYear: code.endsWith("BS") ? code : `${code} BS`
+        }));
+      }
+      loadDashboardData();
+    };
+
+    window.addEventListener("gtax:rates_updated", handleUpdate);
+    window.addEventListener("gtax:active_fy_changed", handleUpdate);
+
+    return () => {
+      window.removeEventListener("gtax:rates_updated", handleUpdate);
+      window.removeEventListener("gtax:active_fy_changed", handleUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeFiscalYearCode) {
+      const formatted = activeFiscalYearCode.endsWith("BS") ? activeFiscalYearCode : `${activeFiscalYearCode} BS`;
+      setStats((prev) => ({
+        ...prev,
+        activeFiscalYear: formatted
+      }));
+    }
+  }, [activeFiscalYearCode]);
+
+  const yearDigits = stats.activeFiscalYear.replace(/[^0-9]/g, "").slice(0, 4) || "2081";
 
   const recentAssessments = [
     {
       id: 1,
       taxpayer: "Ram Bahadur Thapa (राम बहादुर थापा)",
-      code: "TP-2081-0001",
+      code: `TP-${yearDigits}-0001`,
       ward: 1,
       kitta: "२४९ (249)",
       assessed: "Rs. 9,052,000",
       taxDue: "Rs. 12,220",
       status: "Paid",
-      date: "2081-07-02"
+      date: `${yearDigits}-07-02`
     },
     {
       id: 2,
       taxpayer: "Sita Maya Shrestha (सीता माया श्रेष्ठ)",
-      code: "TP-2081-0002",
+      code: `TP-${yearDigits}-0002`,
       ward: 2,
       kitta: "५१८ (518)",
       assessed: "Rs. 14,250,000",
       taxDue: "Rs. 23,800",
       status: "Assessed",
-      date: "2081-07-03"
+      date: `${yearDigits}-07-03`
     },
     {
       id: 3,
       taxpayer: "Himalayan Trading Syndicate Ltd",
-      code: "TP-2081-0003",
+      code: `TP-${yearDigits}-0003`,
       ward: 1,
       kitta: "१०२/क (102A)",
       assessed: "Rs. 42,800,000",
       taxDue: "Rs. 74,500",
       status: "Pending",
-      date: "2081-07-04"
+      date: `${yearDigits}-07-04`
     },
     {
       id: 4,
       taxpayer: "Bishnu Prasad Adhikari",
-      code: "TP-2081-0004",
+      code: `TP-${yearDigits}-0004`,
       ward: 3,
       kitta: "४१२ (412)",
       assessed: "Rs. 6,400,000",
       taxDue: "Rs. 8,640",
       status: "Paid",
-      date: "2081-07-04"
+      date: `${yearDigits}-07-04`
     }
   ];
 
@@ -93,10 +170,10 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 rounded-full border border-indigo-400/30">
-                FY {stats.activeFiscalYear} Live
+              <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 rounded-full border border-indigo-400/30 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-indigo-300" />
+                <span>FY {stats.activeFiscalYear} Live</span>
               </span>
-             
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Municipal Property Tax Administration

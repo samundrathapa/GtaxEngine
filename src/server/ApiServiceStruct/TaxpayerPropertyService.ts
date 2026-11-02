@@ -932,10 +932,19 @@ class TaxpayerPropertyDatabase {
       ...existing,
       ...data,
       id: 1,
+      fiscal_year_id: data.fiscal_year_id !== undefined ? Number(data.fiscal_year_id) : existing.fiscal_year_id,
       update_by: user,
       update_on: now
     };
     this.applicationSettings.set(1, updated);
+
+    if (updated.fiscal_year_id) {
+      for (const [id, fy] of this.fiscalYears.entries()) {
+        if (id === updated.fiscal_year_id) {
+          this.fiscalYears.set(id, { ...fy, is_active: true });
+        }
+      }
+    }
     return updated;
   }
 

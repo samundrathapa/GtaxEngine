@@ -69,9 +69,9 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           const sorted = [...fys].sort((a: any, b: any) =>
             (a.date_from_bs || a.code || "").localeCompare(b.date_from_bs || b.code || "")
           );
-          const currentFy = sorted.find((f: any) => f.code === "2081/82") || sorted[sorted.length - 1];
-          const defaultFromFy = sorted.find((f: any) => f.code === "2079/80") || sorted[0];
           const appFyId = mastersRes.data.applicationSettings?.[0]?.fiscal_year_id;
+          const currentFy = (appFyId ? sorted.find((f: any) => f.id === appFyId) : null) || sorted.find((f: any) => f.is_active) || sorted[sorted.length - 1];
+          const defaultFromFy = sorted.find((f: any) => f.code === "2079/80") || sorted[0];
           setFromFiscalYearId(defaultFromFy?.id || 3);
           setToFiscalYearId(appFyId || currentFy?.id || 2);
         }
@@ -85,6 +85,21 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
 
   useEffect(() => {
     loadInitialData();
+
+    const handleUpdate = (e?: any) => {
+      if (e?.detail?.fiscal_year_id) {
+        setToFiscalYearId(Number(e.detail.fiscal_year_id));
+      }
+      loadInitialData();
+    };
+
+    window.addEventListener("gtax:rates_updated", handleUpdate);
+    window.addEventListener("gtax:active_fy_changed", handleUpdate);
+
+    return () => {
+      window.removeEventListener("gtax:rates_updated", handleUpdate);
+      window.removeEventListener("gtax:active_fy_changed", handleUpdate);
+    };
   }, []);
 
   // When selected taxpayer changes, load dossier to populate lands & houses dropdown

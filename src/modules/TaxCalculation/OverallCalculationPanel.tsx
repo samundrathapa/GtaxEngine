@@ -143,6 +143,21 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
   useEffect(() => {
     loadInitialData();
+
+    const handleUpdate = (e?: any) => {
+      if (e?.detail?.fiscal_year_id) {
+        setSelectedFiscalYearId(Number(e.detail.fiscal_year_id));
+      }
+      loadInitialData();
+    };
+
+    window.addEventListener("gtax:rates_updated", handleUpdate);
+    window.addEventListener("gtax:active_fy_changed", handleUpdate);
+
+    return () => {
+      window.removeEventListener("gtax:rates_updated", handleUpdate);
+      window.removeEventListener("gtax:active_fy_changed", handleUpdate);
+    };
   }, []);
 
   // Filter taxpayers by search & ward
@@ -1010,7 +1025,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   </span>
                 </div>
                 <span className="font-mono text-xs px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                  FY 2081/82 BS
+                  FY {masters.fiscalYears.find((f: any) => f.id === selectedFiscalYearId)?.code || "Active"} BS
                 </span>
               </div>
 

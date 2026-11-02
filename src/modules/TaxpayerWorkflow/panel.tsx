@@ -259,9 +259,25 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     }
   };
 
-  // Always load taxpayers and masters on initial mount
+  // Always load taxpayers and masters on initial mount and when settings change
   useEffect(() => {
     loadAllData();
+
+    const handleUpdate = (e?: any) => {
+      if (e?.detail?.fiscal_year_id) {
+        setCalcFiscalYearId(Number(e.detail.fiscal_year_id));
+        setNewLandAcquisitionFyId(Number(e.detail.fiscal_year_id));
+      }
+      loadAllData();
+    };
+
+    window.addEventListener("gtax:rates_updated", handleUpdate);
+    window.addEventListener("gtax:active_fy_changed", handleUpdate);
+
+    return () => {
+      window.removeEventListener("gtax:rates_updated", handleUpdate);
+      window.removeEventListener("gtax:active_fy_changed", handleUpdate);
+    };
   }, []);
 
   // When selectedTaxpayerId changes subsequently, fetch the matching dossier
@@ -296,8 +312,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     const wLandRates = masters.landRates.filter((r: any) => !r.ward_no_ids || r.ward_no_ids.split(',').map((w: string) => w.trim()).includes(String(ward)));
     setNewLandRateId(wLandRates[0]?.id || masters.landRates[0]?.id || 1);
     const wMalpotRates = masters.malpotRates.filter((r: any) => !r.ward_no_ids || r.ward_no_ids.split(',').map((w: string) => w.trim()).includes(String(ward)));
-    setNewLandMalpotRateId(wMalpotRates[0]?.id || masters.malpotRates[0]?.id || 1);
-    setNewLandAcquisitionFyId(2);
+    setNewLandAcquisitionFyId(masters.applicationSettings?.[0]?.fiscal_year_id || calcFiscalYearId || 2);
     setNewLandModalOpen(true);
   };
 
@@ -1087,7 +1102,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <div className="text-2xl font-black font-mono mt-1">
                 Rs. {taxpayerDossier.valuationSummary.netPayableTax?.toLocaleString()}
               </div>
-              <div className="text-[11px] text-indigo-200 mt-0.5 font-mono">FY 2081/82 Municipal Bill</div>
+              <div className="text-[11px] text-indigo-200 mt-0.5 font-mono">FY {currentFiscalYear?.code || "Active"} Municipal Bill</div>
             </div>
           </div>
 
@@ -1812,7 +1827,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               <div className="flex items-center gap-2 text-xs text-slate-500 mb-0.5">
                 <span>Official Municipal Property Tax Receipt</span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono text-emerald-600 font-bold">Fiscal Year: 2081/82</span>
+                <span className="font-mono text-emerald-600 font-bold">Fiscal Year: {currentFiscalYear?.code || "Active"}</span>
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 {taxpayerDossier.taxpayer.fullanme}

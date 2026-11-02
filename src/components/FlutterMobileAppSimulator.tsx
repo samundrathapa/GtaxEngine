@@ -311,7 +311,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
         body: JSON.stringify({
           message: text,
           context: {
-            fiscalYear: "2081/82",
+            fiscalYear: localStorage.getItem("gtax_active_fy_code") || "2081/82",
             jurisdiction: "Kathmandu Metropolitan City",
             devicePlatform: deviceFrame
           }
@@ -496,7 +496,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                       gtax Mobile (Flutter 3.x)
                     </h3>
-                    <p className="text-[10px] text-blue-200/80">FY 2081/82 • Common Entry Engine</p>
+                    <p className="text-[10px] text-blue-200/80">FY {localStorage.getItem("gtax_active_fy_code") || "Active"} • Common Entry Engine</p>
                   </div>
                   <button
                     onClick={fetchManifest}
@@ -786,7 +786,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                           <div className="p-3 bg-gradient-to-r from-blue-900 to-indigo-950 rounded-xl border border-blue-500/40 space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-[9px] font-bold text-blue-200 uppercase">Grand Total Tax Payable</span>
-                              <span className="text-[9px] font-mono text-amber-400">FY 2081/82</span>
+                              <span className="text-[9px] font-mono text-amber-400">FY {localStorage.getItem("gtax_active_fy_code") || "Active"}</span>
                             </div>
                             <div className="text-xl font-bold font-mono text-white">
                               NPR {currentCalc.finalTax.toLocaleString()}
@@ -824,7 +824,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                                 <span className="text-emerald-400 font-mono">NPR {Number(item.total_tax).toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between text-[8px] text-slate-400 mt-0.5 font-mono">
-                                <span>{item.fiscal_year_name || "FY 2081/82"}</span>
+                                <span>{item.fiscal_year_name || `FY ${localStorage.getItem("gtax_active_fy_code") || "Active"}`}</span>
                                 <span>Date: {item.calculate_date_bs || "2081-07-02"}</span>
                               </div>
                             </div>

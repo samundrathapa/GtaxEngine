@@ -257,7 +257,40 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     if (res.success) {
       setStatusMsg(editingItem ? "Record updated successfully!" : "New record created successfully!");
       setIsModalOpen(false);
-      loadData();
+      await loadData();
+
+      const changedFyId = formData.fiscal_year_id ? Number(formData.fiscal_year_id) : undefined;
+      const matchedFy = changedFyId ? masters.fiscalYears.find((f: any) => f.id === changedFyId) : undefined;
+      const fyCode = matchedFy?.code;
+
+      if (changedFyId) {
+        localStorage.setItem("gtax_active_fy_id", String(changedFyId));
+      }
+      if (fyCode) {
+        localStorage.setItem("gtax_active_fy_code", fyCode);
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("gtax:rates_updated", {
+          detail: {
+            tab: activeTab,
+            fiscal_year_id: changedFyId,
+            fiscalYearCode: fyCode
+          }
+        })
+      );
+
+      if (activeTab === "application_setting" || activeTab === "fiscal_year") {
+        window.dispatchEvent(
+          new CustomEvent("gtax:active_fy_changed", {
+            detail: {
+              fiscal_year_id: changedFyId,
+              fiscalYearCode: fyCode
+            }
+          })
+        );
+      }
+
       setTimeout(() => setStatusMsg(null), 3000);
     }
   };

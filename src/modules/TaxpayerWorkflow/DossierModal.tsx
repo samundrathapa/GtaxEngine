@@ -418,8 +418,8 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   // =========================================================================
   // CALCULATION LOGIC PREPARATION (Matches exact C# Specification)
   // =========================================================================
-  const currentFiscalYear = masters.fiscalYears.find((f: any) => f.id === calcFiscalYearId) || masters.fiscalYears[0];
-  const fyCode = currentFiscalYear?.code || "2081/82";
+  const currentFiscalYear = masters.fiscalYears.find((f: any) => f.id === calcFiscalYearId) || masters.fiscalYears.find((f: any) => f.id === (masters as any).applicationSettings?.[0]?.fiscal_year_id) || masters.fiscalYears[0];
+  const fyCode = currentFiscalYear?.code || "Active FY";
 
   // Step 2: Load Lands & Calculate Land Evaluation Amount
   const dossierLands = dossier?.lands || [];
@@ -929,7 +929,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                   </td>
                                   <td className="p-3 text-slate-700 dark:text-slate-300">
                                     <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold">
-                                      {acqFy?.code || "2081/82"}
+                                      {acqFy?.code || currentFiscalYear?.code || "Active FY"}
                                     </span>
                                   </td>
                                   <td className="p-3 font-bold">

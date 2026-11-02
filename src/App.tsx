@@ -21,6 +21,7 @@ import { DbColumnLanguageModal } from "./components/DbColumnLanguageModal.tsx";
 import { FlutterMobileAppSimulator } from "./components/FlutterMobileAppSimulator.tsx";
 import { MunicipalDashboardPanel } from "./components/MunicipalDashboardPanel.tsx";
 import { DbStatusModal, DbStatusData } from "./components/DbStatusModal.tsx";
+import { ApiController } from "./api/controller.ts";
 import {
   LayoutDashboard,
   Layers,
@@ -257,6 +258,60 @@ export default function App() {
   // Theme & Language (Controlled via User Menu)
   const [currentLang, setCurrentLang] = useState<SupportedLang>("eng");
   const [currentTheme, setCurrentTheme] = useState<SupportedTheme>("slate");
+
+  // Global Dynamic Active Fiscal Year State (Derived from application_settings & tbl_fiscal_year)
+  const [activeFiscalYearCode, setActiveFiscalYearCode] = useState<string>(() => {
+    return localStorage.getItem("gtax_active_fy_code") || "2081/82";
+  });
+  const [activeFiscalYearId, setActiveFiscalYearId] = useState<number>(() => {
+    const saved = localStorage.getItem("gtax_active_fy_id");
+    return saved ? Number(saved) : 2;
+  });
+
+  const fetchActiveFiscalYear = async () => {
+    try {
+      const res = await ApiController.getPropertyMasters();
+      if (res.success && res.data) {
+        const appSetting = res.data.applicationSettings?.[0];
+        const fyId = appSetting?.fiscal_year_id;
+        const fys = res.data.fiscalYears || [];
+        const matchedFy = (fyId ? fys.find((f: any) => f.id === fyId) : null)
+          || fys.find((f: any) => f.is_active)
+          || fys[0];
+
+        if (matchedFy) {
+          setActiveFiscalYearCode(matchedFy.code);
+          setActiveFiscalYearId(matchedFy.id);
+          localStorage.setItem("gtax_active_fy_code", matchedFy.code);
+          localStorage.setItem("gtax_active_fy_id", String(matchedFy.id));
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch active fiscal year in App:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveFiscalYear();
+
+    const handleFyUpdate = (e?: any) => {
+      if (e?.detail?.fiscalYearCode) {
+        setActiveFiscalYearCode(e.detail.fiscalYearCode);
+      }
+      if (e?.detail?.fiscal_year_id) {
+        setActiveFiscalYearId(Number(e.detail.fiscal_year_id));
+      }
+      fetchActiveFiscalYear();
+    };
+
+    window.addEventListener("gtax:rates_updated", handleFyUpdate);
+    window.addEventListener("gtax:active_fy_changed", handleFyUpdate);
+
+    return () => {
+      window.removeEventListener("gtax:rates_updated", handleFyUpdate);
+      window.removeEventListener("gtax:active_fy_changed", handleFyUpdate);
+    };
+  }, []);
 
   const t = translations[currentLang];
 
@@ -839,6 +894,25 @@ export default function App() {
                 </span>
               </div>
             </div>
+
+            {/* Active Fiscal Year Topbar Display Pill */}
+            <button
+              onClick={() => {
+                setActiveTab("masters");
+                setMastersSubTab("application_setting");
+              }}
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/70 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 font-semibold text-xs shadow-2xs transition-all group shrink-0 cursor-pointer"
+              title={`Active Fiscal Year: FY ${activeFiscalYearCode} BS (Click to modify in Application Settings)`}
+              aria-label="Active Fiscal Year"
+            >
+              <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="font-mono font-bold text-[11px] sm:text-xs tracking-tight">
+                FY {activeFiscalYearCode} BS
+              </span>
+              <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase tracking-wider bg-indigo-200/70 dark:bg-indigo-800/70 text-indigo-800 dark:text-indigo-200">
+                Active
+              </span>
+            </button>
           </div>
 
           {/* Global Taxpayer Search Bar (Name or Citizen / PAN ID) */}
@@ -860,6 +934,18 @@ export default function App() {
 
           {/* Right Header Actions: Live DB Status Chip + Voice + AI Assistant + Mobile App + User Menu */}
           <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Mobile Compact Active Fiscal Year Badge */}
+            <button
+              onClick={() => {
+                setActiveTab("masters");
+                setMastersSubTab("application_setting");
+              }}
+              className="md:hidden flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[10px] font-mono font-bold shadow-2xs"
+              title={`Active Fiscal Year: FY ${activeFiscalYearCode} BS (Click to modify in settings)`}
+            >
+              <Calendar className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+              <span>FY {activeFiscalYearCode}</span>
+            </button>
             {/* Live DB Connection Badge / Inspector Button */}
             {/* <button
               onClick={() => setIsDbStatusModalOpen(true)}
@@ -940,6 +1026,8 @@ export default function App() {
                 setOpenNewTaxpayerTrigger((prev) => prev + 1);
               }}
               currentLang={currentLang}
+              activeFiscalYearCode={activeFiscalYearCode}
+              activeFiscalYearId={activeFiscalYearId}
             />
           )}
 
