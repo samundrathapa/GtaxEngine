@@ -30,6 +30,7 @@ interface UserMenuProps {
   onLogout: () => void;
   loggingOut?: boolean;
   onOpenDbColumnModal?: () => void;
+  onOpenPrivacy?: () => void;
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({
@@ -40,7 +41,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onThemeChange,
   onLogout,
   loggingOut = false,
-  onOpenDbColumnModal
+  onOpenDbColumnModal,
+  onOpenPrivacy
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [syncingCache, setSyncingCache] = useState(false);
@@ -304,8 +306,25 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           
           </div>
 
-          {/* Footer Action: Sign Out */}
-          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800">
+          {/* Footer Actions: Privacy Policy & Sign Out */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {onOpenPrivacy && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onOpenPrivacy();
+                }}
+                className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Privacy Policy & Terms</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">Policy</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setIsOpen(false);

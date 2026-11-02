@@ -110,6 +110,13 @@ app.post("/api/v1/auth/forgot-password", async (req, res) => {
   res.status(result.status).json(result);
 });
 
+app.get("/api/v1/auth/session-config", (req, res) => {
+  const timeoutMin = parseInt(process.env.VITE_IDLE_SESSION_TIMEOUT_MINUTES || process.env.IDLE_SESSION_TIMEOUT_MINUTES || "15", 10);
+  res.json(ApiResponse.buildSuccess({
+    idleTimeoutMinutes: isNaN(timeoutMin) || timeoutMin <= 0 ? 15 : timeoutMin
+  }, "Session configuration parameters"));
+});
+
 app.get("/api/v1/auth/session", (req, res) => {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const sessionData = AuthSessionService.validateToken(token);

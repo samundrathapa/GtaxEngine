@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AuthPanel } from "./modules/Auth/panel.tsx";
 import { AuthSessionState } from "./modules/Auth/model.ts";
 import { AuthController } from "./modules/Auth/controller.ts";
@@ -21,6 +21,9 @@ import { DbColumnLanguageModal } from "./components/DbColumnLanguageModal.tsx";
 import { FlutterMobileAppSimulator } from "./components/FlutterMobileAppSimulator.tsx";
 import { MunicipalDashboardPanel } from "./components/MunicipalDashboardPanel.tsx";
 import { DbStatusModal, DbStatusData } from "./components/DbStatusModal.tsx";
+import { PrivacyPolicyPage } from "./components/PrivacyPolicyPage.tsx";
+import { useIdleSessionTimeout } from "./hooks/useIdleSessionTimeout.ts";
+import { IdleSessionWarningModal } from "./components/IdleSessionWarningModal.tsx";
 import { ApiController } from "./api/controller.ts";
 import {
   LayoutDashboard,
@@ -65,7 +68,8 @@ type NavigationTab =
   | "jurisdictions"
   | "users"
   | "reports"
-  | "security_logs";
+  | "security_logs"
+  | "privacy";
 
 const parseRouteFromLocation = (): {
   tab: NavigationTab;
@@ -76,11 +80,31 @@ const parseRouteFromLocation = (): {
   rbacTab?: RateTab;
 } => {
   try {
-    // 1. Try URL hash e.g. #/calculation, #/calculation/multi_year, #/taxpayer, #/masters, #/dashboard
+    // 0. Check pathname for direct /privacy or /privacypage or /terms routes
+    const pathname = window.location.pathname.toLowerCase().trim();
+    if (
+      pathname === "/privacy" ||
+      pathname === "/privacypage" ||
+      pathname === "/privacy-policy" ||
+      pathname === "/terms" ||
+      pathname === "/terms-of-service"
+    ) {
+      return { tab: "privacy" };
+    }
+
+    // 1. Try URL hash e.g. #/calculation, #/taxpayer, #/privacy, #/privacypage
     const hash = window.location.hash.replace(/^#\/?/, "").toLowerCase().trim();
     if (hash) {
       const parts = hash.split("/").map((p) => p.trim());
       const mainSegment = parts[0];
+      if (
+        mainSegment === "privacy" ||
+        mainSegment === "privacypage" ||
+        mainSegment === "privacy-policy" ||
+        mainSegment === "terms"
+      ) {
+        return { tab: "privacy" };
+      }
       const validTabs: NavigationTab[] = [
         "dashboard",
         "taxpayer",
@@ -95,7 +119,8 @@ const parseRouteFromLocation = (): {
         "jurisdictions",
         "users",
         "reports",
-        "security_logs"
+        "security_logs",
+        "privacy"
       ];
       if (validTabs.includes(mainSegment as NavigationTab)) {
         const result: any = { tab: mainSegment as NavigationTab };
@@ -118,9 +143,18 @@ const parseRouteFromLocation = (): {
       }
     }
 
-    // 2. Try URL search params e.g. ?tab=calculation
+    // 2. Try URL search params e.g. ?tab=calculation or ?page=privacy
     const params = new URLSearchParams(window.location.search);
     const paramTab = params.get("tab")?.toLowerCase().trim();
+    const paramPage = params.get("page")?.toLowerCase().trim();
+    if (
+      paramTab === "privacy" ||
+      paramTab === "privacypage" ||
+      paramPage === "privacy" ||
+      paramPage === "privacypage"
+    ) {
+      return { tab: "privacy" };
+    }
     if (paramTab) {
       return { tab: paramTab as NavigationTab };
     }
@@ -181,6 +215,8 @@ export default function App() {
         hashString = `#/${activeTab}/${mastersSubTab}`;
       } else if (activeTab === "rate" && rateSubTab) {
         hashString = `#/${activeTab}/${rateSubTab}`;
+      } else if (activeTab === "rbac" && rbacSubTab) {
+        hashString = `#/${activeTab}/${rbacSubTab}`;
       }
 
       if (window.location.hash !== hashString) {
@@ -191,7 +227,7 @@ export default function App() {
         localStorage.setItem("gtax_calculation_tab", calculationTab);
       }
     } catch (_) {}
-  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab, calculationTab]);
+  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab, rbacSubTab, calculationTab]);
 
   // Handle browser back/forward buttons and external hash changes
   useEffect(() => {
@@ -212,6 +248,9 @@ export default function App() {
       if (route.rateTab && route.rateTab !== rateSubTab) {
         setRateSubTab(route.rateTab);
       }
+      if (route.rbacTab && route.rbacTab !== rbacSubTab) {
+        setRbacSubTab(route.rbacTab);
+      }
     };
 
     window.addEventListener("hashchange", handleHashChange);
@@ -220,7 +259,7 @@ export default function App() {
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("popstate", handleHashChange);
     };
-  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab]);
+  }, [activeTab, taxpayerSubView, mastersSubTab, rateSubTab, rbacSubTab]);
 
   // Global Taxpayer Selection & AI Chatbot State
   const [selectedTaxpayerId, setSelectedTaxpayerId] = useState<number>(1);
@@ -480,10 +519,31 @@ export default function App() {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await AuthController.logout(session?.user?.id as number);
+    if (session?.user?.id) {
+      await AuthController.logout(session.user.id as number);
+    }
     setSession(null);
     setLoggingOut(false);
   };
+
+  const handleIdleTimeout = useCallback(async () => {
+    localStorage.setItem("gtax_logout_reason", "idle_timeout");
+    if (session?.user?.id) {
+      await AuthController.logout(session.user.id as number);
+    }
+    setSession(null);
+  }, [session]);
+
+  const {
+    isWarningOpen: isIdleWarningOpen,
+    secondsRemaining: idleSecondsRemaining,
+    timeoutMinutes: idleTimeoutMinutes,
+    resetTimer: resetIdleTimer
+  } = useIdleSessionTimeout({
+    onTimeout: handleIdleTimeout,
+    enabled: Boolean(session && session.isAuthenticated),
+    warningSeconds: 60
+  });
 
   // Theme styling resolver
   const themeClasses: Record<SupportedTheme, { bg: string; sidebarBg: string; text: string; cardBg: string; headerBg: string }> = {
@@ -530,9 +590,38 @@ export default function App() {
     );
   }
 
+  // Public Privacy Policy & Terms of Service View (accessible with or without authentication)
+  if (activeTab === "privacy") {
+    return (
+      <PrivacyPolicyPage
+        isAuthenticated={Boolean(session && session.isAuthenticated)}
+        onBackToApp={() => {
+          if (session && session.isAuthenticated) {
+            setActiveTab("dashboard");
+            window.location.hash = "#/dashboard";
+          } else {
+            setActiveTab("dashboard");
+            window.location.hash = "";
+            if (window.location.pathname === "/privacy" || window.location.pathname === "/privacypage") {
+              window.history.pushState(null, "", "/");
+            }
+          }
+        }}
+      />
+    );
+  }
+
   // Creative Login Screen if not authenticated
   if (!session || !session.isAuthenticated) {
-    return <AuthPanel onLoginSuccess={(newSession) => setSession(newSession)} />;
+    return (
+      <AuthPanel
+        onLoginSuccess={(newSession) => setSession(newSession)}
+        onOpenPrivacy={() => {
+          setActiveTab("privacy");
+          window.location.hash = "#/privacy";
+        }}
+      />
+    );
   }
 
   return (
@@ -849,20 +938,41 @@ export default function App() {
                     <Activity className="w-4 h-4 text-rose-400" />
                     <span>Audit Logs</span>
                   </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab("privacy");
+                      setSidebarOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <span>Privacy Policy</span>
+                  </button>
                 </div>
               )}
             </div>
           </nav>
         </div>
 
-
-
-        {/* Clean Sidebar Footer */}
-        <div className="pt-2 border-t border-white/10">
+        {/* Clean Sidebar Footer with Idle Session Timeout info */}
+        <div className="pt-2 border-t border-white/10 space-y-1.5">
+          <div className="flex items-center justify-between px-1 text-[10px] text-slate-400">
+            <span className="font-mono">Timeout: {idleTimeoutMinutes}m</span>
+            <button
+              onClick={() => {
+                setActiveTab("privacy");
+                setSidebarOpen(false);
+              }}
+              className="text-indigo-400 hover:text-white underline cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+          </div>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>{loggingOut ? "Logging out..." : "Sign Out"}</span>
@@ -1009,6 +1119,10 @@ export default function App() {
               onLogout={handleLogout}
               loggingOut={loggingOut}
               onOpenDbColumnModal={() => setIsDbColMapOpen(true)}
+              onOpenPrivacy={() => {
+                setActiveTab("privacy");
+                window.location.hash = "#/privacy";
+              }}
             />
           </div>
         </header>
@@ -1153,6 +1267,15 @@ export default function App() {
         onClose={() => setIsDbStatusModalOpen(false)}
         status={dbStatus}
         onRefresh={fetchDbStatus}
+      />
+
+      {/* Inactivity & Idle Session Warning Modal */}
+      <IdleSessionWarningModal
+        isOpen={isIdleWarningOpen}
+        secondsRemaining={idleSecondsRemaining}
+        timeoutMinutes={idleTimeoutMinutes}
+        onStayLoggedIn={resetIdleTimer}
+        onLogoutNow={handleLogout}
       />
     </div>
   );

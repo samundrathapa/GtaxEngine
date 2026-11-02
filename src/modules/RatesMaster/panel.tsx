@@ -156,7 +156,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     { id: "land_nature", label: "Land Nature", sub: "Zoning & residential classifications", icon: Trees, count: masters.landNatures.length, group: "masters" },
 
     // RBAC Group
-    { id: "company", label: "Company", sub: "Municipal organization entity", icon: Landmark, count: masters.companies.length, group: "rbac" },
+    { id: "company", label: "Company Profile", sub: "Municipal organization entity", icon: Landmark, count: masters.companies.length, group: "rbac" },
     { id: "application_setting", label: "Application Settings", sub: "Global system configuration", icon: Settings, count: masters.applicationSettings.length, group: "rbac" }
   ];
 
@@ -341,22 +341,123 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     );
   });
 
+  const getHeaderInfo = () => {
+    switch (activeTab) {
+      case "company":
+        return {
+          title: "Company Profile (संस्था / पालिका विवरण)",
+          subtitle: "Municipal organization entity, registration numbers, contact information, and ward offices",
+          icon: Landmark,
+          iconColor: "text-amber-500",
+          addLabel: "Add Company / Ward Profile"
+        };
+      case "application_setting":
+        return {
+          title: "Application Settings (प्रणाली सेटिङ)",
+          subtitle: "Global municipal configuration, active fiscal year & default taxation parameters",
+          icon: Settings,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Setting Record"
+        };
+      case "fiscal_year":
+        return {
+          title: "Fiscal Year Master (आर्थिक वर्ष व्यवस्थापन)",
+          subtitle: "Municipal accounting calendar, active fiscal years, and BS / AD date spans",
+          icon: Calendar,
+          iconColor: "text-blue-500",
+          addLabel: "Add Fiscal Year"
+        };
+      case "construction_type":
+        return {
+          title: "Construction Types Master (संरचना प्रकार)",
+          subtitle: "Building structure classifications (RCC, Timber, Adobe, Steel) for municipal valuation",
+          icon: Building,
+          iconColor: "text-purple-500",
+          addLabel: "Add Construction Type"
+        };
+      case "unit":
+        return {
+          title: "Measurement Unit Master (इकाई नाप व्यवस्थापन)",
+          subtitle: "Standard land and area measurement units (Ropani, Bigha, Sq.Ft, Square Metre)",
+          icon: Sliders,
+          iconColor: "text-cyan-500",
+          addLabel: "Add Measurement Unit"
+        };
+      case "land_nature":
+        return {
+          title: "Land Nature Master (जग्गाको प्रकृति व्यवस्थापन)",
+          subtitle: "Zoning, agricultural, commercial, industrial and residential classifications",
+          icon: Trees,
+          iconColor: "text-emerald-500",
+          addLabel: "Add Land Nature"
+        };
+      case "malpot_rate":
+        return {
+          title: "Malpot Valuation Rates (मालपोत दररेट)",
+          subtitle: "Government statutory valuation rates per unit across municipal wards",
+          icon: Layers,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Malpot Rate"
+        };
+      case "construction_rate":
+        return {
+          title: "Construction Valuation Rates (संरचना दररेट)",
+          subtitle: "Building structure rate matrix per square foot based on construction type",
+          icon: Building,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Construction Rate"
+        };
+      case "depreciation":
+        return {
+          title: "Depreciation Rate Schedule (ह्रासकट्टी दररेट)",
+          subtitle: "Annual building depreciation percentage matrix based on structure age",
+          icon: TrendingDown,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Depreciation Tier"
+        };
+      case "fine_rebate":
+        return {
+          title: "Fine & Rebate Policy (जरिवाना र छुट व्यवस्थापन)",
+          subtitle: "Early payment tax rebate incentives and delayed payment late fine tiers",
+          icon: Gift,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Fine / Rebate Rule"
+        };
+      case "property_range":
+        return {
+          title: "Property Tax Slabs & Ranges (सम्पत्ति कर स्ल्याब)",
+          subtitle: "Valuation ranges, progressive tax percentages, flat tiers, and minimum tax rules",
+          icon: Sliders,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Tax Slab"
+        };
+      case "land_rate":
+      default:
+        return {
+          title: "Rate & Master Matrix Configuration (दररेट व्यवस्थापन)",
+          subtitle: "Municipal property and land valuation rates across wards and units",
+          icon: DollarSign,
+          iconColor: "text-indigo-600",
+          addLabel: "Add Rate Record"
+        };
+    }
+  };
+
+  const headerInfo = getHeaderInfo();
+  const HeaderIcon = headerInfo.icon;
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          {/* <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Gtax Enterprise Rate Architecture</span>
-            <span aria-hidden="true">·</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono text-indigo-600 font-semibold uppercase">{activeTab}</span>
-          </div> */}
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-indigo-600" />
-            <span>Rate & Master Matrix Configuration (दररेट व्यवस्थापन)</span>
+            <HeaderIcon className={`w-5 h-5 ${headerInfo.iconColor}`} />
+            <span>{headerInfo.title}</span>
           </h2>
-         
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {headerInfo.subtitle}
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -388,7 +489,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Rate Record</span>
+            <span>{headerInfo.addLabel}</span>
           </button>
         </div>
       </div>
@@ -563,7 +664,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               {currentList.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400">
-                    No rate records found for this category or filter.
+                    {activeTab === "company"
+                      ? "No company or municipal profile records found."
+                      : activeTab === "application_setting"
+                      ? "No application settings found."
+                      : "No rate records found for this category or filter."}
                   </td>
                 </tr>
               ) : (
@@ -831,10 +936,12 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  {editingItem ? `Edit Rate: ${editingItem.code || editingItem.id}` : `Add New ${activeTab.replace("_", " ")}`}
+                  {editingItem
+                    ? `Edit ${activeTab === "company" ? "Company Profile" : activeTab === "application_setting" ? "Settings" : "Record"}: ${editingItem.fullname || editingItem.fullanme || editingItem.code || editingItem.id}`
+                    : `Add New ${activeTab === "company" ? "Company / Ward Profile" : activeTab.replace("_", " ")}`}
                 </h3>
                 <div className="text-[11px] text-slate-500 font-mono capitalize">
-                  Configuration: {activeTab.replace(/_/g, " ")}
+                  {activeTab === "company" ? "Municipal Profile & Organization Settings" : `Configuration: ${activeTab.replace(/_/g, " ")}`}
                 </div>
               </div>
               <button

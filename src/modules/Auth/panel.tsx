@@ -12,18 +12,37 @@ import {
   KeyRound,
   CheckCircle2,
   Building2,
-  Landmark
+  Landmark,
+  Shield,
+  Clock
 } from "lucide-react";
 
 interface AuthPanelProps {
   onLoginSuccess: (session: AuthSessionState) => void;
+  onOpenPrivacy?: () => void;
+  idleTimeoutNotice?: string | null;
 }
 
-export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
+export const AuthPanel: React.FC<AuthPanelProps> = ({
+  onLoginSuccess,
+  onOpenPrivacy,
+  idleTimeoutNotice = null
+}) => {
   const [form, setForm] = useState<LoginFormData>(initialLoginForm);
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Check if logout was due to idle session timeout
+  const [sessionTimeoutAlert, setSessionTimeoutAlert] = useState<string | null>(() => {
+    if (idleTimeoutNotice) return idleTimeoutNotice;
+    const reason = localStorage.getItem("gtax_logout_reason");
+    if (reason === "idle_timeout") {
+      localStorage.removeItem("gtax_logout_reason");
+      return "Your session timed out due to inactivity. For municipal financial data security, you have been automatically logged out. Please sign in again.";
+    }
+    return null;
+  });
 
   // Modals
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -125,8 +144,17 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
+          <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-500 font-mono flex items-center justify-between">
             <span>Official Municipal Revenue Portal</span>
+            {onOpenPrivacy && (
+              <button
+                type="button"
+                onClick={onOpenPrivacy}
+                className="text-indigo-400 hover:text-indigo-300 underline font-sans text-xs transition-colors"
+              >
+                Privacy & Terms
+              </button>
+            )}
           </div>
         </div>
 
@@ -146,6 +174,25 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
                 <KeyRound className="w-5 h-5" />
               </div>
             </div>
+
+            {sessionTimeoutAlert && (
+              <div className="mb-4 p-3.5 text-xs bg-amber-950/60 border border-amber-600/60 text-amber-200 rounded-2xl flex items-start justify-between gap-3 shadow-lg">
+                <div className="flex items-start gap-2.5">
+                  <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-amber-300">Session Timed Out (सत्र समाप्त)</div>
+                    <div className="text-[11px] text-amber-200/90 mt-0.5">{sessionTimeoutAlert}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSessionTimeoutAlert(null)}
+                  className="font-bold text-amber-400 hover:text-white underline text-[11px] shrink-0"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
 
             {registeredNotice && (
               <div className="mb-4 p-3 text-xs bg-emerald-950/70 border border-emerald-800 text-emerald-300 rounded-xl flex items-center justify-between">
@@ -237,19 +284,20 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onLoginSuccess }) => {
             </form>
           </div>
 
-          {/* Bottom Bar: Clean User Registration Link */}
-          {/* <div className="mt-8 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <span className="text-slate-400">
-              Need a new operator account?
-            </span>
-            <button
-              onClick={() => setIsRegisterOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl transition-colors"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Register New User</span>
-            </button>
-          </div> */}
+          {/* Bottom Bar: Privacy & Security Policy */}
+          <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+            <span>Enterprise Security Enabled</span>
+            {onOpenPrivacy && (
+              <button
+                type="button"
+                onClick={onOpenPrivacy}
+                className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1.5 transition-colors font-medium"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Privacy Policy (गोपनीयता नीति)</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
