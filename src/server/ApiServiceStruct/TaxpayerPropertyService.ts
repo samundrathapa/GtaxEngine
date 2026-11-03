@@ -1,6 +1,9 @@
+import fs from "fs";
+import path from "path";
 import { AuditFields } from "../BaseFrame/repo/BaseRepo.ts";
 import { ApiResponse, IApiResponse } from "../BaseFrame/response/ApiResponse.ts";
 import { generateFiscalYears2021To2086 } from "../db/fiscalYearSeeds.ts";
+import { PostgresPoolManager } from "../db/postgresPool.ts";
 
 export interface TblFiscalYear extends AuditFields {
   id: number;
@@ -369,6 +372,9 @@ export interface TblCompany extends AuditFields {
 
 export interface TblApplicationSetting extends AuditFields {
   id: number;
+  code?: string;
+  fullname?: string;
+  fullanme?: string;
   company_id: number;
   fiscal_year_id: number;
   unit_type_id: number;
@@ -381,6 +387,8 @@ export interface TblApplicationSetting extends AuditFields {
   default_language?: string;
   is_deleted: boolean;
 }
+
+const APP_SETTING_STORE_PATH = path.join(process.cwd(), "data", "application_setting.json");
 
 class TaxpayerPropertyDatabase {
   public fiscalYears: Map<number, TblFiscalYear> = new Map();
@@ -409,6 +417,41 @@ class TaxpayerPropertyDatabase {
 
   constructor() {
     this.seedInitialData();
+  }
+
+  private saveSettingsToDisk() {
+    try {
+      const dataDir = path.dirname(APP_SETTING_STORE_PATH);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const list = Array.from(this.applicationSettings.values());
+      fs.writeFileSync(APP_SETTING_STORE_PATH, JSON.stringify(list, null, 2), "utf8");
+    } catch (err) {
+      console.warn("[TaxpayerPropertyService] Failed to save settings to disk:", err);
+    }
+  }
+
+  private loadSettingsFromDisk() {
+    try {
+      if (fs.existsSync(APP_SETTING_STORE_PATH)) {
+        const raw = fs.readFileSync(APP_SETTING_STORE_PATH, "utf8");
+        const list: TblApplicationSetting[] = JSON.parse(raw);
+        if (Array.isArray(list) && list.length > 0) {
+          for (const item of list) {
+            this.applicationSettings.set(item.id, item);
+          }
+          const activeFyId = list[0].fiscal_year_id;
+          if (activeFyId) {
+            for (const [id, fy] of this.fiscalYears.entries()) {
+              this.fiscalYears.set(id, { ...fy, is_active: id === activeFyId });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[TaxpayerPropertyService] Failed to load settings from disk:", err);
+    }
   }
 
   private seedInitialData() {
@@ -751,6 +794,9 @@ class TaxpayerPropertyDatabase {
     // 16. Application Settings (tbl_appication_setting)
     this.applicationSettings.set(1, {
       id: 1,
+      code: "APP-CONF-01",
+      fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
       company_id: 1,
       fiscal_year_id: 2,
       unit_type_id: 3,
@@ -767,6 +813,7 @@ class TaxpayerPropertyDatabase {
       deleted_on: null,
       is_active: true
     });
+    this.loadSettingsFromDisk();
 
     // 17. Seed Initial Calculation Master & Breakdown Tables
     this.calcMasters.set(1, {
@@ -916,9 +963,13 @@ class TaxpayerPropertyDatabase {
     const now = new Date().toISOString();
     const existing = this.applicationSettings.get(1) || {
       id: 1,
+      code: "APP-CONF-01",
+      fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
       company_id: 1,
       fiscal_year_id: 2,
       unit_type_id: 3,
+      municipality_name: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
       is_deleted: false,
       insert_by: user,
       insert_on: now,
@@ -928,21 +979,37 @@ class TaxpayerPropertyDatabase {
       deleted_on: null,
       is_active: true
     };
+
+    const resolvedName = data.fullname || data.fullanme || data.municipality_name || existing.fullname || "Kathmandu Metropolitan City";
+    const resolvedCode = data.code || existing.code || "APP-CONF-01";
+    const resolvedFyId = data.fiscal_year_id !== undefined ? Number(data.fiscal_year_id) : existing.fiscal_year_id;
+
     const updated: TblApplicationSetting = {
       ...existing,
       ...data,
       id: 1,
-      fiscal_year_id: data.fiscal_year_id !== undefined ? Number(data.fiscal_year_id) : existing.fiscal_year_id,
+      code: resolvedCode,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      municipality_name: data.municipality_name || resolvedName,
+      fiscal_year_id: resolvedFyId,
       update_by: user,
       update_on: now
     };
     this.applicationSettings.set(1, updated);
+    this.saveSettingsToDisk();
 
     if (updated.fiscal_year_id) {
       for (const [id, fy] of this.fiscalYears.entries()) {
-        if (id === updated.fiscal_year_id) {
-          this.fiscalYears.set(id, { ...fy, is_active: true });
-        }
+        this.fiscalYears.set(id, { ...fy, is_active: id === updated.fiscal_year_id });
+      }
+
+      if (PostgresPoolManager.getStatus().connected) {
+        PostgresPoolManager.query("UPDATE tbl_fiscal_year SET is_active = (id = $1);", [updated.fiscal_year_id]).catch(() => {});
+        PostgresPoolManager.query(
+          "UPDATE tbl_appication_setting SET fiscal_year_id = $1, municipality_name = $2, update_on = NOW() WHERE id = 1;",
+          [updated.fiscal_year_id, updated.municipality_name]
+        ).catch(() => {});
       }
     }
     return updated;
@@ -1868,6 +1935,16 @@ class TaxpayerPropertyDatabase {
         this.propertyRanges.set(itemId, item);
         return item;
       }
+      case "application_setting": {
+        const item = this.updateApplicationSetting({
+          ...data,
+          code: data.code || "APP-CONF-01",
+          fullname: data.fullname || data.fullanme || data.municipality_name || "Kathmandu Metropolitan City",
+          fullanme: data.fullanme || data.fullname || data.municipality_name || "Kathmandu Metropolitan City",
+          municipality_name: data.municipality_name || data.fullname || data.fullanme || "Kathmandu Metropolitan City"
+        }, userId);
+        return item;
+      }
       default:
         return null;
     }
@@ -2451,6 +2528,7 @@ class TaxpayerPropertyDatabase {
       case "fine_rebate": return this.fineRebates;
       case "property_range": return this.propertyRanges;
       case "land_nature": return this.landNatures;
+      case "application_setting": return this.applicationSettings;
       default: return null;
     }
   }

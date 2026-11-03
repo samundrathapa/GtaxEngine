@@ -57,6 +57,17 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (searchTerm) {
+      setIsSearching(true);
+      const timer = setTimeout(() => setIsSearching(false), 200);
+      return () => clearTimeout(timer);
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchTerm, filterFiscalYear]);
 
   useEffect(() => {
     if (initialTab && initialTab !== activeTab) {
@@ -221,7 +232,21 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         setFormData({ code: "NEW-MUN", fullname: "New Municipality Corporation", address: "Ward 1", phone: "+977-01-0000000", email: "info@municipality.gov.np", pan_vat_no: "300000000", registration_no: "REG-2081-01", is_active: true });
         break;
       case "application_setting":
-        setFormData({ company_id: 1, fiscal_year_id: 2, unit_type_id: 3, bhumikar_start_fy: 1, prop_bhumikar_start_fy: 2, ipt_start_fy: 2, municipality_name: "Kathmandu Metropolitan City", ward_count: 32, theme_preference: "slate", default_language: "eng" });
+        setFormData({
+          code: "APP-CONF-01",
+          fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+          fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+          municipality_name: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+          company_id: 1,
+          fiscal_year_id: 2,
+          unit_type_id: 3,
+          bhumikar_start_fy: 1,
+          prop_bhumikar_start_fy: 2,
+          ipt_start_fy: 2,
+          ward_count: 32,
+          theme_preference: "slate",
+          default_language: "eng"
+        });
         break;
     }
     setIsModalOpen(true);
@@ -229,7 +254,15 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
   const handleOpenEdit = (item: any) => {
     setEditingItem(item);
-    setFormData({ ...item });
+    const resolvedCode = item.code || (activeTab === "application_setting" ? "APP-CONF-01" : "");
+    const resolvedName = item.fullname || item.fullanme || item.municipality_name || (activeTab === "application_setting" ? "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)" : "");
+    setFormData({
+      ...item,
+      code: resolvedCode,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      municipality_name: item.municipality_name || resolvedName
+    });
     setIsModalOpen(true);
   };
 
@@ -249,7 +282,13 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     if (activeTab === "company") {
       res = await ApiController.saveCompany(formData, editingItem?.id);
     } else if (activeTab === "application_setting") {
-      res = await ApiController.updateApplicationSettings(formData);
+      res = await ApiController.updateApplicationSettings({
+        ...formData,
+        code: formData.code || "APP-CONF-01",
+        fullname: formData.fullname || formData.fullanme || formData.municipality_name || "Kathmandu Metropolitan City",
+        fullanme: formData.fullanme || formData.fullname || formData.municipality_name || "Kathmandu Metropolitan City",
+        municipality_name: formData.municipality_name || formData.fullname || formData.fullanme || "Kathmandu Metropolitan City"
+      });
     } else {
       res = await ApiController.saveRateItem(activeTab, formData, editingItem?.id);
     }
@@ -548,8 +587,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               placeholder={`Search ${activeTab.replace("_", " ")}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            {isSearching && (
+              <RefreshCw className="w-3.5 h-3.5 text-indigo-500 animate-spin absolute right-2.5 top-2.5" />
+            )}
           </div>
 
           {isRateCategory && (
@@ -581,6 +623,12 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
       {/* Dynamic Data Table for Active Rate Tab */}
       <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+        {isSearching && (
+          <div className="px-4 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-indigo-100 dark:border-indigo-900 animate-in fade-in">
+            <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
+            <span>Searching database records...</span>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">

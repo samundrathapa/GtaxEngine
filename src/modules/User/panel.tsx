@@ -8,9 +8,20 @@ export const UserPanel: React.FC = () => {
   const [users, setUsers] = useState<UserModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [isWindowOpen, setIsWindowOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchQuery) {
+      setIsSearching(true);
+      const timer = setTimeout(() => setIsSearching(false), 200);
+      return () => clearTimeout(timer);
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
 
   const loadData = async () => {
     setLoading(true);
@@ -30,7 +41,8 @@ export const UserPanel: React.FC = () => {
 
   const handleCreateOrUpdate = async (formData: UserFormData) => {
     if (selectedUser) {
-      const res = await UserController.updateUser(selectedUser.user_id, formData);
+      const userId = selectedUser.user_id || String((selectedUser as any).id);
+      const res = await UserController.updateUser(userId, formData);
       setActionMessage(res.message);
     } else {
       const res = await UserController.createUser(formData);
@@ -42,19 +54,21 @@ export const UserPanel: React.FC = () => {
 
   const handleDelete = async (userId: string) => {
     if (confirm("Are you sure you want to delete ? (is_active will be marked false with timestamp)")) {
-      const res = await UserController.deleteUser(userId);
+      const res = await UserController.deleteUser(String(userId));
       setActionMessage(res.message);
       await loadData();
       setTimeout(() => setActionMessage(null), 4000);
     }
   };
 
-  const filteredUsers = users.filter((u) =>
-    (u.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.role || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.employee_id || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((u) => {
+    const fullName = (u.full_name || (u as any).fullname || (u as any).fullanme || "").toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    const role = (u.role || "").toLowerCase();
+    const empId = (u.employee_id || (u as any).emp_id || (u as any).code || "").toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return fullName.includes(q) || email.includes(q) || role.includes(q) || empId.includes(q);
+  });
 
   const getRoleBadge = (role: string) => {
     const r = (role || "").toLowerCase();
@@ -143,8 +157,11 @@ export const UserPanel: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, email, employee ID, or role..."
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            className="w-full pl-9 pr-8 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           />
+          {isSearching && (
+            <RefreshCw className="w-3.5 h-3.5 text-indigo-500 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+          )}
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400">
           Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{filteredUsers.length}</span> active operators in <span className="font-mono text-indigo-500">user</span>
@@ -153,6 +170,12 @@ export const UserPanel: React.FC = () => {
 
       {/* Data Grid / Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+        {isSearching && (
+          <div className="px-4 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-indigo-100 dark:border-indigo-900 animate-in fade-in">
+            <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
+            <span>Searching user records in database...</span>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -182,16 +205,18 @@ export const UserPanel: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                filteredUsers.map((user) => {
+                  const displayName = user.full_name || (user as any).fullname || (user as any).fullanme || "User";
+                  return (
                   <tr key={user.user_id || String(user.id)} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center font-bold text-xs text-indigo-700 dark:text-indigo-300 shrink-0">
-                          {user.full_name?.charAt(0) || "U"}
+                          {displayName.charAt(0).toUpperCase()}
                         </div>
                         <div>
                           <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                            <span>{user.full_name}</span>
+                            <span>{displayName}</span>
                             {user.is_locked && (
                               <span className="text-[10px] px-1.5 py-0.2 bg-rose-100 text-rose-700 rounded font-semibold">Locked</span>
                             )}
