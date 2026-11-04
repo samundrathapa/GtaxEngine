@@ -31,6 +31,7 @@ export class DatabaseSchemaBootstrap {
             tax_identifier VARCHAR(64) NOT NULL,
             country_code VARCHAR(3) NOT NULL,
             currency VARCHAR(3) DEFAULT 'USD',
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -47,6 +48,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             role_name VARCHAR(64) UNIQUE NOT NULL,
             description VARCHAR(255),
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -71,6 +73,7 @@ export class DatabaseSchemaBootstrap {
             effective_to DATE DEFAULT NULL,
             employee_id VARCHAR(64) DEFAULT NULL,
             is_locked BOOLEAN DEFAULT FALSE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -89,6 +92,7 @@ export class DatabaseSchemaBootstrap {
             right_name VARCHAR(200) NOT NULL,
             module_name VARCHAR(100) NOT NULL,
             action_type VARCHAR(32) NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -105,6 +109,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             role_id INT REFERENCES tbl_role(id) ON DELETE CASCADE NOT NULL,
             right_id INT REFERENCES tbl_right(id) ON DELETE CASCADE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -122,6 +127,7 @@ export class DatabaseSchemaBootstrap {
             id SERIAL PRIMARY KEY,
             user_id INT REFERENCES tbl_user(id) ON DELETE CASCADE NOT NULL,
             role_id INT REFERENCES tbl_role(id) ON DELETE CASCADE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -140,6 +146,7 @@ export class DatabaseSchemaBootstrap {
             user_id INT REFERENCES tbl_user(id) ON DELETE CASCADE NOT NULL,
             right_id INT REFERENCES tbl_right(id) ON DELETE CASCADE NOT NULL,
             is_granted BOOLEAN DEFAULT TRUE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -161,6 +168,7 @@ export class DatabaseSchemaBootstrap {
             ip_address VARCHAR(64) DEFAULT '127.0.0.1',
             user_agent VARCHAR(500) DEFAULT NULL,
             details TEXT DEFAULT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -183,6 +191,7 @@ export class DatabaseSchemaBootstrap {
             login_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             last_active TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -396,7 +405,7 @@ export class DatabaseSchemaBootstrap {
         CREATE TABLE IF NOT EXISTS tbl_taxpayer_master (
             id SERIAL PRIMARY KEY,
             code VARCHAR(64) UNIQUE NOT NULL,
-            fullanme VARCHAR(255) NOT NULL,
+            fullname VARCHAR(255) NOT NULL,
             mobile_no VARCHAR(32) NOT NULL,
             tax_type_id INT DEFAULT 1,
             email VARCHAR(255),
@@ -425,6 +434,7 @@ export class DatabaseSchemaBootstrap {
             phone_number VARCHAR(32),
             ward_no INT DEFAULT 1,
             tole_village VARCHAR(100),
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -531,6 +541,7 @@ export class DatabaseSchemaBootstrap {
             nexus_sales_threshold NUMERIC(14, 2) DEFAULT 100000.00,
             nexus_tx_threshold INT DEFAULT 200,
             is_destination_based BOOLEAN DEFAULT TRUE NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -555,6 +566,7 @@ export class DatabaseSchemaBootstrap {
             min_bracket_amount NUMERIC(14, 2) DEFAULT 0.00,
             max_bracket_amount NUMERIC(14, 2),
             exemption_category VARCHAR(64),
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -583,6 +595,7 @@ export class DatabaseSchemaBootstrap {
             taxable_amount NUMERIC(14, 2) NOT NULL,
             total_tax_amount NUMERIC(14, 2) DEFAULT 0.00 NOT NULL,
             sync_status VARCHAR(32) DEFAULT 'PENDING' NOT NULL,
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -605,6 +618,7 @@ export class DatabaseSchemaBootstrap {
             tax_amount NUMERIC(14, 2) NOT NULL,
             is_compounded BOOLEAN DEFAULT FALSE NOT NULL,
             statute_reference VARCHAR(128),
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -614,6 +628,50 @@ export class DatabaseSchemaBootstrap {
             is_active BOOLEAN DEFAULT TRUE NOT NULL
         );
       `);
+
+      // Ensure all 26 tables have is_deleted column in PostgreSQL
+      try {
+        await PostgresPoolManager.query(`
+          DO $$
+          DECLARE
+              tbl text;
+          BEGIN
+              FOR tbl IN SELECT unnest(ARRAY[
+                  'sys_organizations','tbl_role','tbl_user','tbl_right','tbl_role_right','tbl_user_role','tbl_user_right',
+                  'tbl_user_log','tbl_session_log','tbl_fiscal_year','tbl_unit','tbl_construction_type','tbl_land_nature',
+                  'tbl_land_rate','tbl_malpot_rates','tbl_construction_rates','tbl_depreciation','tbl_fine_rebate',
+                  'tbl_taxpayer_master','tbl_taxpayer','tbl_land','tbl_house','tbl_floor','tax_jurisdictions',
+                  'tax_rules_matrix','tax_transactions','tax_liability_breakdown'
+              ]) LOOP
+                  EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE NOT NULL;', tbl);
+              END LOOP;
+          END $$;
+        `);
+      } catch (_) {}
+
+      // Ensure tbl_taxpayer_master has fullname column and fullanme is migrated/dropped
+      try {
+        await PostgresPoolManager.query(`
+          DO $$
+          BEGIN
+              IF NOT EXISTS (
+                  SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'tbl_taxpayer_master' AND column_name = 'fullname'
+              ) THEN
+                  ALTER TABLE tbl_taxpayer_master ADD COLUMN fullname VARCHAR(255);
+              END IF;
+
+              IF EXISTS (
+                  SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'tbl_taxpayer_master' AND column_name = 'fullanme'
+              ) THEN
+                  UPDATE tbl_taxpayer_master SET fullname = fullanme WHERE (fullname IS NULL OR fullname = '') AND fullanme IS NOT NULL;
+                  ALTER TABLE tbl_taxpayer_master ALTER COLUMN fullname SET NOT NULL;
+                  ALTER TABLE tbl_taxpayer_master DROP COLUMN fullanme;
+              END IF;
+          END $$;
+        `);
+      } catch (_) {}
 
       // Ensure fiscal_year_id allows NULL in rate tables for universal default rates
       try {

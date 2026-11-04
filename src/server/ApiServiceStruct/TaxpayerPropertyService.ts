@@ -156,7 +156,8 @@ export interface TblPropertyRange extends AuditFields {
 export interface TblTaxpayerMaster extends AuditFields {
   id: number;
   code: string;
-  fullanme: string;
+  fullname: string;
+  fullanme?: string;
   mobile_no: string;
   tax_type_id: number;
   email: string;
@@ -1328,11 +1329,13 @@ class TaxpayerPropertyDatabase {
   public createTaxpayer(data: any, userId = "SYSTEM"): TblTaxpayerMaster {
     const id = this.nextId++;
     const now = new Date().toISOString();
+    const tpName = data.fullname || data.fullanme || data.full_name || "New Taxpayer";
     const tp: TblTaxpayerMaster = {
       id,
       code: data.code || `TP-2081-${String(id).padStart(4, "0")}`,
-      fullanme: data.fullanme,
-      mobile_no: data.mobile_no,
+      fullname: tpName,
+      fullanme: tpName,
+      mobile_no: data.mobile_no || data.phone_number || "",
       tax_type_id: data.tax_type_id || 1,
       email: data.email || "",
       ward_no: Number(data.ward_no || 1),
