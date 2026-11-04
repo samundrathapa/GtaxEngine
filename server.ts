@@ -223,7 +223,8 @@ const RATE_CATEGORY_TO_TABLE: Record<string, string> = {
   malpot_rate: "tbl_malpot_rates",
   construction_rate: "tbl_construction_rates",
   depreciation: "tbl_depreciation",
-  fine_rebate: "tbl_fine_rebate"
+  fine_rebate: "tbl_fine_rebate",
+  application_setting: "tbl_appication_setting"
 };
 
 // Master Tables Snapshot: Always served from Redis cache (auto-synced from DB)
@@ -303,10 +304,10 @@ app.post("/api/v1/property/fiscal-year", async (req, res) => {
   res.status(201).json(ApiResponse.buildSuccess(fy, "Fiscal year created in database and synced to Redis", 201));
 });
 
-// Taxpayers: Retrieve from Redis cache (synced with PostgreSQL tbl_taxpayer_master)
+// Taxpayers: Retrieve live directly from database (synced with PostgreSQL tbl_taxpayer_master)
 app.get("/api/v1/property/taxpayers", async (req, res) => {
-  const list = await TableCacheDbSyncService.getTableData("tbl_taxpayer_master");
-  res.json(ApiResponse.buildSuccess(list, "Taxpayers list (Served from Redis Cache)"));
+  const list = await TableCacheDbSyncService.getTableData("tbl_taxpayer_master", true);
+  res.json(ApiResponse.buildSuccess(list, "Taxpayers list (Served directly from Database)"));
 });
 
 app.post("/api/v1/property/taxpayers", async (req, res) => {

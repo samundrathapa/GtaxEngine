@@ -19,6 +19,8 @@
  *   4. Supports "Clear Cache & Sync DB" triggered from client user menu bar.
  */
 
+import fs from "fs";
+import path from "path";
 import { PostgresPoolManager } from "./postgresPool.ts";
 import { RedisCacheManager } from "../BaseFrame/cache/RedisCacheManager.ts";
 import { DatabaseSchemaBootstrap } from "./databaseSchemaBootstrap.ts";
@@ -55,13 +57,50 @@ export const ALL_26_TABLES = [
 
 export type GtaxTableName = (typeof ALL_26_TABLES)[number];
 
+const STORES_BACKUP_PATH = path.resolve(process.cwd(), "data", "table_stores.json");
+
 export class TableCacheDbSyncService {
   private static inMemoryStores: Map<string, any[]> = new Map();
   private static initialized = false;
 
+  private static saveStoresToDisk(): void {
+    try {
+      const dir = path.dirname(STORES_BACKUP_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const obj: Record<string, any[]> = {};
+      for (const [k, v] of this.inMemoryStores.entries()) {
+        obj[k] = v;
+      }
+      fs.writeFileSync(STORES_BACKUP_PATH, JSON.stringify(obj, null, 2), "utf-8");
+    } catch (err) {
+      console.warn("[gtax:CacheSync] Failed to save stores to disk:", err);
+    }
+  }
+
+  private static loadStoresFromDisk(): void {
+    try {
+      if (fs.existsSync(STORES_BACKUP_PATH)) {
+        const raw = fs.readFileSync(STORES_BACKUP_PATH, "utf-8");
+        const parsed = JSON.parse(raw);
+        for (const [k, v] of Object.entries(parsed)) {
+          if (Array.isArray(v) && v.length > 0) {
+            this.inMemoryStores.set(k, v);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[gtax:CacheSync] Failed to load stores from disk:", err);
+    }
+  }
+
   public static async initialize(): Promise<void> {
     if (this.initialized) return;
     this.initialized = true;
+
+    // Load persisted stores from disk if any
+    this.loadStoresFromDisk();
 
     // 1. Initialize Redis Cache
     RedisCacheManager.initialize();
@@ -88,10 +127,18 @@ export class TableCacheDbSyncService {
   }
 
   /**
-   * Retrieves table records from Redis Cache.
-   * If cache miss occurs, auto-syncs directly from PostgreSQL database and populates Redis.
+   * Retrieves table records.
+   * If database is connected or forceFresh is requested, directly queries live PostgreSQL so external updates reflect instantly.
+   * Otherwise returns from cache / persistent store.
    */
-  public static async getTableData<T = any>(table: GtaxTableName | string): Promise<T[]> {
+  public static async getTableData<T = any>(table: GtaxTableName | string, forceFresh = false): Promise<T[]> {
+    const isDbConnected = PostgresPoolManager.getStatus().connected;
+
+    // If connected to remote PostgreSQL or forced fresh, ALWAYS query database directly
+    if (isDbConnected || forceFresh) {
+      return await this.refreshTableCacheFromDb<T>(table);
+    }
+
     const cacheKey = `gtax:cache:table:${table}`;
 
     // 1. Check Redis Cache
@@ -100,7 +147,14 @@ export class TableCacheDbSyncService {
       return cached;
     }
 
-    // 2. Cache Miss -> Auto-sync from PostgreSQL Database
+    // 2. Fallback to memory / persistent disk store
+    const memRows = (this.inMemoryStores.get(table) || []) as T[];
+    if (memRows.length > 0) {
+      await RedisCacheManager.set(cacheKey, memRows, 3600);
+      return memRows;
+    }
+
+    // 3. Refresh from DB
     return await this.refreshTableCacheFromDb<T>(table);
   }
 
@@ -132,9 +186,49 @@ export class TableCacheDbSyncService {
     if (PostgresPoolManager.getStatus().connected) {
       // Direct PostgreSQL query: Return genuine server database rows
       this.inMemoryStores.set(table, rows || []);
+      this.saveStoresToDisk();
     } else {
       // Database offline: Only fallback to in-memory store if DB is offline
       rows = (this.inMemoryStores.get(table) || []) as T[];
+    }
+
+    if (table === "tbl_taxpayer_master" || table === "tbl_taxpayer") {
+      rows = rows.map((r: any) => {
+        const name = r.fullanme || r.fullname || r.full_name || "";
+        const code = r.code || r.taxpayer_code || "";
+        const phone = r.mobile_no || r.phone_number || r.mobile || "";
+        return {
+          ...r,
+          fullanme: name,
+          fullname: name,
+          full_name: name,
+          code,
+          taxpayer_code: code,
+          mobile_no: phone,
+          phone_number: phone
+        };
+      }) as any;
+    } else if (table === "tbl_appication_setting") {
+      rows = rows.map((r: any) => {
+        const name = r.fullname || r.fullanme || r.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
+        return {
+          ...r,
+          code: r.code || "APP-CONF-01",
+          fullname: name,
+          fullanme: name,
+          municipality_name: r.municipality_name || name
+        };
+      }) as any;
+    } else if (table === "tbl_user") {
+      rows = rows.map((r: any) => {
+        const name = r.full_name || r.fullname || r.fullanme || "User";
+        return {
+          ...r,
+          full_name: name,
+          fullname: name,
+          user_id: r.user_id ? String(r.user_id) : String(r.id)
+        };
+      }) as any;
     }
 
     // Write to Redis cache with 1-hour TTL
@@ -168,6 +262,21 @@ export class TableCacheDbSyncService {
       is_active: recordData.is_active !== undefined ? Boolean(recordData.is_active) : true,
       is_deleted: false,
     };
+
+    // Ensure required columns for taxpayer tables are never null
+    if (table === "tbl_taxpayer_master") {
+      const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
+      payload.code = payload.code || payload.taxpayer_code || generatedCode;
+      payload.fullanme = payload.fullanme || payload.fullname || payload.full_name || "New Taxpayer";
+      payload.mobile_no = payload.mobile_no || payload.phone_number || "";
+      payload.ward_no = Number(payload.ward_no || 1);
+    } else if (table === "tbl_taxpayer") {
+      const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
+      payload.taxpayer_code = payload.taxpayer_code || payload.code || generatedCode;
+      payload.full_name = payload.full_name || payload.fullanme || payload.fullname || "New Taxpayer";
+      payload.phone_number = payload.phone_number || payload.mobile_no || "";
+      payload.ward_no = Number(payload.ward_no || 1);
+    }
 
     let insertedRecord: T | null = null;
 
@@ -204,6 +313,7 @@ export class TableCacheDbSyncService {
       insertedRecord = { ...payload, id: newId } as T;
       store.push(insertedRecord);
       this.inMemoryStores.set(table, store);
+      this.saveStoresToDisk();
     }
 
     // Auto-sync Redis Cache from Database
@@ -229,6 +339,16 @@ export class TableCacheDbSyncService {
       update_by: finalUserId,
       update_on: now,
     };
+
+    if (table === "tbl_taxpayer_master") {
+      if (!payload.fullanme && (payload.fullname || payload.full_name)) {
+        payload.fullanme = payload.fullname || payload.full_name;
+      }
+    } else if (table === "tbl_taxpayer") {
+      if (!payload.full_name && (payload.fullanme || payload.fullname)) {
+        payload.full_name = payload.fullanme || payload.fullname;
+      }
+    }
 
     let updatedRecord: T | null = null;
 
@@ -257,6 +377,7 @@ export class TableCacheDbSyncService {
         store[idx] = { ...store[idx], ...payload };
         updatedRecord = store[idx];
         this.inMemoryStores.set(table, store);
+        this.saveStoresToDisk();
       }
     }
 
@@ -300,6 +421,7 @@ export class TableCacheDbSyncService {
       store[idx].delete_by = finalUserId;
       store[idx].deleted_on = now;
       this.inMemoryStores.set(table, store);
+      this.saveStoresToDisk();
     }
 
     // Auto-sync Redis Cache from Database

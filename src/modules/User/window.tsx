@@ -31,16 +31,24 @@ export const UserWindow: React.FC<UserWindowProps> = ({
 
   useEffect(() => {
     if (editUser) {
+      const resolvedName = editUser.full_name || (editUser as any).fullname || (editUser as any).fullanme || "";
+      const resolvedUsername = editUser.username || (editUser.email ? editUser.email.split("@")[0] : "");
+      const resolvedMobile = editUser.mobile || (editUser as any).phone || (editUser as any).phone_number || (editUser as any).mobile_no || "";
+      const resolvedEmpId = editUser.employee_id || (editUser as any).emp_id || (editUser as any).code || "";
+      const resolvedRole = editUser.role || (editUser as any).user_role || "operator";
+      const resolvedOrg = editUser.org_id || "ORG_GLOBAL_CORP";
+      const resolvedCompanyId = editUser.company_id || 1;
+
       setFormData({
-        username: editUser.username || "",
+        username: resolvedUsername,
         email: editUser.email || "",
-        full_name: editUser.full_name || "",
+        full_name: resolvedName,
         password: "",
-        mobile: editUser.mobile || "",
-        employee_id: editUser.employee_id || "",
-        role: editUser.role || "operator",
-        org_id: editUser.org_id || "ORG_GLOBAL_CORP",
-        company_id: editUser.company_id || 1
+        mobile: resolvedMobile,
+        employee_id: resolvedEmpId,
+        role: resolvedRole,
+        org_id: resolvedOrg,
+        company_id: resolvedCompanyId
       });
     } else {
       setFormData({

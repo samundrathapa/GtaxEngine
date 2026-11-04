@@ -64,6 +64,24 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedWardFilter, setSelectedWardFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    if (searchTerm) {
+      setIsSearching(true);
+      const timer = setTimeout(() => setIsSearching(false), 200);
+      return () => clearTimeout(timer);
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedWardFilter]);
 
   useEffect(() => {
     if (initialSubView) {
@@ -99,7 +117,6 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const [dossierOpen, setDossierOpen] = useState<boolean>(false);
   const [dossierTab, setDossierTab] = useState<"taxpayer" | "land" | "house" | "calculate">("taxpayer");
   const [commonDetailTab, setCommonDetailTab] = useState<"assessment" | "lands" | "houses">("assessment");
-  const [selectedWardFilter, setSelectedWardFilter] = useState<string>("all");
 
   // Calculate Section States
   const [calcFiscalYearId, setCalcFiscalYearId] = useState<number>(2);
@@ -564,14 +581,24 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     }
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
+    const tpName = (tp.fullanme || tp.fullname || tp.full_name || "").toLowerCase();
+    const tpCode = (tp.code || tp.taxpayer_code || "").toLowerCase();
+    const tpMobile = (tp.mobile_no || tp.phone_number || tp.mobile || "").toLowerCase();
+    const tpPan = (tp.pan_vat_no || tp.pan_number || "").toLowerCase();
+    const tpCit = (tp.citizenship_no || tp.citizenship_number || "").toLowerCase();
     return (
-      (tp.fullanme && tp.fullanme.toLowerCase().includes(term)) ||
-      (tp.code && tp.code.toLowerCase().includes(term)) ||
-      (tp.mobile_no && tp.mobile_no.includes(term)) ||
-      (tp.pan_vat_no && tp.pan_vat_no.toLowerCase().includes(term)) ||
-      (tp.citizenship_no && tp.citizenship_no.toLowerCase().includes(term))
+      tpName.includes(term) ||
+      tpCode.includes(term) ||
+      tpMobile.includes(term) ||
+      tpPan.includes(term) ||
+      tpCit.includes(term)
     );
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredTaxpayers.length / itemsPerPage));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (validCurrentPage - 1) * itemsPerPage;
+  const paginatedTaxpayers = filteredTaxpayers.slice(startIndex, startIndex + itemsPerPage);
 
   // Active selected taxpayer derivation - always syncs with clicked row in list
   const currentTaxpayer = taxpayers.find((tp) => Number(tp.id) === Number(selectedTaxpayerId)) || taxpayerDossier?.taxpayer;
@@ -802,8 +829,11 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               placeholder="Search taxpayer name, code, mobile, PAN, citizenship..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+            {isSearching && (
+              <RefreshCw className="w-3.5 h-3.5 text-indigo-500 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -823,6 +853,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
         {/* Master Taxpayer Table */}
         <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+          {isSearching && (
+            <div className="px-4 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-indigo-100 dark:border-indigo-900 animate-in fade-in">
+              <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
+              <span>Searching taxpayers in remote PostgreSQL database...</span>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
@@ -838,14 +874,14 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredTaxpayers.length === 0 ? (
+                {paginatedTaxpayers.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-400">
                       No taxpayers found matching criteria. Click "New Taxpayer" to create one.
                     </td>
                   </tr>
                 ) : (
-                  filteredTaxpayers.map((tp, idx) => (
+                  paginatedTaxpayers.map((tp, idx) => (
                     <tr
                       key={tp.id}
                       onClick={() => {
@@ -859,7 +895,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                       }`}
                     >
                       <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
-                        {idx + 1}
+                        {startIndex + idx + 1}
                       </td>
                       <td className="p-3.5 text-slate-900 dark:text-white">
                         <div className="flex items-center gap-2.5">
@@ -868,11 +904,11 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                               ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
                               : "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
                           }`}>
-                            {tp.fullanme ? tp.fullanme.charAt(0) : "T"}
+                            {(tp.fullanme || tp.fullname || tp.full_name) ? (tp.fullanme || tp.fullname || tp.full_name).charAt(0).toUpperCase() : "T"}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold">{tp.fullanme}</span>
+                              <span className="font-bold">{tp.fullanme || tp.fullname || tp.full_name}</span>
                               {selectedTaxpayerId === tp.id && (
                                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
                                   ACTIVE
@@ -884,7 +920,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                         </div>
                       </td>
                       <td className="p-3.5 font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
-                        {tp.code}
+                        {tp.code || tp.taxpayer_code}
                       </td>
                       <td className="p-3.5 font-mono">
                         <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px]">
@@ -892,13 +928,13 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                         </span>
                       </td>
                       <td className="p-3.5 font-mono text-slate-700 dark:text-slate-300">
-                        {tp.mobile_no}
+                        {tp.mobile_no || tp.phone_number}
                       </td>
                       <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">
-                        {tp.pan_vat_no || "N/A"}
+                        {tp.pan_vat_no || tp.pan_number || "N/A"}
                       </td>
                       <td className="p-3.5 font-mono text-slate-600 dark:text-slate-400">
-                        {tp.citizenship_no || "N/A"}
+                        {tp.citizenship_no || tp.citizenship_number || "N/A"}
                       </td>
                       <td className="p-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
@@ -951,6 +987,74 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls Footer */}
+          {filteredTaxpayers.length > 0 && (
+            <div className="px-4 py-3 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="text-slate-500 dark:text-slate-400 font-medium">
+                Showing <span className="font-bold text-slate-800 dark:text-white font-mono">{startIndex + 1}</span> to{" "}
+                <span className="font-bold text-slate-800 dark:text-white font-mono">
+                  {Math.min(startIndex + itemsPerPage, filteredTaxpayers.length)}
+                </span>{" "}
+                of <span className="font-bold text-slate-800 dark:text-white font-mono">{filteredTaxpayers.length}</span> taxpayers (20 per page)
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={validCurrentPage === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Prev</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                    // Show current page, first, last, and adjacent pages
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      Math.abs(pageNum - validCurrentPage) <= 1
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all ${
+                            validCurrentPage === pageNum
+                              ? "bg-indigo-600 text-white shadow-xs"
+                              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (
+                      pageNum === 2 && validCurrentPage > 3 ||
+                      pageNum === totalPages - 1 && validCurrentPage < totalPages - 2
+                    ) {
+                      return (
+                        <span key={pageNum} className="text-slate-400 font-mono px-0.5">
+                          ..
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={validCurrentPage === totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span>Next</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
