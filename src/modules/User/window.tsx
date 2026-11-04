@@ -101,9 +101,9 @@ export const UserWindow: React.FC<UserWindowProps> = ({
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 {editUser ? "Edit User Record" : "Register User"}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              {/* <p className="text-xs text-slate-500 dark:text-slate-400">
                 Persistence with mandatory audit columns & RBAC roles
-              </p>
+              </p> */}
             </div>
           </div>
           <button
@@ -215,9 +215,9 @@ export const UserWindow: React.FC<UserWindowProps> = ({
           </div>
 
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div className="text-[11px] text-slate-400 font-mono">
+            {/* <div className="text-[11px] text-slate-400 font-mono">
               Audit Contract: User record and assigned roles managed with insert_by & timestamps.
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3">
