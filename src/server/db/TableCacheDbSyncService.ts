@@ -51,7 +51,9 @@ export const ALL_25_TABLES = [
   "tax_jurisdictions",
   "tax_rules_matrix",
   "tax_transactions",
-  "tax_liability_breakdown"
+  "tax_liability_breakdown",
+  "tbl_appication_setting",
+  "tbl_application_setting"
 ] as const;
 
 export type GtaxTableName = (typeof ALL_25_TABLES)[number];
@@ -320,6 +322,53 @@ export class TableCacheDbSyncService {
         }
       }
       clean.fullname = name;
+      return clean;
+    }
+
+    if (table === "tbl_house") {
+      const allowedColumns = new Set([
+        "id", "taxpayer_id", "land_id", "secondary_land_id", "kitta_numbers", "land_ids",
+        "house_no", "area_sqfeet", "acquisition_date_bs", "acquisition_date_ad", "plinth_area",
+        "floor_no", "include_in_evaluation", "measuring_unit_id", "construction_type_id",
+        "assessed_valuation", "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+      return clean;
+    }
+
+    if (table === "tbl_malpot_rates" || table === "tbl_land_rate" || table === "tbl_construction_rates") {
+      const allowedColumns = new Set([
+        "id", "code", "fullanme", "fiscal_year_id", "is_parent", "parent_id", "unit_id",
+        "const_type_id", "rate_per_unit", "area_upto", "area_per_unit", "ward_no_ids",
+        "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+      return clean;
+    }
+
+    if (table === "tbl_appication_setting" || table === "tbl_application_setting") {
+      const allowedColumns = new Set([
+        "id", "code", "fullname", "municipality_name", "company_id", "fiscal_year_id",
+        "unit_type_id", "ward_count", "theme_preference", "default_language",
+        "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+      clean.fullname = payload.fullname || payload.fullanme || payload.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
       return clean;
     }
 
