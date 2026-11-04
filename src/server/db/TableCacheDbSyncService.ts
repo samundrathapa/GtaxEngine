@@ -247,6 +247,88 @@ export class TableCacheDbSyncService {
   /**
    * Inserts a record directly into PostgreSQL table, ensures audit fields store userId from tbl_user,
    * auto-syncs with Redis, and returns the response from Redis cache.
+  /**
+   * Sanitizes payload strictly to columns existing in PostgreSQL table schema.
+   * Eliminates non-existent column errors during INSERT / UPDATE.
+   */
+  public static sanitizePayloadForDb(table: string, rawPayload: Record<string, any>): Record<string, any> {
+    const payload = { ...rawPayload };
+
+    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
+      const name = payload.full_name || payload.fullname || payload.fullanme || "New Taxpayer";
+      const code = payload.taxpayer_code || payload.code || `TP-${Date.now().toString().slice(-6)}`;
+      const phone = payload.phone_number || payload.mobile_no || payload.mobile || "";
+      const pan = payload.pan_number || payload.pan_vat_no || "";
+      const citizenship = payload.citizenship_number || payload.citizenship_no || "";
+      const ward = payload.ward_no !== undefined ? Number(payload.ward_no) : 1;
+
+      const allowedColumns = new Set([
+        "id",
+        "taxpayer_code",
+        "full_name",
+        "mobile",
+        "phone_number",
+        "email",
+        "ward_no",
+        "pan_number",
+        "citizenship_number",
+        "tax_type_id",
+        "tole_village",
+        "gender",
+        "registration_date",
+        "is_deleted",
+        "insert_by",
+        "insert_on",
+        "update_by",
+        "update_on",
+        "delete_by",
+        "deleted_on",
+        "is_active"
+      ]);
+
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+
+      clean.full_name = name;
+      clean.taxpayer_code = code;
+      clean.phone_number = phone;
+      clean.mobile = phone;
+      clean.pan_number = pan;
+      clean.citizenship_number = citizenship;
+      clean.ward_no = ward;
+      if (clean.tax_type_id !== undefined) clean.tax_type_id = Number(clean.tax_type_id);
+
+      return clean;
+    }
+
+    if (table === "tbl_user") {
+      const name = payload.full_name || payload.fullname || payload.fullanme || "User";
+      const allowedColumns = new Set([
+        "id", "fullname", "photo_path", "email", "password", "mobile", "country_id",
+        "effective_from", "effective_to", "employee_id", "is_locked", "is_deleted",
+        "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+      clean.fullname = name;
+      return clean;
+    }
+
+    return payload;
+  }
+
+  /**
+   * Inserts a record directly into PostgreSQL table, ensures audit fields store userId from tbl_user,
+   * auto-syncs with Redis, and returns the response from Redis cache.
    */
   public static async insertRecord<T = any>(
     table: GtaxTableName | string,
@@ -269,19 +351,6 @@ export class TableCacheDbSyncService {
       is_deleted: false,
     };
 
-    // Ensure required columns for taxpayer tables are never null
-    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
-      const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
-      const tpCode = payload.taxpayer_code || payload.code || generatedCode;
-      const tpName = payload.full_name || payload.fullname || payload.fullanme || "New Taxpayer";
-      const tpPhone = payload.phone_number || payload.mobile_no || payload.mobile || "";
-      payload.taxpayer_code = tpCode;
-      payload.full_name = tpName;
-      payload.phone_number = tpPhone;
-      payload.mobile = tpPhone;
-      payload.ward_no = Number(payload.ward_no || 1);
-    }
-
     let insertedRecord: T | null = null;
 
     if (PostgresPoolManager.getStatus().connected) {
@@ -295,10 +364,11 @@ export class TableCacheDbSyncService {
           // Table may use string ID (e.g. tax_jurisdictions)
         }
 
-        const keys = Object.keys(payload);
+        const dbPayload = this.sanitizePayloadForDb(table, payload);
+        const keys = Object.keys(dbPayload);
         const columns = keys.map((k) => `"${k}"`).join(", ");
         const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
-        const values = Object.values(payload);
+        const values = Object.values(dbPayload);
 
         const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *;`;
         const res = await PostgresPoolManager.query<T>(sql, values);
@@ -321,7 +391,11 @@ export class TableCacheDbSyncService {
     }
 
     // Auto-sync Redis Cache from Database
-    await this.refreshTableCacheFromDb(table);
+    const freshRows = await this.refreshTableCacheFromDb(table);
+    const found = freshRows.find((r: any) => String(r.id) === String((insertedRecord as any)?.id));
+    if (found) {
+      insertedRecord = found as T;
+    }
 
     return insertedRecord;
   }
@@ -344,26 +418,15 @@ export class TableCacheDbSyncService {
       update_on: now,
     };
 
-    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
-      const name = payload.full_name || payload.fullname || payload.fullanme;
-      if (name) {
-        payload.full_name = name;
-      }
-      const phone = payload.phone_number || payload.mobile_no || payload.mobile;
-      if (phone) {
-        payload.phone_number = phone;
-        payload.mobile = phone;
-      }
-    }
-
     let updatedRecord: T | null = null;
 
     if (PostgresPoolManager.getStatus().connected) {
       try {
+        const dbPayload = this.sanitizePayloadForDb(table, payload);
         const idCol = typeof id === "number" || !isNaN(Number(id)) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
-        const keys = Object.keys(payload).filter((k) => k !== "id" && k !== idCol);
+        const keys = Object.keys(dbPayload).filter((k) => k !== "id" && k !== idCol);
         const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(", ");
-        const values = keys.map((k) => payload[k]);
+        const values = keys.map((k) => dbPayload[k]);
         values.push(id);
 
         const sql = `UPDATE ${table} SET ${setClauses} WHERE "${idCol}" = $${values.length} RETURNING *;`;
@@ -388,7 +451,11 @@ export class TableCacheDbSyncService {
     }
 
     // Auto-sync Redis Cache from Database
-    await this.refreshTableCacheFromDb(table);
+    const freshRows = await this.refreshTableCacheFromDb(table);
+    const found = freshRows.find((r: any) => String(r.id) === String(id));
+    if (found) {
+      updatedRecord = found as T;
+    }
 
     return updatedRecord;
   }

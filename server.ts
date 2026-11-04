@@ -251,15 +251,15 @@ app.get("/api/v1/property/masters", async (req, res) => {
     depreciations,
     fineRebates
   ] = await Promise.all([
-    TableCacheDbSyncService.getTableData("tbl_fiscal_year"),
-    TableCacheDbSyncService.getTableData("tbl_unit"),
-    TableCacheDbSyncService.getTableData("tbl_land_nature"),
-    TableCacheDbSyncService.getTableData("tbl_construction_type"),
-    TableCacheDbSyncService.getTableData("tbl_land_rate"),
-    TableCacheDbSyncService.getTableData("tbl_malpot_rates"),
-    TableCacheDbSyncService.getTableData("tbl_construction_rates"),
-    TableCacheDbSyncService.getTableData("tbl_depreciation"),
-    TableCacheDbSyncService.getTableData("tbl_fine_rebate")
+    TableCacheDbSyncService.getTableData("tbl_fiscal_year", true),
+    TableCacheDbSyncService.getTableData("tbl_unit", true),
+    TableCacheDbSyncService.getTableData("tbl_land_nature", true),
+    TableCacheDbSyncService.getTableData("tbl_construction_type", true),
+    TableCacheDbSyncService.getTableData("tbl_land_rate", true),
+    TableCacheDbSyncService.getTableData("tbl_malpot_rates", true),
+    TableCacheDbSyncService.getTableData("tbl_construction_rates", true),
+    TableCacheDbSyncService.getTableData("tbl_depreciation", true),
+    TableCacheDbSyncService.getTableData("tbl_fine_rebate", true)
   ]);
 
   res.json(ApiResponse.buildSuccess({
@@ -334,7 +334,7 @@ app.post("/api/v1/property/taxpayers", async (req, res) => {
 
 app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer");
+  const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer", true);
   const masterTp = tpList.find((t: any) => Number(t.id) === id);
 
   let dossier = propertyDb.getTaxpayerCompleteRecord(id);

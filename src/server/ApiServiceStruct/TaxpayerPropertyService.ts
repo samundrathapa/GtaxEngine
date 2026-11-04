@@ -1532,16 +1532,30 @@ class TaxpayerPropertyDatabase {
   public updateTaxpayer(id: number, data: any, userId = "SYSTEM"): TblTaxpayerMaster | null {
     const existing = this.taxpayers.get(id);
     if (!existing || existing.is_deleted) return null;
+    const resolvedName = data.full_name ?? data.fullname ?? data.fullanme ?? existing.full_name ?? existing.fullname ?? existing.fullanme;
+    const resolvedCode = data.taxpayer_code ?? data.code ?? existing.taxpayer_code ?? existing.code;
+    const resolvedPhone = data.phone_number ?? data.mobile_no ?? data.mobile ?? existing.phone_number ?? existing.mobile_no;
+    const resolvedPan = data.pan_number ?? data.pan_vat_no ?? existing.pan_number ?? existing.pan_vat_no;
+    const resolvedCitizenship = data.citizenship_number ?? data.citizenship_no ?? existing.citizenship_number ?? existing.citizenship_no;
+    const resolvedWard = data.ward_no !== undefined ? Number(data.ward_no) : existing.ward_no;
+
     const updated: TblTaxpayerMaster = {
       ...existing,
-      code: data.code ?? existing.code,
-      fullanme: data.fullanme ?? existing.fullanme,
-      mobile_no: data.mobile_no ?? existing.mobile_no,
+      code: resolvedCode,
+      taxpayer_code: resolvedCode,
+      full_name: resolvedName,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      phone_number: resolvedPhone,
+      mobile_no: resolvedPhone,
+      mobile: resolvedPhone,
+      pan_number: resolvedPan,
+      pan_vat_no: resolvedPan,
+      citizenship_number: resolvedCitizenship,
+      citizenship_no: resolvedCitizenship,
+      ward_no: resolvedWard,
       email: data.email ?? existing.email,
-      ward_no: data.ward_no !== undefined ? Number(data.ward_no) : existing.ward_no,
-      pan_vat_no: data.pan_vat_no ?? existing.pan_vat_no,
-      citizenship_no: data.citizenship_no ?? existing.citizenship_no,
-      tax_type_id: data.tax_type_id ?? existing.tax_type_id,
+      tax_type_id: data.tax_type_id !== undefined ? Number(data.tax_type_id) : existing.tax_type_id,
       update_by: userId,
       update_on: new Date().toISOString()
     };
