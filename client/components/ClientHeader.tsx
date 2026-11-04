@@ -33,11 +33,9 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-bold text-sm sm:text-base tracking-tight text-white">
-              gtax Enterprise
+              Gtax Enterprise
             </h1>
-            <span className="text-[10px] font-mono bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 px-1.5 py-0.5 rounded">
-              Next.js Client
-            </span>
+          
           </div>
           <p className="text-[11px] text-slate-400 hidden sm:block">
             Municipal Property & Integrated Tax Liabilities Engine
