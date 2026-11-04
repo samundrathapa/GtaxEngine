@@ -153,19 +153,30 @@ export interface TblPropertyRange extends AuditFields {
   is_deleted: boolean;
 }
 
-export interface TblTaxpayerMaster extends AuditFields {
+export interface TblTaxpayer extends AuditFields {
   id: number;
-  code: string;
-  fullname: string;
+  code?: string;
+  taxpayer_code: string;
+  fullname?: string;
+  full_name: string;
   fullanme?: string;
-  mobile_no: string;
+  mobile_no?: string;
+  phone_number?: string;
+  mobile?: string;
   tax_type_id: number;
   email: string;
   ward_no: number;
   pan_vat_no?: string;
+  pan_number?: string;
   citizenship_no?: string;
+  citizenship_number?: string;
+  tole_village?: string;
+  gender?: string;
+  registration_date?: string;
   is_deleted: boolean;
 }
+
+export type TblTaxpayerMaster = TblTaxpayer;
 
 export interface TblLand extends AuditFields {
   id: number;
@@ -402,7 +413,7 @@ class TaxpayerPropertyDatabase {
   public depreciations: Map<number, TblDepreciation> = new Map();
   public fineRebates: Map<number, TblFineRebate> = new Map();
   public propertyRanges: Map<number, TblPropertyRange> = new Map();
-  public taxpayers: Map<number, TblTaxpayerMaster> = new Map();
+  public taxpayers: Map<number, TblTaxpayer> = new Map();
   public lands: Map<number, TblLand> = new Map();
   public houses: Map<number, TblHouse> = new Map();
   public floors: Map<number, TblFloor> = new Map();
@@ -1326,21 +1337,29 @@ class TaxpayerPropertyDatabase {
     };
   }
 
-  public createTaxpayer(data: any, userId = "SYSTEM"): TblTaxpayerMaster {
+  public createTaxpayer(data: any, userId = "SYSTEM"): TblTaxpayer {
     const id = this.nextId++;
     const now = new Date().toISOString();
     const tpName = data.fullname || data.fullanme || data.full_name || "New Taxpayer";
-    const tp: TblTaxpayerMaster = {
+    const tpCode = data.taxpayer_code || data.code || `TP-2081-${String(id).padStart(4, "0")}`;
+    const tpPhone = data.phone_number || data.mobile_no || data.mobile || "";
+    const tp: TblTaxpayer = {
       id,
-      code: data.code || `TP-2081-${String(id).padStart(4, "0")}`,
+      code: tpCode,
+      taxpayer_code: tpCode,
       fullname: tpName,
+      full_name: tpName,
       fullanme: tpName,
-      mobile_no: data.mobile_no || data.phone_number || "",
+      mobile_no: tpPhone,
+      phone_number: tpPhone,
+      mobile: tpPhone,
       tax_type_id: data.tax_type_id || 1,
       email: data.email || "",
       ward_no: Number(data.ward_no || 1),
-      pan_vat_no: data.pan_vat_no || "",
-      citizenship_no: data.citizenship_no || "",
+      pan_vat_no: data.pan_vat_no || data.pan_number || "",
+      pan_number: data.pan_number || data.pan_vat_no || "",
+      citizenship_no: data.citizenship_no || data.citizenship_number || "",
+      citizenship_number: data.citizenship_number || data.citizenship_no || "",
       is_deleted: false,
       insert_by: userId,
       insert_on: now,

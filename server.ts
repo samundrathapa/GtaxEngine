@@ -22,7 +22,7 @@ import { aiRouter } from "./ai/index.ts";
 import { mobileRouter } from "./server/routes/mobileRoutes.ts";
 import { CommonEntryPointCoordinator } from "./server/entry.ts";
 import { PostgresPoolManager } from "./src/server/db/postgresPool.ts";
-import { TableCacheDbSyncService, ALL_26_TABLES } from "./src/server/db/TableCacheDbSyncService.ts";
+import { TableCacheDbSyncService, ALL_25_TABLES } from "./src/server/db/TableCacheDbSyncService.ts";
 
 dotenv.config();
 
@@ -304,9 +304,9 @@ app.post("/api/v1/property/fiscal-year", async (req, res) => {
   res.status(201).json(ApiResponse.buildSuccess(fy, "Fiscal year created in database and synced to Redis", 201));
 });
 
-// Taxpayers: Retrieve live directly from database (synced with PostgreSQL tbl_taxpayer_master)
+// Taxpayers: Retrieve live directly from database (synced with PostgreSQL tbl_taxpayer)
 app.get("/api/v1/property/taxpayers", async (req, res) => {
-  const list = await TableCacheDbSyncService.getTableData("tbl_taxpayer_master", true);
+  const list = await TableCacheDbSyncService.getTableData("tbl_taxpayer", true);
   res.json(ApiResponse.buildSuccess(list, "Taxpayers list (Served directly from Database)"));
 });
 
@@ -314,26 +314,16 @@ app.post("/api/v1/property/taxpayers", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
 
-  // Persist directly to tbl_taxpayer_master with user ID audit column
-  const tp = await TableCacheDbSyncService.insertRecord("tbl_taxpayer_master", req.body, userId);
-  // Mirror to tbl_taxpayer
-  await TableCacheDbSyncService.insertRecord("tbl_taxpayer", {
-    taxpayer_code: tp.code || `TP-${Date.now()}`,
-    full_name: tp.fullanme,
-    pan_number: tp.pan_vat_no || "",
-    citizenship_number: tp.citizenship_no || "",
-    phone_number: tp.mobile_no || "",
-    ward_no: tp.ward_no || 1,
-    tole_village: req.body.tole_village || "Central Ward"
-  }, userId);
+  // Persist directly to tbl_taxpayer with user ID audit column
+  const tp = await TableCacheDbSyncService.insertRecord("tbl_taxpayer", req.body, userId);
 
   propertyDb.createTaxpayer(tp, userId);
-  res.status(201).json(ApiResponse.buildSuccess(tp, "Taxpayer master registered in database and synced to Redis", 201));
+  res.status(201).json(ApiResponse.buildSuccess(tp, "Taxpayer registered in database and synced to Redis", 201));
 });
 
 app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer_master");
+  const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer");
   const masterTp = tpList.find((t: any) => Number(t.id) === id);
 
   let dossier = propertyDb.getTaxpayerCompleteRecord(id);
@@ -370,7 +360,7 @@ app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
 app.put("/api/v1/property/taxpayers/:id", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  const updated = await TableCacheDbSyncService.updateRecord("tbl_taxpayer_master", Number(req.params.id), req.body, userId);
+  const updated = await TableCacheDbSyncService.updateRecord("tbl_taxpayer", Number(req.params.id), req.body, userId);
   propertyDb.updateTaxpayer(Number(req.params.id), req.body, userId);
   if (!updated) {
     return res.status(404).json(ApiResponse.buildFailure("Taxpayer not found", ["Not found"], {}, 404));
@@ -381,7 +371,7 @@ app.put("/api/v1/property/taxpayers/:id", async (req, res) => {
 app.delete("/api/v1/property/taxpayers/:id", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  await TableCacheDbSyncService.deleteRecord("tbl_taxpayer_master", Number(req.params.id), userId);
+  await TableCacheDbSyncService.deleteRecord("tbl_taxpayer", Number(req.params.id), userId);
   const ok = propertyDb.deleteTaxpayer(Number(req.params.id), userId);
   if (!ok) {
     return res.status(404).json(ApiResponse.buildFailure("Taxpayer not found", ["Not found"], {}, 404));
@@ -580,8 +570,8 @@ app.get("/api/v1/cache/stats", (req, res) => {
   res.json(ApiResponse.buildSuccess({
     redisStats: RedisCacheManager.getStats(),
     dbConfig: PostgresPoolManager.getConfig(),
-    tablesCount: ALL_26_TABLES.length,
-    allTables: ALL_26_TABLES,
+    tablesCount: ALL_25_TABLES.length,
+    allTables: ALL_25_TABLES,
     status: "REDIS_SYNC_ACTIVE"
   }, "Redis cache and database synchronization telemetry"));
 });

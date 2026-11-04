@@ -297,7 +297,7 @@ export class PostgresPoolManager {
   }
 
   /**
-   * Fetches a clean snapshot of all 26 tables directly from PostgreSQL database for Redis caching
+   * Fetches a clean snapshot of all 25 tables directly from PostgreSQL database for Redis caching
    */
   public static async getAllTablesSnapshot(): Promise<Record<string, any[]>> {
     const tableNames = [
@@ -318,7 +318,6 @@ export class PostgresPoolManager {
       "tbl_construction_rates",
       "tbl_depreciation",
       "tbl_fine_rebate",
-      "tbl_taxpayer_master",
       "tbl_taxpayer",
       "tbl_land",
       "tbl_house",

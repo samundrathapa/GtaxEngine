@@ -400,40 +400,22 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
-      // 20. tbl_taxpayer_master
-      await PostgresPoolManager.query(`
-        CREATE TABLE IF NOT EXISTS tbl_taxpayer_master (
-            id SERIAL PRIMARY KEY,
-            code VARCHAR(64) UNIQUE NOT NULL,
-            fullname VARCHAR(255) NOT NULL,
-            mobile_no VARCHAR(32) NOT NULL,
-            tax_type_id INT DEFAULT 1,
-            email VARCHAR(255),
-            ward_no INT DEFAULT 1,
-            pan_vat_no VARCHAR(64),
-            citizenship_no VARCHAR(64),
-            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
-            insert_by VARCHAR(64) NOT NULL DEFAULT '1',
-            insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            update_by VARCHAR(64) NOT NULL DEFAULT '1',
-            update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            delete_by VARCHAR(64) DEFAULT NULL,
-            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-            is_active BOOLEAN DEFAULT TRUE NOT NULL
-        );
-      `);
-
-      // 21. tbl_taxpayer
+      // 20. tbl_taxpayer (Single Unified Taxpayer Master Table)
       await PostgresPoolManager.query(`
         CREATE TABLE IF NOT EXISTS tbl_taxpayer (
             id SERIAL PRIMARY KEY,
-            taxpayer_code VARCHAR(32) UNIQUE NOT NULL,
-            full_name VARCHAR(200) NOT NULL,
-            pan_number VARCHAR(32),
-            citizenship_number VARCHAR(32),
+            taxpayer_code VARCHAR(64) UNIQUE NOT NULL,
+            full_name VARCHAR(255) NOT NULL,
+            mobile VARCHAR(32),
             phone_number VARCHAR(32),
-            ward_no INT DEFAULT 1,
-            tole_village VARCHAR(100),
+            email VARCHAR(255),
+            ward_no INT DEFAULT 1 NOT NULL,
+            pan_number VARCHAR(64),
+            citizenship_number VARCHAR(64),
+            tax_type_id INT DEFAULT 1,
+            tole_village VARCHAR(128),
+            gender VARCHAR(16) DEFAULT 'MALE',
+            registration_date DATE DEFAULT CURRENT_DATE NOT NULL,
             is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -445,11 +427,11 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
-      // 22. tbl_land
+      // 21. tbl_land
       await PostgresPoolManager.query(`
         CREATE TABLE IF NOT EXISTS tbl_land (
             id SERIAL PRIMARY KEY,
-            taxpayer_id INT REFERENCES tbl_taxpayer_master(id) ON DELETE CASCADE NOT NULL,
+            taxpayer_id INT REFERENCES tbl_taxpayer(id) ON DELETE CASCADE NOT NULL,
             kitta_number VARCHAR(64) NOT NULL,
             moth_number VARCHAR(64) NOT NULL,
             ward_no INT DEFAULT 1,
@@ -471,11 +453,11 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
-      // 23. tbl_house
+      // 22. tbl_house
       await PostgresPoolManager.query(`
         CREATE TABLE IF NOT EXISTS tbl_house (
             id SERIAL PRIMARY KEY,
-            taxpayer_id INT REFERENCES tbl_taxpayer_master(id) ON DELETE CASCADE NOT NULL,
+            taxpayer_id INT REFERENCES tbl_taxpayer(id) ON DELETE CASCADE NOT NULL,
             land_id INT REFERENCES tbl_land(id) ON DELETE SET NULL,
             secondary_land_id INT REFERENCES tbl_land(id) ON DELETE SET NULL,
             kitta_numbers VARCHAR(255),
@@ -629,7 +611,7 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
-      // Ensure all 26 tables have is_deleted column in PostgreSQL
+      // Ensure all 25 tables have is_deleted column in PostgreSQL
       try {
         await PostgresPoolManager.query(`
           DO $$
@@ -640,7 +622,7 @@ export class DatabaseSchemaBootstrap {
                   'sys_organizations','tbl_role','tbl_user','tbl_right','tbl_role_right','tbl_user_role','tbl_user_right',
                   'tbl_user_log','tbl_session_log','tbl_fiscal_year','tbl_unit','tbl_construction_type','tbl_land_nature',
                   'tbl_land_rate','tbl_malpot_rates','tbl_construction_rates','tbl_depreciation','tbl_fine_rebate',
-                  'tbl_taxpayer_master','tbl_taxpayer','tbl_land','tbl_house','tbl_floor','tax_jurisdictions',
+                  'tbl_taxpayer','tbl_land','tbl_house','tbl_floor','tax_jurisdictions',
                   'tax_rules_matrix','tax_transactions','tax_liability_breakdown'
               ]) LOOP
                   EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE NOT NULL;', tbl);
@@ -649,25 +631,44 @@ export class DatabaseSchemaBootstrap {
         `);
       } catch (_) {}
 
-      // Ensure tbl_taxpayer_master has fullname column and fullanme is migrated/dropped
+      // Migrate records from tbl_taxpayer_master to tbl_taxpayer if tbl_taxpayer_master exists, then drop tbl_taxpayer_master
       try {
         await PostgresPoolManager.query(`
           DO $$
           BEGIN
-              IF NOT EXISTS (
-                  SELECT 1 FROM information_schema.columns 
-                  WHERE table_name = 'tbl_taxpayer_master' AND column_name = 'fullname'
-              ) THEN
-                  ALTER TABLE tbl_taxpayer_master ADD COLUMN fullname VARCHAR(255);
+              IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tbl_taxpayer' AND column_name = 'mobile') THEN
+                ALTER TABLE tbl_taxpayer ADD COLUMN mobile VARCHAR(32);
+              END IF;
+              IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tbl_taxpayer' AND column_name = 'email') THEN
+                ALTER TABLE tbl_taxpayer ADD COLUMN email VARCHAR(255);
+              END IF;
+              IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tbl_taxpayer' AND column_name = 'tax_type_id') THEN
+                ALTER TABLE tbl_taxpayer ADD COLUMN tax_type_id INT DEFAULT 1;
               END IF;
 
-              IF EXISTS (
-                  SELECT 1 FROM information_schema.columns 
-                  WHERE table_name = 'tbl_taxpayer_master' AND column_name = 'fullanme'
-              ) THEN
-                  UPDATE tbl_taxpayer_master SET fullname = fullanme WHERE (fullname IS NULL OR fullname = '') AND fullanme IS NOT NULL;
-                  ALTER TABLE tbl_taxpayer_master ALTER COLUMN fullname SET NOT NULL;
-                  ALTER TABLE tbl_taxpayer_master DROP COLUMN fullanme;
+              IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'tbl_taxpayer_master') THEN
+                  INSERT INTO tbl_taxpayer (id, taxpayer_code, full_name, mobile, phone_number, email, ward_no, pan_number, citizenship_number, tax_type_id, is_deleted, insert_by, insert_on, update_by, update_on, is_active)
+                  SELECT m.id, COALESCE(m.code, 'TP-' || m.id), COALESCE(m.fullname, 'New Taxpayer'), m.mobile_no, m.mobile_no, m.email, COALESCE(m.ward_no, 1), m.pan_vat_no, m.citizenship_no, COALESCE(m.tax_type_id, 1), COALESCE(m.is_deleted, false), COALESCE(m.insert_by, '1'), COALESCE(m.insert_on, NOW()), COALESCE(m.update_by, '1'), COALESCE(m.update_on, NOW()), COALESCE(m.is_active, true)
+                  FROM tbl_taxpayer_master m
+                  ON CONFLICT (id) DO UPDATE SET
+                    full_name = EXCLUDED.full_name,
+                    mobile = EXCLUDED.mobile,
+                    email = EXCLUDED.email,
+                    ward_no = EXCLUDED.ward_no;
+
+                  BEGIN
+                    ALTER TABLE tbl_land DROP CONSTRAINT IF EXISTS tbl_land_taxpayer_id_fkey;
+                    ALTER TABLE tbl_land ADD CONSTRAINT tbl_land_taxpayer_id_fkey FOREIGN KEY (taxpayer_id) REFERENCES tbl_taxpayer(id) ON DELETE CASCADE;
+                  EXCEPTION WHEN OTHERS THEN NULL;
+                  END;
+
+                  BEGIN
+                    ALTER TABLE tbl_house DROP CONSTRAINT IF EXISTS tbl_house_taxpayer_id_fkey;
+                    ALTER TABLE tbl_house ADD CONSTRAINT tbl_house_taxpayer_id_fkey FOREIGN KEY (taxpayer_id) REFERENCES tbl_taxpayer(id) ON DELETE CASCADE;
+                  EXCEPTION WHEN OTHERS THEN NULL;
+                  END;
+
+                  DROP TABLE tbl_taxpayer_master CASCADE;
               END IF;
           END $$;
         `);
@@ -879,7 +880,6 @@ export class DatabaseSchemaBootstrap {
         "tbl_construction_rates",
         "tbl_depreciation",
         "tbl_fine_rebate",
-        "tbl_taxpayer_master",
         "tbl_taxpayer",
         "tbl_land",
         "tbl_house",
@@ -898,7 +898,7 @@ export class DatabaseSchemaBootstrap {
       }
 
       this.bootstrapped = true;
-      console.log("[gtax:Bootstrap] SUCCESS: All 26 tables, default seed data, and sequences are 100% synchronized in PostgreSQL!");
+      console.log("[gtax:Bootstrap] SUCCESS: All 25 tables, default seed data, and sequences are 100% synchronized in PostgreSQL!");
       return true;
     } catch (err) {
       console.error("[gtax:Bootstrap] Error during PostgreSQL schema bootstrap:", err);

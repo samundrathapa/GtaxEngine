@@ -26,7 +26,7 @@ import { RedisCacheManager } from "../BaseFrame/cache/RedisCacheManager.ts";
 import { DatabaseSchemaBootstrap } from "./databaseSchemaBootstrap.ts";
 import { generateFiscalYears2021To2086 } from "./fiscalYearSeeds.ts";
 
-export const ALL_26_TABLES = [
+export const ALL_25_TABLES = [
   "tbl_role",
   "tbl_user",
   "tbl_right",
@@ -44,7 +44,6 @@ export const ALL_26_TABLES = [
   "tbl_construction_rates",
   "tbl_depreciation",
   "tbl_fine_rebate",
-  "tbl_taxpayer_master",
   "tbl_taxpayer",
   "tbl_land",
   "tbl_house",
@@ -55,7 +54,7 @@ export const ALL_26_TABLES = [
   "tax_liability_breakdown"
 ] as const;
 
-export type GtaxTableName = (typeof ALL_26_TABLES)[number];
+export type GtaxTableName = (typeof ALL_25_TABLES)[number];
 
 const STORES_BACKUP_PATH = path.resolve(process.cwd(), "data", "table_stores.json");
 
@@ -113,7 +112,7 @@ export class TableCacheDbSyncService {
       await DatabaseSchemaBootstrap.bootstrapAllTables();
     }
 
-    // 4. Warm up Redis cache for all 26 tables
+    // 4. Warm up Redis cache for all 25 tables
     await this.warmUpCache();
   }
 
@@ -121,7 +120,7 @@ export class TableCacheDbSyncService {
    * Warms up Redis cache from PostgreSQL (or memory fallback)
    */
   public static async warmUpCache(): Promise<void> {
-    for (const table of ALL_26_TABLES) {
+    for (const table of ALL_25_TABLES) {
       await this.refreshTableCacheFromDb(table);
     }
   }
@@ -192,20 +191,27 @@ export class TableCacheDbSyncService {
       rows = (this.inMemoryStores.get(table) || []) as T[];
     }
 
-    if (table === "tbl_taxpayer_master" || table === "tbl_taxpayer") {
+    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
       rows = rows.map((r: any) => {
-        const name = r.fullanme || r.fullname || r.full_name || "";
-        const code = r.code || r.taxpayer_code || "";
-        const phone = r.mobile_no || r.phone_number || r.mobile || "";
+        const name = r.full_name || r.fullname || r.fullanme || "";
+        const code = r.taxpayer_code || r.code || "";
+        const phone = r.phone_number || r.mobile_no || r.mobile || "";
+        const pan = r.pan_number || r.pan_vat_no || "";
+        const citizenship = r.citizenship_number || r.citizenship_no || "";
         return {
           ...r,
-          fullanme: name,
-          fullname: name,
           full_name: name,
-          code,
+          fullname: name,
+          fullanme: name,
           taxpayer_code: code,
+          code,
+          phone_number: phone,
           mobile_no: phone,
-          phone_number: phone
+          mobile: phone,
+          pan_number: pan,
+          pan_vat_no: pan,
+          citizenship_number: citizenship,
+          citizenship_no: citizenship
         };
       }) as any;
     } else if (table === "tbl_appication_setting") {
@@ -264,19 +270,15 @@ export class TableCacheDbSyncService {
     };
 
     // Ensure required columns for taxpayer tables are never null
-    if (table === "tbl_taxpayer_master") {
+    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
       const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
-      payload.code = payload.code || payload.taxpayer_code || generatedCode;
-      payload.fullname = payload.fullname || payload.fullanme || payload.full_name || "New Taxpayer";
-      delete payload.fullanme;
-      delete payload.full_name;
-      payload.mobile_no = payload.mobile_no || payload.phone_number || "";
-      payload.ward_no = Number(payload.ward_no || 1);
-    } else if (table === "tbl_taxpayer") {
-      const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
-      payload.taxpayer_code = payload.taxpayer_code || payload.code || generatedCode;
-      payload.full_name = payload.full_name || payload.fullanme || payload.fullname || "New Taxpayer";
-      payload.phone_number = payload.phone_number || payload.mobile_no || "";
+      const tpCode = payload.taxpayer_code || payload.code || generatedCode;
+      const tpName = payload.full_name || payload.fullname || payload.fullanme || "New Taxpayer";
+      const tpPhone = payload.phone_number || payload.mobile_no || payload.mobile || "";
+      payload.taxpayer_code = tpCode;
+      payload.full_name = tpName;
+      payload.phone_number = tpPhone;
+      payload.mobile = tpPhone;
       payload.ward_no = Number(payload.ward_no || 1);
     }
 
@@ -342,15 +344,15 @@ export class TableCacheDbSyncService {
       update_on: now,
     };
 
-    if (table === "tbl_taxpayer_master") {
-      if (payload.fullanme || payload.full_name || payload.fullname) {
-        payload.fullname = payload.fullname || payload.fullanme || payload.full_name;
-        delete payload.fullanme;
-        delete payload.full_name;
+    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
+      const name = payload.full_name || payload.fullname || payload.fullanme;
+      if (name) {
+        payload.full_name = name;
       }
-    } else if (table === "tbl_taxpayer") {
-      if (!payload.full_name && (payload.fullanme || payload.fullname)) {
-        payload.full_name = payload.fullanme || payload.fullname;
+      const phone = payload.phone_number || payload.mobile_no || payload.mobile;
+      if (phone) {
+        payload.phone_number = phone;
+        payload.mobile = phone;
       }
     }
 
@@ -436,7 +438,7 @@ export class TableCacheDbSyncService {
 
   /**
    * Action: Clear Cache and Re-sync directly from PostgreSQL Database.
-   * Flushes Redis cache, re-queries all 26 tables directly from PostgreSQL, primes Redis,
+   * Flushes Redis cache, re-queries all 25 tables directly from PostgreSQL, primes Redis,
    * and returns the fresh response snapshot directly from Redis.
    */
   public static async clearCacheAndSyncFromDb(): Promise<{
@@ -459,8 +461,8 @@ export class TableCacheDbSyncService {
     const tableCounts: Record<string, number> = {};
     let totalRecords = 0;
 
-    // 2. Query each of the 26 tables directly from PostgreSQL database & update Redis
-    for (const table of ALL_26_TABLES) {
+    // 2. Query each of the 25 tables directly from PostgreSQL database & update Redis
+    for (const table of ALL_25_TABLES) {
       const rows = await this.refreshTableCacheFromDb(table);
       tableCounts[table] = rows.length;
       totalRecords += rows.length;
@@ -473,8 +475,8 @@ export class TableCacheDbSyncService {
       status: "SUCCESS",
       message: "Redis cache successfully cleared and re-synced directly from PostgreSQL database server.",
       database: dbConfig.database,
-      clearedKeys: ALL_26_TABLES.length,
-      syncedTablesCount: ALL_26_TABLES.length,
+      clearedKeys: ALL_25_TABLES.length,
+      syncedTablesCount: ALL_25_TABLES.length,
       totalRecordsLoaded: totalRecords,
       tables: tableCounts,
       latencyMs,
@@ -489,7 +491,7 @@ export class TableCacheDbSyncService {
   public static seedDefaultInMemoryStores(): void {
     if (this.inMemoryStores.size > 0) return;
 
-    // Seed defaults for all 26 tables in memory
+    // Seed defaults for all 25 tables in memory
     this.inMemoryStores.set("tbl_role", [
       { id: 1, role_name: "superadmin", description: "Unrestricted Master Control", insert_by: "1", update_by: "1", is_active: true, is_deleted: false },
       { id: 2, role_name: "admin", description: "Corporate Tax Manager", insert_by: "1", update_by: "1", is_active: true, is_deleted: false },
@@ -566,7 +568,6 @@ export class TableCacheDbSyncService {
     ]);
 
     // Taxpayers, lands, houses, and floors start empty - strictly populated from database server
-    this.inMemoryStores.set("tbl_taxpayer_master", []);
     this.inMemoryStores.set("tbl_taxpayer", []);
     this.inMemoryStores.set("tbl_land", []);
     this.inMemoryStores.set("tbl_house", []);

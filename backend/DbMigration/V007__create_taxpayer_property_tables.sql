@@ -186,17 +186,21 @@ CREATE TABLE IF NOT EXISTS tbl_fine_rebate (
     is_active BOOLEAN DEFAULT TRUE NOT NULL
 );
 
--- 10. tbl_taxpayer_master
-CREATE TABLE IF NOT EXISTS tbl_taxpayer_master (
+-- 10. tbl_taxpayer (Single Unified Taxpayer Master Table)
+CREATE TABLE IF NOT EXISTS tbl_taxpayer (
     id SERIAL PRIMARY KEY,
-    code VARCHAR(64) UNIQUE NOT NULL, -- e.g. 'TP-2080-0012'
-    fullanme VARCHAR(255) NOT NULL,
-    mobile_no VARCHAR(32) NOT NULL,
-    tax_type_id INT DEFAULT 1,
+    taxpayer_code VARCHAR(64) UNIQUE NOT NULL, -- e.g. 'TP-2080-0012'
+    full_name VARCHAR(255) NOT NULL,
+    mobile VARCHAR(32),
+    phone_number VARCHAR(32),
     email VARCHAR(255),
-    ward_no INT DEFAULT 1,
-    pan_vat_no VARCHAR(64),
-    citizenship_no VARCHAR(64),
+    ward_no INT DEFAULT 1 NOT NULL,
+    pan_number VARCHAR(64),
+    citizenship_number VARCHAR(64),
+    tax_type_id INT DEFAULT 1,
+    tole_village VARCHAR(128),
+    gender VARCHAR(16) DEFAULT 'MALE',
+    registration_date DATE DEFAULT CURRENT_DATE NOT NULL,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
     insert_by VARCHAR(64) NOT NULL,
     insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -210,7 +214,7 @@ CREATE TABLE IF NOT EXISTS tbl_taxpayer_master (
 -- 11. tbl_land
 CREATE TABLE IF NOT EXISTS tbl_land (
     id SERIAL PRIMARY KEY,
-    taxpayer_id INT REFERENCES tbl_taxpayer_master(id) ON DELETE CASCADE NOT NULL,
+    taxpayer_id INT REFERENCES tbl_taxpayer(id) ON DELETE CASCADE NOT NULL,
     kitta_number VARCHAR(64) NOT NULL,
     moth_number VARCHAR(64) NOT NULL,
     ward_no INT DEFAULT 1,
@@ -234,7 +238,7 @@ CREATE TABLE IF NOT EXISTS tbl_land (
 -- 12. tbl_house
 CREATE TABLE IF NOT EXISTS tbl_house (
     id SERIAL PRIMARY KEY,
-    taxpayer_id INT REFERENCES tbl_taxpayer_master(id) ON DELETE CASCADE NOT NULL,
+    taxpayer_id INT REFERENCES tbl_taxpayer(id) ON DELETE CASCADE NOT NULL,
     land_id INT REFERENCES tbl_land(id) ON DELETE SET NULL,
     house_no VARCHAR(64) NOT NULL,
     area_sqfeet NUMERIC(14, 2) NOT NULL,
