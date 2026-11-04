@@ -528,35 +528,81 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     e.preventDefault();
     if (!newTpName || !newTpMobile) return;
     const res = await ApiController.createTaxpayer({
+      full_name: newTpName,
+      fullname: newTpName,
       fullanme: newTpName,
+      phone_number: newTpMobile,
       mobile_no: newTpMobile,
+      mobile: newTpMobile,
       email: newTpEmail,
-      ward_no: newTpWard,
+      ward_no: Number(newTpWard || 1),
+      pan_number: newTpPan,
       pan_vat_no: newTpPan,
+      citizenship_number: newTpCitizenship,
       citizenship_no: newTpCitizenship
     });
     if (res.success && res.data) {
-      setStatusMsg(`Taxpayer ${res.data.fullanme} registered successfully!`);
+      setStatusMsg(`Taxpayer ${res.data.fullanme || res.data.fullname || res.data.full_name} registered successfully!`);
       setSelectedTaxpayerId(res.data.id);
       setNewTpModalOpen(false);
-      loadAllData();
+      await loadAllData();
       setTimeout(() => setStatusMsg(null), 3000);
     }
   };
 
   const handleOpenEditTaxpayer = (tp: any) => {
-    setEditingTaxpayer({ ...tp });
+    const resolvedName = tp.full_name || tp.fullname || tp.fullanme || "";
+    const resolvedPhone = tp.phone_number || tp.mobile_no || tp.mobile || "";
+    const resolvedPan = tp.pan_number || tp.pan_vat_no || "";
+    const resolvedCitizenship = tp.citizenship_number || tp.citizenship_no || "";
+    const resolvedWard = tp.ward_no !== undefined ? Number(tp.ward_no) : 1;
+
+    setEditingTaxpayer({
+      ...tp,
+      full_name: resolvedName,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      phone_number: resolvedPhone,
+      mobile_no: resolvedPhone,
+      mobile: resolvedPhone,
+      pan_number: resolvedPan,
+      pan_vat_no: resolvedPan,
+      citizenship_number: resolvedCitizenship,
+      citizenship_no: resolvedCitizenship,
+      ward_no: resolvedWard
+    });
     setEditTaxpayerModalOpen(true);
   };
 
   const handleSaveEditTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTaxpayer) return;
-    const res = await ApiController.updateTaxpayer(editingTaxpayer.id, editingTaxpayer);
+    const resolvedName = editingTaxpayer.fullanme || editingTaxpayer.fullname || editingTaxpayer.full_name || "";
+    const resolvedPhone = editingTaxpayer.mobile_no || editingTaxpayer.phone_number || editingTaxpayer.mobile || "";
+    const resolvedPan = editingTaxpayer.pan_vat_no || editingTaxpayer.pan_number || "";
+    const resolvedCitizenship = editingTaxpayer.citizenship_no || editingTaxpayer.citizenship_number || "";
+    const resolvedWard = editingTaxpayer.ward_no !== undefined ? Number(editingTaxpayer.ward_no) : 1;
+
+    const payload = {
+      ...editingTaxpayer,
+      full_name: resolvedName,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      phone_number: resolvedPhone,
+      mobile_no: resolvedPhone,
+      mobile: resolvedPhone,
+      pan_number: resolvedPan,
+      pan_vat_no: resolvedPan,
+      citizenship_number: resolvedCitizenship,
+      citizenship_no: resolvedCitizenship,
+      ward_no: resolvedWard
+    };
+
+    const res = await ApiController.updateTaxpayer(editingTaxpayer.id, payload);
     if (res.success) {
-      setStatusMsg(`Taxpayer ${editingTaxpayer.fullanme} updated successfully!`);
+      setStatusMsg(`Taxpayer ${resolvedName} updated successfully!`);
       setEditTaxpayerModalOpen(false);
-      loadAllData();
+      await loadAllData();
       setTimeout(() => setStatusMsg(null), 3000);
     }
   };

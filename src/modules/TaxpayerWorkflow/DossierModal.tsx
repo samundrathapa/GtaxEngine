@@ -182,7 +182,27 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
       const res = await ApiController.getTaxpayerDossier(taxpayerId);
       if (res.success && res.data) {
         setDossier(res.data);
-        setTpForm({ ...res.data.taxpayer });
+        const tp = res.data.taxpayer || {};
+        const resolvedName = tp.full_name || tp.fullname || tp.fullanme || "";
+        const resolvedPhone = tp.phone_number || tp.mobile_no || tp.mobile || "";
+        const resolvedPan = tp.pan_number || tp.pan_vat_no || "";
+        const resolvedCitizenship = tp.citizenship_number || tp.citizenship_no || "";
+        const resolvedWard = tp.ward_no !== undefined ? Number(tp.ward_no) : 1;
+
+        setTpForm({
+          ...tp,
+          full_name: resolvedName,
+          fullname: resolvedName,
+          fullanme: resolvedName,
+          phone_number: resolvedPhone,
+          mobile_no: resolvedPhone,
+          mobile: resolvedPhone,
+          pan_number: resolvedPan,
+          pan_vat_no: resolvedPan,
+          citizenship_number: resolvedCitizenship,
+          citizenship_no: resolvedCitizenship,
+          ward_no: resolvedWard
+        });
         if (res.data.lands) {
           setCalcSelectedLandIds(res.data.lands.map((l: any) => l.id));
         }
@@ -209,10 +229,31 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   // Taxpayer update
   const handleSaveTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await ApiController.updateTaxpayer(taxpayerId, tpForm);
+    const resolvedName = tpForm.fullanme || tpForm.fullname || tpForm.full_name || "";
+    const resolvedPhone = tpForm.mobile_no || tpForm.phone_number || tpForm.mobile || "";
+    const resolvedPan = tpForm.pan_vat_no || tpForm.pan_number || "";
+    const resolvedCitizenship = tpForm.citizenship_no || tpForm.citizenship_number || "";
+    const resolvedWard = tpForm.ward_no !== undefined ? Number(tpForm.ward_no) : 1;
+
+    const payload = {
+      ...tpForm,
+      full_name: resolvedName,
+      fullname: resolvedName,
+      fullanme: resolvedName,
+      phone_number: resolvedPhone,
+      mobile_no: resolvedPhone,
+      mobile: resolvedPhone,
+      pan_number: resolvedPan,
+      pan_vat_no: resolvedPan,
+      citizenship_number: resolvedCitizenship,
+      citizenship_no: resolvedCitizenship,
+      ward_no: resolvedWard
+    };
+
+    const res = await ApiController.updateTaxpayer(taxpayerId, payload);
     if (res.success) {
       setStatusMsg("Taxpayer details updated successfully!");
-      loadDossier();
+      await loadDossier();
       onRefresh();
       setTimeout(() => setStatusMsg(null), 3000);
     }
