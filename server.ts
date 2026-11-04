@@ -71,9 +71,20 @@ app.post("/api/v1/db/ping", async (req, res) => {
   }, connected ? "PostgreSQL database connected successfully" : `PostgreSQL connection error: ${PostgresPoolManager.getStatus().lastError}`));
 });
 
-// Initialize DomainRegistry, DbConnections, Redis Cache & Auto-Sync Engine
+app.get("/api/v1/db/migrations", (req, res) => {
+  res.json(ApiResponse.buildSuccess(MigrationRunner.getMigrations(), "System migration records and compliance status"));
+});
+
+app.post("/api/v1/db/migrations/apply", async (req, res) => {
+  const result = await MigrationRunner.runPendingMigrations();
+  await TableCacheDbSyncService.warmUpCache();
+  res.json(ApiResponse.buildSuccess(result, `Auto-migration completed: ${result.appliedCount} applied, ${result.errors.length} errors`));
+});
+
+// Initialize DomainRegistry, DbConnections, Redis Cache, Auto-Migrations & Auto-Sync Engine
 await DomainRegistry.initialize();
 await PostgresPoolManager.initialize();
+await MigrationRunner.runPendingMigrations();
 await TableCacheDbSyncService.initialize();
 await UserRepo.ensureSchema();
 

@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "migrun": "node scripts/migrun.js",
+    "migrate:create": "node scripts/migrun.js",
     "release": "tsx scripts/publish_release.ts"
   },
   "dependencies": {
