@@ -57,6 +57,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterFiscalYear, setFilterFiscalYear] = useState<string>("all");
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -114,7 +115,6 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const [copyTargetFy, setCopyTargetFy] = useState<number>(2);
   const [copyCategory, setCopyCategory] = useState<string>("all");
   const [isCopying, setIsCopying] = useState<boolean>(false);
-  const [filterFiscalYear, setFilterFiscalYear] = useState<string>("all");
 
   const loadData = async () => {
     setLoading(true);

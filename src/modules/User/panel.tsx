@@ -285,8 +285,9 @@ export const UserPanel: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })
+            )}
             </tbody>
           </table>
         </div>
