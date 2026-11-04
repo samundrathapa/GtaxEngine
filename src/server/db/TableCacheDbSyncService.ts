@@ -267,7 +267,9 @@ export class TableCacheDbSyncService {
     if (table === "tbl_taxpayer_master") {
       const generatedCode = `TP-${Date.now().toString().slice(-6)}`;
       payload.code = payload.code || payload.taxpayer_code || generatedCode;
-      payload.fullanme = payload.fullanme || payload.fullname || payload.full_name || "New Taxpayer";
+      payload.fullname = payload.fullname || payload.fullanme || payload.full_name || "New Taxpayer";
+      delete payload.fullanme;
+      delete payload.full_name;
       payload.mobile_no = payload.mobile_no || payload.phone_number || "";
       payload.ward_no = Number(payload.ward_no || 1);
     } else if (table === "tbl_taxpayer") {
@@ -341,8 +343,10 @@ export class TableCacheDbSyncService {
     };
 
     if (table === "tbl_taxpayer_master") {
-      if (!payload.fullanme && (payload.fullname || payload.full_name)) {
-        payload.fullanme = payload.fullname || payload.full_name;
+      if (payload.fullanme || payload.full_name || payload.fullname) {
+        payload.fullname = payload.fullname || payload.fullanme || payload.full_name;
+        delete payload.fullanme;
+        delete payload.full_name;
       }
     } else if (table === "tbl_taxpayer") {
       if (!payload.full_name && (payload.fullanme || payload.fullname)) {
