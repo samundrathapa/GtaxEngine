@@ -266,6 +266,9 @@ CREATE TABLE IF NOT EXISTS tbl_users (
     insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     update_by VARCHAR(64) NOT NULL DEFAULT 'SYSTEM_INIT',
     update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    delete_by VARCHAR(64) DEFAULT NULL,
+    deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL
 );
 
 -- -------------------------------------------------------------------------
