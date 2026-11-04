@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS tbl_malpot_rates (
     fullanme VARCHAR(200) NOT NULL,
     fiscal_year_id INT REFERENCES tbl_fiscal_year(id) NOT NULL,
     unit_id INT REFERENCES tbl_unit(id) NOT NULL,
+
     rate_per_unit NUMERIC(14, 2) NOT NULL,
     ward_no_ids TEXT NOT NULL,
     is_deleted BOOLEAN DEFAULT FALSE NOT NULL,

@@ -43,8 +43,8 @@
 DO
 $do$
 DECLARE
-  v_user text := :'db_user';
-  v_pass text := :'db_pass';
+  v_user text := 'gtax_user';
+  v_pass text := 'gtax_password';
 BEGIN
    IF NOT EXISTS (
       SELECT FROM pg_catalog.pg_roles
@@ -77,4 +77,4 @@ SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES 
 SELECT format('ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO %I', :'db_user')\gexec
 
 -- 6. Execute Table Schemas
-\i 02_init_gtax_schema.sql
+--\i 02_init_gtax_schema.sql
