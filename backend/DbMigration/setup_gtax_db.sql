@@ -2,11 +2,11 @@
 -- All-in-One Setup Script for Existing PostgreSQL Installation
 -- 
 -- FOR COMMAND LINE (Terminal / PowerShell / psql):
---   sudo -u postgres psql -f database/setup_gtax_db.sql
---   or: psql -U postgres -f database/setup_gtax_db.sql
+--   sudo -u postgres psql -f backend/DbMigration/setup_gtax_db.sql
+--   or: psql -U postgres -f backend/DbMigration/setup_gtax_db.sql
 --
 -- FOR NAVICAT / DBeaver / pgAdmin GUI:
---   Use database/navicat_setup_gtax_db.sql instead (no backslash commands)
+--   Use backend/DbMigration/navicat_setup_gtax_db.sql instead (no backslash commands)
 -- =========================================================================
 
 -- 1. Create Role gtax_user
@@ -43,4 +43,4 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO gtax_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO gtax_user;
 
 -- 4. Execute Table Schemas
-\i database/02_init_gtax_schema.sql
+\i 02_init_gtax_schema.sql

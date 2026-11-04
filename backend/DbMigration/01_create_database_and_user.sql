@@ -1,9 +1,9 @@
 -- =========================================================================
 -- Step 1: Create Database User (gtax_user) and Database (gtax_db)
 -- Run this as PostgreSQL superuser (e.g. postgres user):
---   psql -U postgres -f database/01_create_database_and_user.sql
+--   psql -U postgres -f backend/DbMigration/01_create_database_and_user.sql
 -- or in Linux terminal:
---   sudo -u postgres psql -f database/01_create_database_and_user.sql
+--   sudo -u postgres psql -f backend/DbMigration/01_create_database_and_user.sql
 -- =========================================================================
 
 -- 1. Create User if it does not already exist
@@ -49,5 +49,5 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO gtax_user;
 \echo 'Password: gtax_password'
 \echo 'Host:     localhost:5432'
 \echo 'Now execute step 2 to create the tables:'
-\echo 'psql -U gtax_user -d gtax_db -f database/02_init_gtax_schema.sql'
+\echo 'psql -U gtax_user -d gtax_db -f backend/DbMigration/02_init_gtax_schema.sql'
 \echo '---------------------------------------------------------'

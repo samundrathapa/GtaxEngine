@@ -25,7 +25,7 @@ echo ""
 if ! command -v psql &> /dev/null; then
     echo "⚠️  psql command not found in current PATH."
     echo "If PostgreSQL is installed on a separate server or container, run the SQL script manually:"
-    echo "   psql -h <POSTGRES_HOST> -U postgres -f database/setup_gtax_db.sql"
+    echo "   psql -h <POSTGRES_HOST> -U postgres -f backend/DbMigration/setup_gtax_db.sql"
     exit 1
 fi
 
