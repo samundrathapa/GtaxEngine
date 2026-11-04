@@ -611,7 +611,63 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
-      // Ensure all 25 tables have is_deleted column in PostgreSQL
+      // 29. tbl_appication_setting and tbl_application_setting
+      await PostgresPoolManager.query(`
+        CREATE TABLE IF NOT EXISTS tbl_appication_setting (
+            id SERIAL PRIMARY KEY,
+            code VARCHAR(64) DEFAULT 'APP-CONF-01',
+            fullname VARCHAR(255) DEFAULT 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)',
+            municipality_name VARCHAR(255) DEFAULT 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)',
+            company_id INT DEFAULT 1,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
+            unit_type_id INT DEFAULT 3,
+            ward_count INT DEFAULT 32,
+            theme_preference VARCHAR(64) DEFAULT 'slate',
+            default_language VARCHAR(32) DEFAULT 'eng',
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+            insert_by VARCHAR(64) NOT NULL DEFAULT '1',
+            insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            update_by VARCHAR(64) NOT NULL DEFAULT '1',
+            update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            delete_by VARCHAR(64) DEFAULT NULL,
+            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+            is_active BOOLEAN DEFAULT TRUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS tbl_application_setting (
+            id SERIAL PRIMARY KEY,
+            code VARCHAR(64) DEFAULT 'APP-CONF-01',
+            fullname VARCHAR(255) DEFAULT 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)',
+            municipality_name VARCHAR(255) DEFAULT 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)',
+            company_id INT DEFAULT 1,
+            fiscal_year_id INT REFERENCES tbl_fiscal_year(id) DEFAULT NULL,
+            unit_type_id INT DEFAULT 3,
+            ward_count INT DEFAULT 32,
+            theme_preference VARCHAR(64) DEFAULT 'slate',
+            default_language VARCHAR(32) DEFAULT 'eng',
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+            insert_by VARCHAR(64) NOT NULL DEFAULT '1',
+            insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            update_by VARCHAR(64) NOT NULL DEFAULT '1',
+            update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            delete_by VARCHAR(64) DEFAULT NULL,
+            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+            is_active BOOLEAN DEFAULT TRUE NOT NULL
+        );
+      `);
+
+      // Seed initial application settings record if missing
+      await PostgresPoolManager.query(`
+        INSERT INTO tbl_appication_setting (id, code, fullname, municipality_name, company_id, fiscal_year_id, unit_type_id)
+        VALUES (1, 'APP-CONF-01', 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)', 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)', 1, 2, 3)
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO tbl_application_setting (id, code, fullname, municipality_name, company_id, fiscal_year_id, unit_type_id)
+        VALUES (1, 'APP-CONF-01', 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)', 'Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)', 1, 2, 3)
+        ON CONFLICT (id) DO NOTHING;
+      `);
+
+      // Ensure all tables have is_deleted column and missing columns added
       try {
         await PostgresPoolManager.query(`
           DO $$
@@ -623,11 +679,38 @@ export class DatabaseSchemaBootstrap {
                   'tbl_user_log','tbl_session_log','tbl_fiscal_year','tbl_unit','tbl_construction_type','tbl_land_nature',
                   'tbl_land_rate','tbl_malpot_rates','tbl_construction_rates','tbl_depreciation','tbl_fine_rebate',
                   'tbl_taxpayer','tbl_land','tbl_house','tbl_floor','tax_jurisdictions',
-                  'tax_rules_matrix','tax_transactions','tax_liability_breakdown'
+                  'tax_rules_matrix','tax_transactions','tax_liability_breakdown','tbl_appication_setting','tbl_application_setting'
               ]) LOOP
                   EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE NOT NULL;', tbl);
               END LOOP;
           END $$;
+        `);
+      } catch (_) {}
+
+      // Add missing table columns to existing PostgreSQL tables
+      try {
+        await PostgresPoolManager.query(`
+          ALTER TABLE tbl_house ADD COLUMN IF NOT EXISTS secondary_land_id INT REFERENCES tbl_land(id) ON DELETE SET NULL;
+          ALTER TABLE tbl_house ADD COLUMN IF NOT EXISTS kitta_numbers VARCHAR(255);
+          ALTER TABLE tbl_house ADD COLUMN IF NOT EXISTS land_ids VARCHAR(255);
+
+          ALTER TABLE tbl_malpot_rates ADD COLUMN IF NOT EXISTS area_per_unit NUMERIC(14, 2) DEFAULT 1.00;
+          ALTER TABLE tbl_malpot_rates ADD COLUMN IF NOT EXISTS area_upto NUMERIC(14, 2) DEFAULT 0.00;
+          ALTER TABLE tbl_malpot_rates ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT FALSE;
+          ALTER TABLE tbl_malpot_rates ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL;
+
+          ALTER TABLE tbl_land_rate ADD COLUMN IF NOT EXISTS area_per_unit NUMERIC(14, 2) DEFAULT 1.00;
+          ALTER TABLE tbl_land_rate ADD COLUMN IF NOT EXISTS area_upto NUMERIC(14, 2) DEFAULT 0.00;
+          ALTER TABLE tbl_land_rate ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT FALSE;
+          ALTER TABLE tbl_land_rate ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL;
+
+          ALTER TABLE tbl_construction_rates ADD COLUMN IF NOT EXISTS area_per_unit NUMERIC(14, 2) DEFAULT 1.00;
+          ALTER TABLE tbl_construction_rates ADD COLUMN IF NOT EXISTS area_upto NUMERIC(14, 2) DEFAULT 0.00;
+          ALTER TABLE tbl_construction_rates ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT FALSE;
+          ALTER TABLE tbl_construction_rates ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL;
+
+          ALTER TABLE tbl_depreciation ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT FALSE;
+          ALTER TABLE tbl_depreciation ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL;
         `);
       } catch (_) {}
 
@@ -774,87 +857,103 @@ export class DatabaseSchemaBootstrap {
       } catch (_) {}
 
       // 8. Units
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_unit (id, code, fullanme, unit_value, is_deleted, insert_by, update_by) VALUES
-        (1, 'AANA', 'Aana (आना) - 342.25 Sq.Ft', 342.2500, false, '1', '1'),
-        (2, 'ROPANI', 'Ropani (रोपनी) - 5476 Sq.Ft / 16 Aana', 5476.0000, false, '1', '1'),
-        (3, 'PAISA', 'Paisa (पैसा) - 85.56 Sq.Ft / 4 Daam', 85.5625, false, '1', '1'),
-        (4, 'DAAM', 'Daam (दाम) - 21.39 Sq.Ft', 21.3906, false, '1', '1'),
-        (5, 'KATTHA', 'Kattha (कट्ठा) - 3645 Sq.Ft (Terai/Madhesh)', 3645.0000, false, '1', '1'),
-        (6, 'BIGHA', 'Bigha (बिघा) - 72900 Sq.Ft / 20 Kattha', 72900.0000, false, '1', '1'),
-        (7, 'SQFT', 'Square Feet (वर्ग फिट)', 1.0000, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_unit (id, code, fullanme, unit_value, is_deleted, insert_by, update_by) VALUES
+          (1, 'AANA', 'Aana (आना) - 342.25 Sq.Ft', 342.2500, false, '1', '1'),
+          (2, 'ROPANI', 'Ropani (रोपनी) - 5476 Sq.Ft / 16 Aana', 5476.0000, false, '1', '1'),
+          (3, 'PAISA', 'Paisa (पैसा) - 85.56 Sq.Ft / 4 Daam', 85.5625, false, '1', '1'),
+          (4, 'DAAM', 'Daam (दाम) - 21.39 Sq.Ft', 21.3906, false, '1', '1'),
+          (5, 'KATTHA', 'Kattha (कट्ठा) - 3645 Sq.Ft (Terai/Madhesh)', 3645.0000, false, '1', '1'),
+          (6, 'BIGHA', 'Bigha (बिघा) - 72900 Sq.Ft / 20 Kattha', 72900.0000, false, '1', '1'),
+          (7, 'SQFT', 'Square Feet (वर्ग फिट)', 1.0000, false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 9. Construction Types
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_construction_type (id, code, fullanme, is_deleted, insert_by, update_by) VALUES
-        (1, 'RCC_PILLAR', 'R.C.C. Pillar & Slab Structure Grade A (पक्की पिलर भवन)', false, '1', '1'),
-        (2, 'LOAD_BEARING', 'Brick Masonry in Cement Mortar Load Bearing (इँटा-सिमेन्ट गाह्रो)', false, '1', '1'),
-        (3, 'BRICK_MUD', 'Traditional Brick with Mud Mortar Masonry (माटो-इँटा जोडाई)', false, '1', '1'),
-        (4, 'STEEL_TRUSS', 'Engineered Steel Truss & Industrial Prefab Panel (स्टिल ट्रस)', false, '1', '1'),
-        (5, 'WOOD_FRAME', 'Traditional Timber Frame & Stone Masonry (काठ-ढुङ्गा संरचना)', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_construction_type (id, code, fullanme, is_deleted, insert_by, update_by) VALUES
+          (1, 'RCC_PILLAR', 'R.C.C. Pillar & Slab Structure Grade A (पक्की पिलर भवन)', false, '1', '1'),
+          (2, 'LOAD_BEARING', 'Brick Masonry in Cement Mortar Load Bearing (इँटा-सिमेन्ट गाह्रो)', false, '1', '1'),
+          (3, 'BRICK_MUD', 'Traditional Brick with Mud Mortar Masonry (माटो-इँटा जोडाई)', false, '1', '1'),
+          (4, 'STEEL_TRUSS', 'Engineered Steel Truss & Industrial Prefab Panel (स्टिल ट्रस)', false, '1', '1'),
+          (5, 'WOOD_FRAME', 'Traditional Timber Frame & Stone Masonry (काठ-ढुङ्गा संरचना)', false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 10. Land Natures
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_land_nature (id, code, fullanme, is_deleted, insert_by, update_by) VALUES
-        (1, 'COMMERCIAL', 'High Street Commercial & Business Corridor (व्यापारिक क्षेत्र)', false, '1', '1'),
-        (2, 'RESIDENTIAL', 'Municipal Urban Residential Zone (आवासीय क्षेत्र)', false, '1', '1'),
-        (3, 'AGRICULTURAL', 'Fertile Cultivation & Farmland Zone (कृषि क्षेत्र)', false, '1', '1'),
-        (4, 'INDUSTRIAL', 'Industrial & Manufacturing Zone (औद्योगिक क्षेत्र)', false, '1', '1'),
-        (5, 'HIGHWAY', 'National / Provincial Highway Facing (राजमार्गसँग जोडिएको)', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_land_nature (id, code, fullanme, is_deleted, insert_by, update_by) VALUES
+          (1, 'COMMERCIAL', 'High Street Commercial & Business Corridor (व्यापारिक क्षेत्र)', false, '1', '1'),
+          (2, 'RESIDENTIAL', 'Municipal Urban Residential Zone (आवासीय क्षेत्र)', false, '1', '1'),
+          (3, 'AGRICULTURAL', 'Fertile Cultivation & Farmland Zone (कृषि क्षेत्र)', false, '1', '1'),
+          (4, 'INDUSTRIAL', 'Industrial & Manufacturing Zone (औद्योगिक क्षेत्र)', false, '1', '1'),
+          (5, 'HIGHWAY', 'National / Provincial Highway Facing (राजमार्गसँग जोडिएको)', false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 11. Land Rates (tbl_land_rate)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_land_rate (id, code, fullanme, fiscal_year_id, is_parent, parent_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
-        (1, 'LR-001', 'Main Arterial Highway (Paved 40ft+ Corridor)', 2, false, null, 1, 1500000.00, 0.00, 1.00, '1,2,3,4', false, '1', '1'),
-        (2, 'LR-002', 'Secondary Branch Road (Paved 20ft Blacktopped)', 2, false, null, 1, 950000.00, 0.00, 1.00, '2,3,5', false, '1', '1'),
-        (3, 'LR-003', 'Urban Residential Link Road (Gravelled 14ft)', 2, false, null, 1, 650000.00, 0.00, 1.00, '3,4,6', false, '1', '1'),
-        (4, 'LR-004', 'Agricultural Zone Internal Trail (Earthen 10ft)', 2, false, null, 1, 280000.00, 0.00, 1.00, '7,8,9', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_land_rate (id, code, fullanme, fiscal_year_id, is_parent, parent_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
+          (1, 'LR-001', 'Main Arterial Highway (Paved 40ft+ Corridor)', 2, false, null, 1, 1500000.00, 0.00, 1.00, '1,2,3,4', false, '1', '1'),
+          (2, 'LR-002', 'Secondary Branch Road (Paved 20ft Blacktopped)', 2, false, null, 1, 950000.00, 0.00, 1.00, '2,3,5', false, '1', '1'),
+          (3, 'LR-003', 'Urban Residential Link Road (Gravelled 14ft)', 2, false, null, 1, 650000.00, 0.00, 1.00, '3,4,6', false, '1', '1'),
+          (4, 'LR-004', 'Agricultural Zone Internal Trail (Earthen 10ft)', 2, false, null, 1, 280000.00, 0.00, 1.00, '7,8,9', false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 12. Malpot Rates (tbl_malpot_rates)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_malpot_rates (id, code, fullanme, fiscal_year_id, is_parent, parent_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
-        (1, 'MR-001', 'Commercial Zone Government Valuation (मालपोत मूल्यांकन - व्यापारिक)', 2, false, null, 1, 1200000.00, 0.00, 1.00, '1,2,3', false, '1', '1'),
-        (2, 'MR-002', 'Residential Core Government Valuation (मालपोत मूल्यांकन - आवासीय)', 2, false, null, 1, 750000.00, 0.00, 1.00, '4,5,6', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_malpot_rates (id, code, fullanme, fiscal_year_id, is_parent, parent_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
+          (1, 'MR-001', 'Commercial Zone Government Valuation (मालपोत मूल्यांकन - व्यापारिक)', 2, false, null, 1, 1200000.00, 0.00, 1.00, '1,2,3', false, '1', '1'),
+          (2, 'MR-002', 'Residential Core Government Valuation (मालपोत मूल्यांकन - आवासीय)', 2, false, null, 1, 750000.00, 0.00, 1.00, '4,5,6', false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 13. Construction Rates (tbl_construction_rates)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_construction_rates (id, code, fullanme, fiscal_year_id, is_parent, parent_id, const_type_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
-        (1, 'CR-001', 'RCC Frame Structure Grade A Assessment Rate', 2, false, null, 1, 7, 3200.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1'),
-        (2, 'CR-002', 'Cement Mortar Load Bearing Assessment Rate', 2, false, null, 2, 7, 2400.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1'),
-        (3, 'CR-003', 'Brick with Mud Mortar Traditional Masonry Rate', 2, false, null, 3, 7, 1400.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_construction_rates (id, code, fullanme, fiscal_year_id, is_parent, parent_id, const_type_id, unit_id, rate_per_unit, area_upto, area_per_unit, ward_no_ids, is_deleted, insert_by, update_by) VALUES
+          (1, 'CR-001', 'RCC Frame Structure Grade A Assessment Rate', 2, false, null, 1, 1, 3200.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1'),
+          (2, 'CR-002', 'Cement Mortar Load Bearing Assessment Rate', 2, false, null, 2, 1, 2400.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1'),
+          (3, 'CR-003', 'Brick with Mud Mortar Traditional Masonry Rate', 2, false, null, 3, 1, 1400.00, 0.00, 1.00, '1,2,3,4,5,6,7,8,9', false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 14. Depreciation (tbl_depreciation)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_depreciation (id, code, fullanme, fiscal_year_id, is_parent, parent_id, sn, year_from, year_to, percent, is_deleted, insert_by, update_by) VALUES
-        (1, 'DEP-01', 'Building Age 0 to 5 Years (0-5 वर्ष)', 2, false, null, 1, 0, 5, 0.0000, false, '1', '1'),
-        (2, 'DEP-02', 'Building Age 6 to 10 Years (६-१० वर्ष)', 2, false, null, 2, 6, 10, 5.0000, false, '1', '1'),
-        (3, 'DEP-03', 'Building Age 11 to 20 Years (११-२० वर्ष)', 2, false, null, 3, 11, 20, 15.0000, false, '1', '1'),
-        (4, 'DEP-04', 'Building Age 21 to 30 Years (२१-३० वर्ष)', 2, false, null, 4, 21, 30, 25.0000, false, '1', '1'),
-        (5, 'DEP-05', 'Building Age Over 30 Years (३० वर्ष माथि)', 2, false, null, 5, 31, 100, 40.0000, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_depreciation (id, code, fullanme, fiscal_year_id, is_parent, parent_id, sn, year_from, year_to, percent, is_deleted, insert_by, update_by) VALUES
+          (1, 'DEP-01', 'Building Age 0 to 5 Years (0-5 वर्ष)', 2, false, null, 1, 0, 5, 0.0000, false, '1', '1'),
+          (2, 'DEP-02', 'Building Age 6 to 10 Years (६-१० वर्ष)', 2, false, null, 2, 6, 10, 5.0000, false, '1', '1'),
+          (3, 'DEP-03', 'Building Age 11 to 20 Years (११-२० वर्ष)', 2, false, null, 3, 11, 20, 15.0000, false, '1', '1'),
+          (4, 'DEP-04', 'Building Age 21 to 30 Years (२१-३० वर्ष)', 2, false, null, 4, 21, 30, 25.0000, false, '1', '1'),
+          (5, 'DEP-05', 'Building Age Over 30 Years (३० वर्ष माथि)', 2, false, null, 5, 31, 100, 40.0000, false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 15. Fine & Rebate (tbl_fine_rebate)
-      await PostgresPoolManager.query(`
-        INSERT INTO tbl_fine_rebate (id, fiscal_year_id, tax_type_id, ratesn, years, month, calcpercent, ratepercent, flatrate, isfine, days, is_deleted, insert_by, update_by) VALUES
-        (1, 2, 1, 1, 0, 3, -10.0000, -10.0000, 0.00, false, 90, false, '1', '1'),
-        (2, 2, 1, 2, 0, 9, 0.0000, 0.0000, 0.00, false, 270, false, '1', '1'),
-        (3, 2, 1, 3, 1, 0, 10.0000, 10.0000, 0.00, true, 365, false, '1', '1'),
-        (4, 2, 1, 4, 2, 0, 25.0000, 25.0000, 0.00, true, 730, false, '1', '1')
-        ON CONFLICT (id) DO NOTHING;
-      `);
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_fine_rebate (id, fiscal_year_id, tax_type_id, ratesn, years, month, calcpercent, ratepercent, flatrate, isfine, days, is_deleted, insert_by, update_by) VALUES
+          (1, 2, 1, 1, 0, 3, -10.0000, -10.0000, 0.00, false, 90, false, '1', '1'),
+          (2, 2, 1, 2, 0, 9, 0.0000, 0.0000, 0.00, false, 270, false, '1', '1'),
+          (3, 2, 1, 3, 1, 0, 10.0000, 10.0000, 0.00, true, 365, false, '1', '1'),
+          (4, 2, 1, 4, 2, 0, 25.0000, 25.0000, 0.00, true, 730, false, '1', '1')
+          ON CONFLICT DO NOTHING;
+        `);
+      } catch (_) {}
 
       // 16. System Masters Ready - No dummy taxpayers or properties are auto-injected.
       // Database strictly holds genuine data created by the user or pre-existing in the DB server.
