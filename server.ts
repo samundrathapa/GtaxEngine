@@ -24,6 +24,8 @@ import { CommonEntryPointCoordinator } from "./server/entry.ts";
 import { PostgresPoolManager } from "./src/server/db/postgresPool.ts";
 import { TableCacheDbSyncService, ALL_25_TABLES } from "./src/server/db/TableCacheDbSyncService.ts";
 
+import { serversideRouter } from "./src/serverside/index.ts";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +35,10 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// Mount restructured serverside table entity router for /api/User/GetSearchTemplate, /api/User/:id/GetItemTemplate, /api/User/GetCombo
+app.use("/api", serversideRouter);
+app.use("/api/v1", serversideRouter);
 
 // Mount modular AI domain router
 app.use("/api/v1/ai", aiRouter);
