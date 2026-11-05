@@ -24,7 +24,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
   private static schemaBootstrapped = false;
 
   constructor() {
-    super("tbl_user", "user_id");
+    super("tbl_user", "id");
 
     // Seed default in-memory users matching authDb
     this.seedMemoryFallbacks();
@@ -33,6 +33,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
   private seedMemoryFallbacks() {
     const defaultUsers = [
       {
+        id: 1,
         user_id: "USR_1",
         username: "superadmin",
         email: "superadmin@gtax.enterprise",
@@ -45,6 +46,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
         is_locked: false
       },
       {
+        id: 2,
         user_id: "USR_2",
         username: "admin",
         email: "admin@gtax.enterprise",
@@ -57,6 +59,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
         is_locked: false
       },
       {
+        id: 3,
         user_id: "USR_3",
         username: "operator",
         email: "operator@gtax.enterprise",
@@ -69,6 +72,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
         is_locked: false
       },
       {
+        id: 4,
         user_id: "USR_4",
         username: "user",
         email: "user@gtax.enterprise",
@@ -83,7 +87,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
     ];
 
     defaultUsers.forEach((u) => {
-      this.localStore.set(u.user_id, {
+      const rec = {
         ...u,
         insert_by: "SYSTEM_BOOT",
         insert_on: new Date().toISOString(),
@@ -92,7 +96,9 @@ export class UserRepo extends BaseRepo<UserRecord> {
         delete_by: null,
         deleted_on: null,
         is_active: true
-      });
+      };
+      this.localStore.set(String(u.id), rec);
+      this.localStore.set(u.user_id, rec);
     });
   }
 
@@ -205,18 +211,12 @@ export class UserRepo extends BaseRepo<UserRecord> {
   }
 
   override async listAll(limit = 100, offset = 0): Promise<any[]> {
-    // 1. Check Redis cache first (Cache-First retrieval)
-    const cachedUsers = await RedisCacheManager.get<any[]>("gtax:cache:table:tbl_user");
-    if (cachedUsers && Array.isArray(cachedUsers) && cachedUsers.length > 0) {
-      return cachedUsers.slice(offset, offset + limit);
-    }
-
     await UserRepo.ensureSchema();
 
     if (PostgresPoolManager.getStatus().connected) {
       try {
         const rows = await PostgresPoolManager.query<any>(`
-          SELECT 
+          SELECT DISTINCT ON (u.id)
             u.id,
             u.fullname,
             u.photo_path,
@@ -237,59 +237,21 @@ export class UserRepo extends BaseRepo<UserRecord> {
             COALESCE(r.role_name, 'user') AS role,
             COALESCE(r.id, 4) AS role_id
           FROM tbl_user u
-          LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true
-          LEFT JOIN tbl_role r ON ur.role_id = r.id
-          WHERE u.is_active = true
+          LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true AND ur.is_deleted IS NOT TRUE
+          LEFT JOIN tbl_role r ON ur.role_id = r.id AND r.is_active = true
+          WHERE u.is_active = true AND u.is_deleted IS NOT TRUE
           ORDER BY u.id ASC
           LIMIT $1 OFFSET $2;
         `, [limit, offset]);
 
         if (rows) {
-          // If the database has 0 users (e.g. freshly created db), seed defaults and re-query
-          if (rows.length === 0) {
-            await UserRepo.ensureSchema();
-            const recheck = await PostgresPoolManager.query<any>(`
-              SELECT 
-                u.id, u.fullname, u.photo_path, u.email, u.mobile, u.country_id,
-                u.effective_from, u.effective_to, u.employee_id, u.is_locked,
-                u.insert_by, u.insert_on, u.update_by, u.update_on, u.delete_by, u.deleted_on, u.is_active,
-                COALESCE(r.role_name, 'user') AS role, COALESCE(r.id, 4) AS role_id
-              FROM tbl_user u
-              LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true
-              LEFT JOIN tbl_role r ON ur.role_id = r.id
-              WHERE u.is_active = true
-              ORDER BY u.id ASC;
-            `);
-            if (recheck && recheck.length > 0) {
-              return recheck.map((r) => ({
-                id: r.id,
-                user_id: `USR_${r.id}`,
-                username: (r.email || "").split("@")[0],
-                email: r.email,
-                full_name: r.fullname,
-                mobile: r.mobile || "",
-                role: r.role || "user",
-                org_id: "ORG_GLOBAL_CORP",
-                company_id: 1,
-                employee_id: r.employee_id || `EMP-${r.id}`,
-                is_locked: Boolean(r.is_locked),
-                insert_by: r.insert_by || "SYSTEM",
-                insert_on: r.insert_on,
-                update_by: r.update_by || "SYSTEM",
-                update_on: r.update_on,
-                delete_by: r.delete_by,
-                deleted_on: r.deleted_on,
-                is_active: r.is_active
-              }));
-            }
-          }
-
           const mapped = rows.map((r) => ({
             id: r.id,
             user_id: `USR_${r.id}`,
             username: (r.email || "").split("@")[0],
             email: r.email,
             full_name: r.fullname,
+            fullname: r.fullname,
             mobile: r.mobile || "",
             role: r.role || "user",
             org_id: "ORG_GLOBAL_CORP",
@@ -304,6 +266,8 @@ export class UserRepo extends BaseRepo<UserRecord> {
             deleted_on: r.deleted_on,
             is_active: r.is_active
           }));
+
+          // Invalidate stale cache and write fresh mapped list to Redis
           await RedisCacheManager.set("gtax:cache:table:tbl_user", mapped, 3600);
           return mapped;
         }
@@ -314,10 +278,16 @@ export class UserRepo extends BaseRepo<UserRecord> {
 
     // In-memory fallback
     const memList = await super.listAll(limit, offset);
-    if (memList && memList.length > 0) {
-      await RedisCacheManager.set("gtax:cache:table:tbl_user", memList, 3600);
-    }
-    return memList;
+    // De-duplicate in memory by id / user_id
+    const seen = new Set<string>();
+    const deduplicated = memList.filter((m) => {
+      const key = String(m.id || m.user_id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return deduplicated;
   }
 
   override async getById(recordId: string): Promise<any | null> {
@@ -327,15 +297,15 @@ export class UserRepo extends BaseRepo<UserRecord> {
     if (PostgresPoolManager.getStatus().connected && !isNaN(idNum)) {
       try {
         const rows = await PostgresPoolManager.query<any>(`
-          SELECT 
+          SELECT DISTINCT ON (u.id)
             u.id, u.fullname, u.photo_path, u.email, u.mobile, u.country_id,
             u.effective_from, u.effective_to, u.employee_id, u.is_locked,
             u.insert_by, u.insert_on, u.update_by, u.update_on, u.delete_by, u.deleted_on, u.is_active,
             COALESCE(r.role_name, 'user') AS role
           FROM tbl_user u
-          LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true
-          LEFT JOIN tbl_role r ON ur.role_id = r.id
-          WHERE u.id = $1 AND u.is_active = true;
+          LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true AND ur.is_deleted IS NOT TRUE
+          LEFT JOIN tbl_role r ON ur.role_id = r.id AND r.is_active = true
+          WHERE u.id = $1 AND u.is_active = true AND u.is_deleted IS NOT TRUE;
         `, [idNum]);
 
         if (rows && rows.length > 0) {
@@ -346,6 +316,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
             username: (r.email || "").split("@")[0],
             email: r.email,
             full_name: r.fullname,
+            fullname: r.fullname,
             mobile: r.mobile || "",
             role: r.role || "user",
             org_id: "ORG_GLOBAL_CORP",
@@ -364,7 +335,8 @@ export class UserRepo extends BaseRepo<UserRecord> {
       }
     }
 
-    return super.getById(recordId);
+    const item = this.localStore.get(String(recordId)) || this.localStore.get(`USR_${recordId}`) || this.localStore.get(recordId.replace("USR_", ""));
+    return item || null;
   }
 
   override async insert(data: any, userId: string): Promise<any> {
@@ -387,7 +359,6 @@ export class UserRepo extends BaseRepo<UserRecord> {
 
     if (PostgresPoolManager.getStatus().connected) {
       try {
-        // Guarantee sequence is at or above max id before inserting
         await PostgresPoolManager.query(`
           SELECT setval(pg_get_serial_sequence('tbl_user', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM tbl_user), 0), 1));
         `);
@@ -406,21 +377,12 @@ export class UserRepo extends BaseRepo<UserRecord> {
         if (rows && rows.length > 0) {
           createdId = rows[0].id;
 
-          // Assign role in tbl_user_role
           await PostgresPoolManager.query(`
             SELECT setval(pg_get_serial_sequence('tbl_user_role', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM tbl_user_role), 0), 1));
             INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
             VALUES ($1, $2, $3, NOW(), $3, NOW(), true)
             ON CONFLICT DO NOTHING;
           `, [createdId, roleId, actor]);
-
-          // Also record in tbl_user_log
-          await PostgresPoolManager.query(`
-            INSERT INTO tbl_user_log (user_id, username_attempt, action_name, ip_address, user_agent, details, insert_by, insert_on, update_by, update_on, is_active)
-            VALUES ($1, $2, 'USER_CREATED', '127.0.0.1', 'API', $3, $4, NOW(), $4, NOW(), true);
-          `, [createdId, email, `Created user ${fullName} with role ${roleName}`, actor]);
-
-          console.log(`[UserRepo] Persisted new user '${email}' to PostgreSQL tbl_user (id=${createdId}, role=${roleName})`);
         }
       } catch (err) {
         console.warn("[UserRepo] Failed to insert into live tbl_user, persisting to memory:", err);
@@ -433,6 +395,7 @@ export class UserRepo extends BaseRepo<UserRecord> {
       username: email.split("@")[0] || data.username,
       email,
       full_name: fullName,
+      fullname: fullName,
       mobile,
       role: roleName,
       org_id: data.org_id || "ORG_GLOBAL_CORP",
@@ -448,47 +411,11 @@ export class UserRepo extends BaseRepo<UserRecord> {
       is_active: true
     };
 
-    // Save to local memory map
+    // Save under both id string and user_id to prevent duplicates
+    this.localStore.set(String(createdId), record);
     this.localStore.set(record.user_id, record);
 
-    // Sync with authDb store for login
-    authDb.users.set(createdId, {
-      id: createdId,
-      fullname: fullName,
-      photo_path: null,
-      email,
-      password,
-      mobile,
-      country_id: 1,
-      effective_from: new Date().toISOString().split("T")[0],
-      effective_to: null,
-      employee_id: employeeId,
-      is_locked: false,
-      insert_by: actor,
-      insert_on: record.insert_on,
-      update_by: actor,
-      update_on: record.update_on,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    authDb.userRoles.set(createdId, {
-      id: createdId,
-      user_id: createdId,
-      role_id: roleId,
-      insert_by: actor,
-      insert_on: record.insert_on,
-      update_by: actor,
-      update_on: record.update_on,
-      delete_by: null,
-      deleted_on: null,
-      is_active: true
-    });
-
-    // Auto-sync Redis Cache
     await RedisCacheManager.delete("gtax:cache:table:tbl_user");
-
     return record;
   }
 
@@ -532,8 +459,15 @@ export class UserRepo extends BaseRepo<UserRecord> {
       }
     }
 
+    const existing = await this.getById(recordId);
+    if (existing) {
+      const updated = { ...existing, ...data, update_by: actor, update_on: new Date().toISOString() };
+      this.localStore.set(String(existing.id), updated);
+      this.localStore.set(String(existing.user_id), updated);
+    }
+
     await RedisCacheManager.delete("gtax:cache:table:tbl_user");
-    return super.update(recordId, data, userId);
+    return existing;
   }
 
   override async softDelete(recordId: string, userId: string): Promise<boolean> {
@@ -554,8 +488,12 @@ export class UserRepo extends BaseRepo<UserRecord> {
       }
     }
 
+    this.localStore.delete(String(recordId));
+    this.localStore.delete(`USR_${recordId}`);
+    this.localStore.delete(recordId.replace("USR_", ""));
+
     await RedisCacheManager.delete("gtax:cache:table:tbl_user");
-    return super.softDelete(recordId, userId);
+    return true;
   }
 }
 
