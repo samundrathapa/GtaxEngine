@@ -145,20 +145,30 @@ echo [COPY] Assembling IIS production files into:
 echo        %WIN_PKG_DIR%
 
 :: 1. Copy Frontend dist/
-mkdir "%WIN_PKG_DIR%\dist"
-xcopy "%ROOT_DIR%\dist" "%WIN_PKG_DIR%\dist\" /E /Y /I /Q >nul
+if exist "%ROOT_DIR%\dist" (
+    mkdir "%WIN_PKG_DIR%\dist"
+    xcopy "%ROOT_DIR%\dist" "%WIN_PKG_DIR%\dist\" /E /Y /I /Q >nul
+)
 
-:: 2. Copy IIS Configuration & Update Scripts (Drop-in replacements)
-copy /y "%ROOT_DIR%\web.config" "%WIN_PKG_DIR%\web.config" >nul
-copy /y "%ROOT_DIR%\update_iis.bat" "%WIN_PKG_DIR%\update_iis.bat" >nul
-copy /y "%ROOT_DIR%\start_server.bat" "%WIN_PKG_DIR%\start_server.bat" >nul
-copy /y "%ROOT_DIR%\run_migrations.bat" "%WIN_PKG_DIR%\run_migrations.bat" >nul
-copy /y "%ROOT_DIR%\package.json" "%WIN_PKG_DIR%\package.json" >nul
+:: 1b. Copy Public Assets (images, icons, static assets)
+if exist "%ROOT_DIR%\public" (
+    mkdir "%WIN_PKG_DIR%\public"
+    xcopy "%ROOT_DIR%\public" "%WIN_PKG_DIR%\public\" /E /Y /I /Q >nul
+)
+
+:: 2. Copy IIS Configuration, Asset Copier & Update Scripts (Drop-in replacements)
+if exist "%ROOT_DIR%\web.config" copy /y "%ROOT_DIR%\web.config" "%WIN_PKG_DIR%\web.config" >nul
+if exist "%ROOT_DIR%\update_iis.bat" copy /y "%ROOT_DIR%\update_iis.bat" "%WIN_PKG_DIR%\update_iis.bat" >nul
+if exist "%ROOT_DIR%\start_server.bat" copy /y "%ROOT_DIR%\start_server.bat" "%WIN_PKG_DIR%\start_server.bat" >nul
+if exist "%ROOT_DIR%\run_migrations.bat" copy /y "%ROOT_DIR%\run_migrations.bat" "%WIN_PKG_DIR%\run_migrations.bat" >nul
+if exist "%ROOT_DIR%\migrun.bat" copy /y "%ROOT_DIR%\migrun.bat" "%WIN_PKG_DIR%\migrun.bat" >nul
+if exist "%ROOT_DIR%\copy_release_assets.bat" copy /y "%ROOT_DIR%\copy_release_assets.bat" "%WIN_PKG_DIR%\copy_release_assets.bat" >nul
+if exist "%ROOT_DIR%\package.json" copy /y "%ROOT_DIR%\package.json" "%WIN_PKG_DIR%\package.json" >nul
 if exist "%ROOT_DIR%\tsconfig.json" copy /y "%ROOT_DIR%\tsconfig.json" "%WIN_PKG_DIR%\tsconfig.json" >nul
 if exist "%ROOT_DIR%\.env.example" copy /y "%ROOT_DIR%\.env.example" "%WIN_PKG_DIR%\.env.example" >nul
 
-:: 3. Copy Server code and runtime modules
-copy /y "%ROOT_DIR%\server.ts" "%WIN_PKG_DIR%\server.ts" >nul
+:: 3. Copy Server code, data stores, scripts, and runtime modules
+if exist "%ROOT_DIR%\server.ts" copy /y "%ROOT_DIR%\server.ts" "%WIN_PKG_DIR%\server.ts" >nul
 if exist "%ROOT_DIR%\server" (
     mkdir "%WIN_PKG_DIR%\server"
     xcopy "%ROOT_DIR%\server" "%WIN_PKG_DIR%\server\" /E /Y /I /Q >nul
@@ -167,6 +177,14 @@ if exist "%ROOT_DIR%\ai" (
     mkdir "%WIN_PKG_DIR%\ai"
     xcopy "%ROOT_DIR%\ai" "%WIN_PKG_DIR%\ai\" /E /Y /I /Q >nul
 )
+if exist "%ROOT_DIR%\data" (
+    mkdir "%WIN_PKG_DIR%\data"
+    xcopy "%ROOT_DIR%\data" "%WIN_PKG_DIR%\data\" /E /Y /I /Q >nul
+)
+if exist "%ROOT_DIR%\scripts" (
+    mkdir "%WIN_PKG_DIR%\scripts"
+    xcopy "%ROOT_DIR%\scripts" "%WIN_PKG_DIR%\scripts\" /E /Y /I /Q >nul
+)
 if exist "%ROOT_DIR%\database" (
     mkdir "%WIN_PKG_DIR%\database"
     xcopy "%ROOT_DIR%\database" "%WIN_PKG_DIR%\database\" /E /Y /I /Q >nul
@@ -174,6 +192,10 @@ if exist "%ROOT_DIR%\database" (
 if exist "%ROOT_DIR%\dbmigration" (
     mkdir "%WIN_PKG_DIR%\dbmigration"
     xcopy "%ROOT_DIR%\dbmigration" "%WIN_PKG_DIR%\dbmigration\" /E /Y /I /Q >nul
+)
+if exist "%ROOT_DIR%\DbMigration" (
+    mkdir "%WIN_PKG_DIR%\DbMigration"
+    xcopy "%ROOT_DIR%\DbMigration" "%WIN_PKG_DIR%\DbMigration\" /E /Y /I /Q >nul
 )
 if exist "%ROOT_DIR%\src" (
     mkdir "%WIN_PKG_DIR%\src"

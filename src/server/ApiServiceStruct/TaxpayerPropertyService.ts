@@ -1019,7 +1019,11 @@ class TaxpayerPropertyDatabase {
       if (PostgresPoolManager.getStatus().connected) {
         PostgresPoolManager.query("UPDATE tbl_fiscal_year SET is_active = (id = $1);", [updated.fiscal_year_id]).catch(() => {});
         PostgresPoolManager.query(
-          "UPDATE tbl_appication_setting SET fiscal_year_id = $1, municipality_name = $2, update_on = NOW() WHERE id = 1;",
+          "UPDATE tbl_appication_setting SET fiscal_year_id = $1, municipality_name = $2, fullname = $2, update_on = NOW() WHERE id = 1;",
+          [updated.fiscal_year_id, updated.municipality_name]
+        ).catch(() => {});
+        PostgresPoolManager.query(
+          "UPDATE tbl_application_setting SET fiscal_year_id = $1, municipality_name = $2, fullname = $2, update_on = NOW() WHERE id = 1;",
           [updated.fiscal_year_id, updated.municipality_name]
         ).catch(() => {});
       }

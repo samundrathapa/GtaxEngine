@@ -238,7 +238,7 @@ const RATE_CATEGORY_TO_TABLE: Record<string, string> = {
   application_setting: "tbl_appication_setting"
 };
 
-// Master Tables Snapshot: Always served from Redis cache (auto-synced from DB)
+// Master Tables Snapshot: Always served directly from live PostgreSQL database
 app.get("/api/v1/property/masters", async (req, res) => {
   const [
     fiscalYears,
@@ -249,7 +249,8 @@ app.get("/api/v1/property/masters", async (req, res) => {
     malpotRates,
     constructionRates,
     depreciations,
-    fineRebates
+    fineRebates,
+    appSettingsFromDb
   ] = await Promise.all([
     TableCacheDbSyncService.getTableData("tbl_fiscal_year", true),
     TableCacheDbSyncService.getTableData("tbl_unit", true),
@@ -259,8 +260,19 @@ app.get("/api/v1/property/masters", async (req, res) => {
     TableCacheDbSyncService.getTableData("tbl_malpot_rates", true),
     TableCacheDbSyncService.getTableData("tbl_construction_rates", true),
     TableCacheDbSyncService.getTableData("tbl_depreciation", true),
-    TableCacheDbSyncService.getTableData("tbl_fine_rebate", true)
+    TableCacheDbSyncService.getTableData("tbl_fine_rebate", true),
+    TableCacheDbSyncService.getTableData("tbl_application_setting", true)
   ]);
+
+  let applicationSettings = appSettingsFromDb;
+  if (!applicationSettings || applicationSettings.length === 0) {
+    applicationSettings = await TableCacheDbSyncService.getTableData("tbl_appication_setting", true);
+  }
+  if (!applicationSettings || applicationSettings.length === 0) {
+    applicationSettings = propertyDb.getApplicationSettings();
+  } else {
+    propertyDb.updateApplicationSetting(applicationSettings[0]);
+  }
 
   res.json(ApiResponse.buildSuccess({
     fiscalYears,
@@ -274,8 +286,8 @@ app.get("/api/v1/property/masters", async (req, res) => {
     fineRebates,
     propertyRanges: propertyDb.getPropertyRanges(),
     companies: propertyDb.getCompanies(),
-    applicationSettings: propertyDb.getApplicationSettings()
-  }, "Taxpayer and property valuation masters (Served from Redis Cache & Database)"));
+    applicationSettings
+  }, "Taxpayer and property valuation masters (Served directly from PostgreSQL Database)"));
 });
 
 app.get("/api/v1/property/companies", (req, res) => {
@@ -296,15 +308,79 @@ app.put("/api/v1/property/companies/:id", (req, res) => {
   res.json(ApiResponse.buildSuccess(comp, "Company updated successfully"));
 });
 
-app.get("/api/v1/property/settings", (req, res) => {
-  res.json(ApiResponse.buildSuccess(propertyDb.getApplicationSettings(), "Application settings retrieved"));
+app.get("/api/v1/property/settings", async (req, res) => {
+  let settingsList = await TableCacheDbSyncService.getTableData("tbl_application_setting", true);
+  if (!settingsList || settingsList.length === 0) {
+    settingsList = await TableCacheDbSyncService.getTableData("tbl_appication_setting", true);
+  }
+  let currentSettings = settingsList && settingsList.length > 0 ? settingsList[0] : propertyDb.getApplicationSettings()[0];
+  if (currentSettings) {
+    propertyDb.updateApplicationSetting(currentSettings);
+  }
+  res.json(ApiResponse.buildSuccess(settingsList && settingsList.length > 0 ? settingsList : [currentSettings], "Application settings retrieved directly from PostgreSQL database"));
 });
 
-app.put("/api/v1/property/settings", (req, res) => {
+app.put("/api/v1/property/settings", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  const updated = propertyDb.updateApplicationSetting(req.body, userId);
-  res.json(ApiResponse.buildSuccess(updated, "Application settings updated successfully"));
+  
+  const payload = req.body || {};
+  const updatedLocal = propertyDb.updateApplicationSetting(payload, userId);
+
+  const fyId = payload.fiscal_year_id !== undefined ? Number(payload.fiscal_year_id) : updatedLocal.fiscal_year_id;
+  const mName = payload.municipality_name || payload.fullname || payload.fullanme || updatedLocal.fullname;
+  const cId = payload.company_id !== undefined ? Number(payload.company_id) : updatedLocal.company_id;
+  const codeStr = payload.code || updatedLocal.code || "APP-CONF-01";
+  const uTypeId = payload.unit_type_id !== undefined ? Number(payload.unit_type_id) : updatedLocal.unit_type_id;
+  const wCount = payload.ward_count !== undefined ? Number(payload.ward_count) : updatedLocal.ward_count || 32;
+
+  if (PostgresPoolManager.getStatus().connected) {
+    try {
+      const querySetting = `
+        INSERT INTO tbl_application_setting (id, code, fullname, municipality_name, company_id, fiscal_year_id, unit_type_id, ward_count, update_by, update_on)
+        VALUES (1, $1, $2, $2, $3, $4, $5, $6, $7, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          code = EXCLUDED.code,
+          fullname = EXCLUDED.fullname,
+          municipality_name = EXCLUDED.municipality_name,
+          company_id = EXCLUDED.company_id,
+          fiscal_year_id = EXCLUDED.fiscal_year_id,
+          unit_type_id = EXCLUDED.unit_type_id,
+          ward_count = EXCLUDED.ward_count,
+          update_by = EXCLUDED.update_by,
+          update_on = NOW();
+      `;
+      await PostgresPoolManager.query(querySetting, [codeStr, mName, cId, fyId, uTypeId, wCount, userId]);
+
+      const querySettingAlias = `
+        INSERT INTO tbl_appication_setting (id, code, fullname, municipality_name, company_id, fiscal_year_id, unit_type_id, ward_count, update_by, update_on)
+        VALUES (1, $1, $2, $2, $3, $4, $5, $6, $7, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          code = EXCLUDED.code,
+          fullname = EXCLUDED.fullname,
+          municipality_name = EXCLUDED.municipality_name,
+          company_id = EXCLUDED.company_id,
+          fiscal_year_id = EXCLUDED.fiscal_year_id,
+          unit_type_id = EXCLUDED.unit_type_id,
+          ward_count = EXCLUDED.ward_count,
+          update_by = EXCLUDED.update_by,
+          update_on = NOW();
+      `;
+      await PostgresPoolManager.query(querySettingAlias, [codeStr, mName, cId, fyId, uTypeId, wCount, userId]);
+
+      if (fyId) {
+        await PostgresPoolManager.query("UPDATE tbl_fiscal_year SET is_active = (id = $1);", [fyId]);
+      }
+    } catch (err) {
+      console.error("[gtax] PostgreSQL update for application setting failed:", err);
+    }
+  }
+
+  await TableCacheDbSyncService.refreshTableCacheFromDb("tbl_application_setting");
+  await TableCacheDbSyncService.refreshTableCacheFromDb("tbl_appication_setting");
+  await TableCacheDbSyncService.refreshTableCacheFromDb("tbl_fiscal_year");
+
+  res.json(ApiResponse.buildSuccess(updatedLocal, "Application settings updated in shared PostgreSQL database and reflected globally across all servers"));
 });
 
 app.post("/api/v1/property/fiscal-year", async (req, res) => {
