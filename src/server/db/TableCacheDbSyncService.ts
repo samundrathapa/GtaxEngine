@@ -65,35 +65,11 @@ export class TableCacheDbSyncService {
   private static initialized = false;
 
   private static saveStoresToDisk(): void {
-    try {
-      const dir = path.dirname(STORES_BACKUP_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      const obj: Record<string, any[]> = {};
-      for (const [k, v] of this.inMemoryStores.entries()) {
-        obj[k] = v;
-      }
-      fs.writeFileSync(STORES_BACKUP_PATH, JSON.stringify(obj, null, 2), "utf-8");
-    } catch (err) {
-      console.warn("[gtax:CacheSync] Failed to save stores to disk:", err);
-    }
+    // Disk persistence disabled: all records are managed directly via PostgreSQL database & Redis cache.
   }
 
   private static loadStoresFromDisk(): void {
-    try {
-      if (fs.existsSync(STORES_BACKUP_PATH)) {
-        const raw = fs.readFileSync(STORES_BACKUP_PATH, "utf-8");
-        const parsed = JSON.parse(raw);
-        for (const [k, v] of Object.entries(parsed)) {
-          if (Array.isArray(v) && v.length > 0) {
-            this.inMemoryStores.set(k, v);
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("[gtax:CacheSync] Failed to load stores from disk:", err);
-    }
+    // Disk persistence disabled: all records are loaded directly from PostgreSQL database & Redis cache.
   }
 
   public static async initialize(): Promise<void> {
