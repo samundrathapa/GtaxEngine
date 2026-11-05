@@ -432,38 +432,11 @@ class TaxpayerPropertyDatabase {
   }
 
   private saveSettingsToDisk() {
-    try {
-      const dataDir = path.dirname(APP_SETTING_STORE_PATH);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-      const list = Array.from(this.applicationSettings.values());
-      fs.writeFileSync(APP_SETTING_STORE_PATH, JSON.stringify(list, null, 2), "utf8");
-    } catch (err) {
-      console.warn("[TaxpayerPropertyService] Failed to save settings to disk:", err);
-    }
+    // Disk persistence disabled: application settings are persisted directly in PostgreSQL database & Redis cache.
   }
 
   private loadSettingsFromDisk() {
-    try {
-      if (fs.existsSync(APP_SETTING_STORE_PATH)) {
-        const raw = fs.readFileSync(APP_SETTING_STORE_PATH, "utf8");
-        const list: TblApplicationSetting[] = JSON.parse(raw);
-        if (Array.isArray(list) && list.length > 0) {
-          for (const item of list) {
-            this.applicationSettings.set(item.id, item);
-          }
-          const activeFyId = list[0].fiscal_year_id;
-          if (activeFyId) {
-            for (const [id, fy] of this.fiscalYears.entries()) {
-              this.fiscalYears.set(id, { ...fy, is_active: id === activeFyId });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("[TaxpayerPropertyService] Failed to load settings from disk:", err);
-    }
+    // Disk persistence disabled: application settings are loaded directly from PostgreSQL database & Redis cache.
   }
 
   private seedInitialData() {
@@ -1019,7 +992,11 @@ class TaxpayerPropertyDatabase {
       if (PostgresPoolManager.getStatus().connected) {
         PostgresPoolManager.query("UPDATE tbl_fiscal_year SET is_active = (id = $1);", [updated.fiscal_year_id]).catch(() => {});
         PostgresPoolManager.query(
-          "UPDATE tbl_appication_setting SET fiscal_year_id = $1, municipality_name = $2, update_on = NOW() WHERE id = 1;",
+          "UPDATE tbl_appication_setting SET fiscal_year_id = $1, municipality_name = $2, fullname = $2, update_on = NOW() WHERE id = 1;",
+          [updated.fiscal_year_id, updated.municipality_name]
+        ).catch(() => {});
+        PostgresPoolManager.query(
+          "UPDATE tbl_application_setting SET fiscal_year_id = $1, municipality_name = $2, fullname = $2, update_on = NOW() WHERE id = 1;",
           [updated.fiscal_year_id, updated.municipality_name]
         ).catch(() => {});
       }
