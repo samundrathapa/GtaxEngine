@@ -53,7 +53,8 @@ export const ALL_25_TABLES = [
   "tax_transactions",
   "tax_liability_breakdown",
   "tbl_appication_setting",
-  "tbl_application_setting"
+  "tbl_application_setting",
+  "tbl_company"
 ] as const;
 
 export type GtaxTableName = (typeof ALL_25_TABLES)[number];
@@ -135,10 +136,19 @@ export class TableCacheDbSyncService {
     return await this.refreshTableCacheFromDb<T>(table);
   }
 
+  public static isValidTableName(tableName: string): boolean {
+    if (!tableName) return false;
+    const lower = tableName.toLowerCase();
+    return (ALL_25_TABLES as readonly string[]).includes(lower);
+  }
+
   /**
    * Queries PostgreSQL directly for a table's records, writes to Redis Cache, and returns the records.
    */
   public static async refreshTableCacheFromDb<T = any>(table: GtaxTableName | string): Promise<T[]> {
+    if (!this.isValidTableName(table)) {
+      return [];
+    }
     const cacheKey = `gtax:cache:table:${table}`;
     let rows: T[] = [];
 

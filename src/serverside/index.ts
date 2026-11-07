@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { userControllerInstance } from "./User/UserController.ts";
 import { taxpayerControllerInstance } from "./Taxpayer/TaxpayerController.ts";
 import { landControllerInstance } from "./Land/LandController.ts";
@@ -15,6 +15,26 @@ import { EntityController, IEntityModel } from "./DynamicEntityFactory.ts";
 import { ALL_25_TABLES } from "../server/db/TableCacheDbSyncService.ts";
 
 export const serversideRouter = Router();
+
+const RESERVED_ROUTE_PREFIXES = new Set([
+  "db",
+  "property",
+  "auth",
+  "ai",
+  "mobile",
+  "cache",
+  "topology",
+  "migrations",
+  "reports",
+  "gemini",
+  "sync-events",
+  "tax-calc",
+  "jurisdictions",
+  "architecture",
+  "entry",
+  "privacy",
+  "v1"
+]);
 
 // Table Entity Config Map
 const TABLE_MODELS: Record<string, IEntityModel> = {
@@ -155,7 +175,12 @@ const TABLE_MODELS: Record<string, IEntityModel> = {
 const controllerCache = new Map<string, any>();
 
 function getControllerForEntity(entityName: string): any {
+  if (!entityName) return null;
   const norm = entityName.toLowerCase();
+  if (RESERVED_ROUTE_PREFIXES.has(norm)) {
+    return null;
+  }
+
   if (norm === "user" || norm === "tbl_user") return userControllerInstance;
   if (norm === "taxpayer" || norm === "tbl_taxpayer") return taxpayerControllerInstance;
   if (norm === "land" || norm === "tbl_land") return landControllerInstance;
@@ -181,7 +206,10 @@ function getControllerForEntity(entityName: string): any {
   if (modelKey && TABLE_MODELS[modelKey]) {
     model = TABLE_MODELS[modelKey];
   } else {
-    const matchingTable = ALL_25_TABLES.find((t) => t.toLowerCase() === norm) || (norm.startsWith("tbl_") ? norm : `tbl_${norm}`);
+    const matchingTable = ALL_25_TABLES.find((t) => t.toLowerCase() === norm || t.toLowerCase() === `tbl_${norm}`);
+    if (!matchingTable) {
+      return null;
+    }
     model = {
       entityName,
       tableName: matchingTable,
@@ -196,55 +224,65 @@ function getControllerForEntity(entityName: string): any {
 }
 
 // 1. GetSearchTemplate endpoint: GET /api/:entity/GetSearchTemplate
-serversideRouter.get("/:entity/GetSearchTemplate", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/GetSearchTemplate", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetSearchTemplate(req, res);
 });
 
 // 2. GetItemTemplate endpoint: GET /api/:entity/:id/GetItemTemplate or GET /api/:entity/GetItemTemplate?id=1
-serversideRouter.get("/:entity/:id/GetItemTemplate", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/:id/GetItemTemplate", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetItemTemplate(req, res);
 });
 
-serversideRouter.get("/:entity/GetItemTemplate", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/GetItemTemplate", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetItemTemplate(req, res);
 });
 
 // 3. GetCombo & GetComboTemplate endpoint: GET /api/:entity/GetCombo or GET /api/:entity/GetComboTemplate
-serversideRouter.get("/:entity/GetCombo", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/GetCombo", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetComboTemplate(req, res);
 });
 
-serversideRouter.get("/:entity/GetComboTemplate", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/GetComboTemplate", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetComboTemplate(req, res);
 });
 
 // Generic CRUD handlers: GET, POST, PUT, DELETE
-serversideRouter.get("/:entity", (req: Request, res: Response) => {
+serversideRouter.get("/:entity", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetSearchTemplate(req, res);
 });
 
-serversideRouter.get("/:entity/:id", (req: Request, res: Response) => {
+serversideRouter.get("/:entity/:id", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.GetItemTemplate(req, res);
 });
 
-serversideRouter.post("/:entity", (req: Request, res: Response) => {
+serversideRouter.post("/:entity", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.Create(req, res);
 });
 
-serversideRouter.put("/:entity/:id", (req: Request, res: Response) => {
+serversideRouter.put("/:entity/:id", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.Update(req, res);
 });
 
-serversideRouter.delete("/:entity/:id", (req: Request, res: Response) => {
+serversideRouter.delete("/:entity/:id", (req: Request, res: Response, next: NextFunction) => {
   const ctrl = getControllerForEntity(req.params.entity);
+  if (!ctrl) return next();
   ctrl.Delete(req, res);
 });
