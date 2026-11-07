@@ -89,7 +89,21 @@ export class MigrationRunner {
           const startTime = Date.now();
           try {
             const sqlContent = fs.readFileSync(filePath, "utf-8");
-            await PostgresPoolManager.query(sqlContent);
+            const statements = sqlContent
+              .split(";")
+              .map((s) => s.trim())
+              .filter((s) => {
+                const linesWithoutComments = s
+                  .split("\n")
+                  .filter((line) => !line.trim().startsWith("--"))
+                  .join("\n")
+                  .trim();
+                return linesWithoutComments.length > 0;
+              });
+
+            for (const stmt of statements) {
+              await PostgresPoolManager.query(stmt);
+            }
 
             const durationMs = Date.now() - startTime;
             await PostgresPoolManager.query(

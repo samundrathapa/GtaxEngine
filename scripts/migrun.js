@@ -106,7 +106,12 @@ CREATE TABLE IF NOT EXISTS ${tableName} (
       const notNullChoice = await promptQuestion(rl, "Require NOT NULL? (y/n)", "y");
 
       const isNotNull = notNullChoice.toLowerCase().startsWith("y");
-      const defaultClause = defaultValue ? ` DEFAULT ${defaultValue}` : "";
+      let defaultClause = "";
+      if (defaultValue && defaultValue.trim() !== "" && defaultValue.trim().toUpperCase() !== "NULL") {
+        defaultClause = ` DEFAULT ${defaultValue.trim()}`;
+      } else if (!isNotNull) {
+        defaultClause = " DEFAULT NULL";
+      }
       const nullClause = isNotNull ? " NOT NULL" : "";
 
       const description = `Alter ${tableName} add column ${columnName}`;
