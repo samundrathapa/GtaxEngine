@@ -400,6 +400,27 @@ export class DatabaseSchemaBootstrap {
         );
       `);
 
+      // 19.1. tbl_company
+      await PostgresPoolManager.query(`
+        CREATE TABLE IF NOT EXISTS tbl_company (
+            id SERIAL PRIMARY KEY,
+            code VARCHAR(64) UNIQUE,
+            name VARCHAR(255) NOT NULL,
+            address VARCHAR(255),
+            phone VARCHAR(64),
+            email VARCHAR(255),
+            pan_no VARCHAR(64),
+            is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+            insert_by VARCHAR(64) NOT NULL DEFAULT '1',
+            insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            update_by VARCHAR(64) NOT NULL DEFAULT '1',
+            update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            delete_by VARCHAR(64) DEFAULT NULL,
+            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+            is_active BOOLEAN DEFAULT TRUE NOT NULL
+        );
+      `);
+
       // 20. tbl_taxpayer (Single Unified Taxpayer Master Table)
       await PostgresPoolManager.query(`
         CREATE TABLE IF NOT EXISTS tbl_taxpayer (
@@ -958,6 +979,15 @@ export class DatabaseSchemaBootstrap {
       // 16. System Masters Ready - No dummy taxpayers or properties are auto-injected.
       // Database strictly holds genuine data created by the user or pre-existing in the DB server.
 
+      // 15.1. Company (tbl_company)
+      try {
+        await PostgresPoolManager.query(`
+          INSERT INTO tbl_company (id, code, name, address, phone, email, pan_no, insert_by) VALUES
+          (1, 'KMC-01', 'Kathmandu Metropolitan City Office', 'Teku, Kathmandu', '01-4234567', 'info@kathmandu.gov.np', '300012345', '1')
+          ON CONFLICT (id) DO NOTHING;
+        `);
+      } catch (_) {}
+
       // ==========================================
       // SYNCHRONIZE ALL POSTGRESQL SERIAL SEQUENCES
       // ==========================================
@@ -979,6 +1009,7 @@ export class DatabaseSchemaBootstrap {
         "tbl_construction_rates",
         "tbl_depreciation",
         "tbl_fine_rebate",
+        "tbl_company",
         "tbl_taxpayer",
         "tbl_land",
         "tbl_house",
