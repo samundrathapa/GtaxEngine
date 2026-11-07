@@ -79,9 +79,14 @@ export class DatabaseSchemaBootstrap {
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
             update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             delete_by VARCHAR(64) DEFAULT NULL,
-            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-            is_active BOOLEAN DEFAULT TRUE NOT NULL
         );
+
+        ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS username VARCHAR(100);
+        ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS user_id VARCHAR(50);
+        ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'OPERATOR';
+
+        UPDATE tbl_user SET username = SPLIT_PART(email, '@', 1) WHERE username IS NULL OR username = '';
+        UPDATE tbl_user SET user_id = 'USR_' || id WHERE user_id IS NULL OR user_id = '';
       `);
 
       // 5. tbl_right

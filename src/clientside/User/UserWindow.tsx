@@ -32,7 +32,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
       setFormData({
         id: editUser.id,
         user_id: editUser.user_id,
-        username: editUser.username || "",
+        username: editUser.username || (editUser.email ? editUser.email.split("@")[0] : "") || editUser.user_id || "",
         fullname: editUser.fullname || editUser.full_name || "",
         email: editUser.email || "",
         role: editUser.role || "OPERATOR",
