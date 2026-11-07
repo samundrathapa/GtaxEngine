@@ -79,6 +79,8 @@ export class DatabaseSchemaBootstrap {
             update_by VARCHAR(64) NOT NULL DEFAULT '1',
             update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
             delete_by VARCHAR(64) DEFAULT NULL,
+            deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+            is_active BOOLEAN DEFAULT TRUE NOT NULL
         );
 
         ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS username VARCHAR(100);
