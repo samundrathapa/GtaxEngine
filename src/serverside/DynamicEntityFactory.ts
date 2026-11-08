@@ -157,10 +157,33 @@ export class EntityController {
   Create = async (req: Request, res: Response) => {
     try {
       const userId = (req.headers["x-user-id"] as string) || "1";
+      const tbl = String(this.model.tableName).toLowerCase();
+
+      if (tbl === "tbl_land" && (!req.body.taxpayer_id || Number(req.body.taxpayer_id) <= 0 || isNaN(Number(req.body.taxpayer_id)))) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Validation Failed", ["Taxpayer selection (taxpayer_id) is required to register a land parcel."])
+        );
+      }
+      if ((tbl === "tbl_taxpayer" || tbl === "tbl_taxpayer_master") && !req.body.fullname && !req.body.full_name && !req.body.fullanme) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Validation Failed", ["Full Name is required for taxpayer registration."])
+        );
+      }
+      if (tbl === "tbl_user" && (!req.body.fullname || !req.body.email)) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Validation Failed", ["Full Name and Email are required for user registration."])
+        );
+      }
+      if (tbl === "tbl_company" && !req.body.name) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Validation Failed", ["Company Name is required."])
+        );
+      }
+
       const created = await this.service.create(req.body, userId);
       res.status(201).json(ApiResponse.buildSuccess(created, `${this.model.entityName} created successfully`, 201));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Create error", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure(`${this.model.entityName} creation failed`, [err.message || String(err)]));
     }
   };
 
@@ -169,9 +192,14 @@ export class EntityController {
       const id = req.params.id;
       const userId = (req.headers["x-user-id"] as string) || "1";
       const updated = await this.service.update(id, req.body, userId);
+      if (!updated) {
+        return res.status(400).json(
+          ApiResponse.buildFailure(`${this.model.entityName} update failed`, ["Record not found or update rejected."])
+        );
+      }
       res.json(ApiResponse.buildSuccess(updated, `${this.model.entityName} updated successfully`));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Update error", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure(`${this.model.entityName} update failed`, [err.message || String(err)]));
     }
   };
 
@@ -179,10 +207,15 @@ export class EntityController {
     try {
       const id = req.params.id;
       const userId = (req.headers["x-user-id"] as string) || "1";
-      await this.service.delete(id, userId);
+      const ok = await this.service.delete(id, userId);
+      if (!ok) {
+        return res.status(400).json(
+          ApiResponse.buildFailure(`${this.model.entityName} deletion failed`, ["Record not found or deletion rejected."])
+        );
+      }
       res.json(ApiResponse.buildSuccess({ id }, `${this.model.entityName} deleted successfully`));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Delete error", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure(`${this.model.entityName} deletion failed`, [err.message || String(err)]));
     }
   };
 }

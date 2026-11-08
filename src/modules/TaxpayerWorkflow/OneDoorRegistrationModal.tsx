@@ -306,7 +306,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
       if (res.success && res.data) {
         setStatusMsg({
           type: "success",
-          text: `Land Parcel Kitta #${landForm.kitta_number} added successfully! Add another or continue.`
+          text: `Land Parcel Kitta #${landForm.kitta_number || "New"} added successfully! Add another or continue.`
         });
         await refreshTaxpayerAssets(taxpayerId);
         // Reset land form for adding next parcel
@@ -325,6 +325,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
         setBighaParts({ bigha: 0, kattha: 0, dhur: 7.5 });
         setSqftInput(1369);
         setSqmtreInput(127.18);
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to add land parcel.";
+        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add land parcel." });
@@ -335,7 +338,13 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
   const handleDeleteLand = async (id: number) => {
     if (!confirm("Remove this land parcel?")) return;
-    await ApiController.deleteLand(id);
+    const res = await ApiController.deleteLand(id);
+    if (res.success) {
+      setStatusMsg({ type: "success", text: "Land parcel deleted successfully." });
+    } else {
+      const errText = res.errors?.join(", ") || res.message || "Failed to delete land parcel.";
+      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+    }
     if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
   };
 
@@ -404,6 +413,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           acquisition_date_bs: "2076-02-15",
           acquisition_date_ad: "2019-05-29"
         });
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to add house structure.";
+        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add house structure." });
@@ -414,7 +426,13 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
   const handleDeleteHouse = async (id: number) => {
     if (!confirm("Delete this house structure and its associated floors?")) return;
-    await ApiController.deleteHouse(id);
+    const res = await ApiController.deleteHouse(id);
+    if (res.success) {
+      setStatusMsg({ type: "success", text: "House structure deleted successfully." });
+    } else {
+      const errText = res.errors?.join(", ") || res.message || "Failed to delete house structure.";
+      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+    }
     if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
   };
 
@@ -449,6 +467,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           floor_no: nextFloorNo,
           remarks: `Floor Level ${nextFloorNo}`
         }));
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to add floor unit.";
+        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add floor unit." });
@@ -459,7 +480,13 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
   const handleDeleteFloor = async (id: number) => {
     if (!confirm("Delete this floor?")) return;
-    await ApiController.deleteFloor(id);
+    const res = await ApiController.deleteFloor(id);
+    if (res.success) {
+      setStatusMsg({ type: "success", text: "Floor deleted successfully." });
+    } else {
+      const errText = res.errors?.join(", ") || res.message || "Failed to delete floor unit.";
+      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+    }
     if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
   };
 

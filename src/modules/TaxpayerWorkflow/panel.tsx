@@ -62,7 +62,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const t = translations[currentLang];
   const [subView, setSubView] = useState<TaxpayerSubView>(initialSubView);
   const [loading, setLoading] = useState<boolean>(true);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const showNotify = (text: string, type: "success" | "error" = "success") => {
+    setStatusMsg({ type, text });
+    setTimeout(() => setStatusMsg(null), 6000);
+  };
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedWardFilter, setSelectedWardFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -335,14 +340,17 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
   const handleCreateLand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newLandKitta || !newLandMoth) return;
     const targetTpId = selectedTaxpayerId || taxpayerDossier?.taxpayer?.id || (taxpayers && taxpayers.length > 0 ? taxpayers[0].id : 1);
+    if (!targetTpId) {
+      showNotify("Validation Error: Please select or register a Taxpayer first before adding a land parcel.", "error");
+      return;
+    }
     const res = await ApiController.createLand({
       taxpayer_id: targetTpId,
-      kitta_number: newLandKitta,
-      moth_number: newLandMoth,
-      ward_no: newLandWard,
-      area_sqfeet: newLandArea,
+      kitta_number: newLandKitta || "101",
+      moth_number: newLandMoth || "1",
+      ward_no: newLandWard || 1,
+      area_sqfeet: newLandArea || 1000,
       unit_id: newLandUnitId,
       land_measuring_unit_id: newLandUnitId,
       nature_id: newLandNatureId,
@@ -351,10 +359,14 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       acquisition_fy_id: newLandAcquisitionFyId
     });
     if (res.success) {
-      setStatusMsg(`Land Parcel Kitta ${newLandKitta} registered successfully!`);
+      showNotify(`Land Parcel Kitta #${newLandKitta || "101"} registered successfully!`, "success");
       setNewLandModalOpen(false);
       await loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Failed to register land parcel");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -368,10 +380,14 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!editingLand) return;
     const res = await ApiController.updateLand(editingLand.id, editingLand);
     if (res.success) {
-      setStatusMsg(`Land Parcel Kitta ${editingLand.kitta_number} updated with recalculated valuation!`);
+      showNotify(`Land Parcel Kitta #${editingLand.kitta_number || editingLand.id} updated with recalculated valuation!`, "success");
       setEditLandModalOpen(false);
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Failed to update land parcel");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -379,9 +395,13 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!confirm("Are you sure you want to delete this land record? ")) return;
     const res = await ApiController.deleteLand(id);
     if (res.success) {
-      setStatusMsg("Land parcel deleted successfully.");
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      showNotify("Land parcel deleted successfully.", "success");
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Failed to delete land parcel");
+      showNotify(`Delete Error: ${errText}`, "error");
     }
   };
 
@@ -419,10 +439,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
         remarks: "Ground Floor Residential",
         depreciation_percent: 5
       });
-      setStatusMsg(`House ${newHouseNo} and ground floor registered!`);
+      showNotify(`House ${newHouseNo} and ground floor registered!`, "success");
       setNewHouseModalOpen(false);
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to register house");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -436,10 +458,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!editingHouse) return;
     const res = await ApiController.updateHouse(editingHouse.id, editingHouse);
     if (res.success) {
-      setStatusMsg(`House ${editingHouse.house_no} updated successfully!`);
+      showNotify(`House ${editingHouse.house_no} updated successfully!`, "success");
       setEditHouseModalOpen(false);
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update house");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -447,9 +471,11 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!confirm("Are you sure you want to delete this house structure and its associated floors?")) return;
     const res = await ApiController.deleteHouse(id);
     if (res.success) {
-      setStatusMsg("House record deleted successfully.");
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      showNotify("House record deleted successfully.", "success");
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
+      showNotify(`Delete Error: ${errText}`, "error");
     }
   };
 
@@ -486,10 +512,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       depreciation_percent: newFloorDepreciation
     });
     if (res.success) {
-      setStatusMsg(`Floor #${newFloorNo} added successfully!`);
+      showNotify(`Floor #${newFloorNo} added successfully!`, "success");
       setNewFloorModalOpen(false);
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to add floor");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -503,10 +531,12 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!editingFloor) return;
     const res = await ApiController.updateFloor(editingFloor.id, editingFloor);
     if (res.success) {
-      setStatusMsg(`Floor #${editingFloor.floor_no} updated with recalculated valuation!`);
+      showNotify(`Floor #${editingFloor.floor_no} updated with recalculated valuation!`, "success");
       setEditFloorModalOpen(false);
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update floor");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -514,9 +544,11 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!confirm("Are you sure you want to delete this floor?")) return;
     const res = await ApiController.deleteFloor(id);
     if (res.success) {
-      setStatusMsg("Floor deleted successfully.");
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      showNotify("Floor deleted successfully.", "success");
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
+      showNotify(`Delete Error: ${errText}`, "error");
     }
   };
 
@@ -527,7 +559,10 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
   const handleCreateTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTpName || !newTpMobile) return;
+    if (!newTpName || !newTpMobile) {
+      showNotify("Validation Error: Full name and Mobile number are required for Taxpayer registration.", "error");
+      return;
+    }
     const res = await ApiController.createTaxpayer({
       full_name: newTpName,
       fullname: newTpName,
@@ -543,11 +578,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       citizenship_no: newTpCitizenship
     });
     if (res.success && res.data) {
-      setStatusMsg(`Taxpayer ${res.data.fullanme || res.data.fullname || res.data.full_name} registered successfully!`);
+      showNotify(`Taxpayer ${res.data.fullanme || res.data.fullname || res.data.full_name} registered successfully!`, "success");
       setSelectedTaxpayerId(res.data.id);
       setNewTpModalOpen(false);
       await loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Taxpayer registration failed");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -602,10 +641,14 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     const res = await ApiController.updateTaxpayer(editingTaxpayer.id, payload);
     if (res.success) {
       setSelectedTaxpayerId(editingTaxpayer.id);
-      setStatusMsg(`Taxpayer ${resolvedName} updated successfully!`);
+      showNotify(`Taxpayer ${resolvedName} updated successfully!`, "success");
       setEditTaxpayerModalOpen(false);
       await loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Taxpayer update failed");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -613,12 +656,16 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (!confirm("Are you sure you want to delete this taxpayer? All registered assets will be archived.")) return;
     const res = await ApiController.deleteTaxpayer(id);
     if (res.success) {
-      setStatusMsg("Taxpayer deleted successfully.");
+      showNotify("Taxpayer deleted successfully.", "success");
       if (selectedTaxpayerId === id) {
         setDossierOpen(false);
       }
-      loadAllData();
-      setTimeout(() => setStatusMsg(null), 3000);
+      await loadAllData();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+        ? (res as any).errors.join(", ")
+        : (res.message || "Taxpayer deletion failed");
+      showNotify(`Delete Error: ${errText}`, "error");
     }
   };
 
@@ -812,12 +859,13 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
         ]
       });
       if (res.success) {
-        setStatusMsg("Calculation saved to database (calc_master, calc_land, calc_house, calc_floor)!");
-        setTimeout(() => setStatusMsg(null), 3500);
+        showNotify("Calculation saved to database (calc_master, calc_land, calc_house, calc_floor)!", "success");
+      } else {
+        showNotify("Failed to save calculation.", "error");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setStatusMsg("Failed to save calculation.");
+      showNotify(`Failed to save calculation: ${e?.message || String(e)}`, "error");
     } finally {
       setIsSavingCalc(false);
     }
@@ -856,10 +904,16 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       </div>
 
       {statusMsg && (
-        <div className="p-3 text-xs bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center justify-between">
+        <div
+          className={`p-3 text-xs rounded-xl flex items-center justify-between border ${
+            statusMsg.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+              : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
+          }`}
+        >
           <span className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{statusMsg}</span>
+            <CheckCircle2 className={`w-4 h-4 shrink-0 ${statusMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+            <span className="font-semibold">{statusMsg.text}</span>
           </span>
           <button onClick={() => setStatusMsg(null)} className="font-semibold underline ml-2">
             Dismiss

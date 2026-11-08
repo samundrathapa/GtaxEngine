@@ -460,15 +460,15 @@ export class DatabaseSchemaBootstrap {
         CREATE TABLE IF NOT EXISTS tbl_land (
             id SERIAL PRIMARY KEY,
             taxpayer_id INT REFERENCES tbl_taxpayer(id) ON DELETE CASCADE NOT NULL,
-            kitta_number VARCHAR(64) NOT NULL,
-            moth_number VARCHAR(64) NOT NULL,
+            kitta_number VARCHAR(64) DEFAULT '101',
+            moth_number VARCHAR(64) DEFAULT '1',
             ward_no INT DEFAULT 1,
-            area_sqfeet NUMERIC(14, 2) NOT NULL,
+            area_sqfeet NUMERIC(14, 2) DEFAULT 0.00,
             include_in_evaluation BOOLEAN DEFAULT TRUE NOT NULL,
-            land_measuring_unit_id INT REFERENCES tbl_unit(id) NOT NULL,
-            nature_id INT REFERENCES tbl_land_nature(id) NOT NULL,
-            land_rate_id INT REFERENCES tbl_land_rate(id) NOT NULL,
-            malpot_rate_id INT REFERENCES tbl_malpot_rates(id) NOT NULL,
+            land_measuring_unit_id INT REFERENCES tbl_unit(id) ON DELETE SET NULL DEFAULT NULL,
+            nature_id INT REFERENCES tbl_land_nature(id) ON DELETE SET NULL DEFAULT NULL,
+            land_rate_id INT REFERENCES tbl_land_rate(id) ON DELETE SET NULL DEFAULT NULL,
+            malpot_rate_id INT REFERENCES tbl_malpot_rates(id) ON DELETE SET NULL DEFAULT NULL,
             assessed_valuation NUMERIC(14, 2) DEFAULT 0.00,
             is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT '1',
@@ -739,6 +739,14 @@ export class DatabaseSchemaBootstrap {
 
           ALTER TABLE tbl_depreciation ADD COLUMN IF NOT EXISTS is_parent BOOLEAN DEFAULT FALSE;
           ALTER TABLE tbl_depreciation ADD COLUMN IF NOT EXISTS parent_id INT DEFAULT NULL;
+
+          ALTER TABLE tbl_land ALTER COLUMN kitta_number DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN moth_number DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN area_sqfeet DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN land_measuring_unit_id DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN nature_id DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN land_rate_id DROP NOT NULL;
+          ALTER TABLE tbl_land ALTER COLUMN malpot_rate_id DROP NOT NULL;
         `);
       } catch (_) {}
 

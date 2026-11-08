@@ -353,10 +353,17 @@ export class PostgresPoolManager {
   }
 
 
+  private static lastQueryError: string | null = null;
+
+  public static getLastQueryError(): string | null {
+    return this.lastQueryError;
+  }
+
   /**
    * Execute raw SQL query with parameter binding if live pool is active
    */
   public static async query<T = unknown>(text: string, params: unknown[] = []): Promise<T[]> {
+    this.lastQueryError = null;
     if (!this.initialized) {
       await this.initialize();
     }
@@ -369,8 +376,28 @@ export class PostgresPoolManager {
       const result = await this.pool.query(text, params);
       return result.rows as T[];
     } catch (err: any) {
-      console.warn(`[gtax:Postgres] Query warning:`, err?.message || err);
+      this.lastQueryError = err?.message || String(err);
+      console.warn(`[gtax:Postgres] Query warning:`, this.lastQueryError);
       return [];
+    }
+  }
+
+  public static async queryOrThrow<T = unknown>(text: string, params: unknown[] = []): Promise<T[]> {
+    this.lastQueryError = null;
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    if (!this.pool || !this.isConnected) {
+      throw new Error("PostgreSQL database connection is offline");
+    }
+
+    try {
+      const result = await this.pool.query(text, params);
+      return result.rows as T[];
+    } catch (err: any) {
+      this.lastQueryError = err?.message || String(err);
+      throw err;
     }
   }
 
