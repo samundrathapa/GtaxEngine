@@ -419,17 +419,27 @@ app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
   const tpList = await TableCacheDbSyncService.getTableData<any>("tbl_taxpayer", true);
   const masterTp = tpList.find((t: any) => Number(t.id) === id);
 
+  const allLands = await TableCacheDbSyncService.getTableData<any>("tbl_land", true);
+  const taxpayerLands = allLands.filter((l: any) => Number(l.taxpayer_id) === id && !l.is_deleted);
+
+  const allHouses = await TableCacheDbSyncService.getTableData<any>("tbl_house", true);
+  const taxpayerHouses = allHouses.filter((h: any) => Number(h.taxpayer_id) === id && !h.is_deleted);
+
+  const houseIds = new Set(taxpayerHouses.map((h: any) => Number(h.id)));
+  const allFloors = await TableCacheDbSyncService.getTableData<any>("tbl_floor", true);
+  const taxpayerFloors = allFloors.filter((f: any) => houseIds.has(Number(f.house_id)) && !f.is_deleted);
+
   let dossier = propertyDb.getTaxpayerCompleteRecord(id);
   if (!dossier && !masterTp) {
     return res.status(404).json(ApiResponse.buildFailure("Taxpayer not found", ["Not found"], {}, 404));
   }
 
-  if (!dossier && masterTp) {
+  if (!dossier) {
     dossier = {
       taxpayer: masterTp,
-      lands: [],
-      houses: [],
-      floors: [],
+      lands: taxpayerLands,
+      houses: taxpayerHouses,
+      floors: taxpayerFloors,
       valuationSummary: {
         totalLandValuation: 0,
         totalHouseValuation: 0,
@@ -440,11 +450,11 @@ app.get("/api/v1/property/taxpayers/:id", async (req, res) => {
         currency: "NPR / INR"
       }
     };
-  } else if (dossier && masterTp) {
-    dossier.taxpayer = {
-      ...dossier.taxpayer,
-      ...masterTp
-    };
+  } else {
+    dossier.taxpayer = masterTp || dossier.taxpayer;
+    dossier.lands = taxpayerLands;
+    dossier.houses = taxpayerHouses.length > 0 ? taxpayerHouses : dossier.houses;
+    dossier.floors = taxpayerFloors.length > 0 ? taxpayerFloors : dossier.floors;
   }
 
   res.json(ApiResponse.buildSuccess(dossier, "Taxpayer property assessment dossier"));
@@ -470,6 +480,14 @@ app.delete("/api/v1/property/taxpayers/:id", async (req, res) => {
     return res.status(404).json(ApiResponse.buildFailure("Taxpayer not found", ["Not found"], {}, 404));
   }
   res.json(ApiResponse.buildSuccess({ id: Number(req.params.id) }, "Taxpayer deleted from database and synced to Redis"));
+});
+
+// Lands: Direct PostgreSQL table tbl_land with Redis auto-sync
+app.get("/api/v1/property/lands", async (req, res) => {
+  const list = await TableCacheDbSyncService.getTableData<any>("tbl_land", true);
+  const taxpayerId = req.query.taxpayer_id ? Number(req.query.taxpayer_id) : null;
+  const filtered = taxpayerId ? list.filter((l: any) => Number(l.taxpayer_id) === taxpayerId && !l.is_deleted) : list.filter((l: any) => !l.is_deleted);
+  res.json(ApiResponse.buildSuccess(filtered, "Lands list from Database"));
 });
 
 // Lands: Direct PostgreSQL table tbl_land with Redis auto-sync

@@ -223,6 +223,26 @@ export class TableCacheDbSyncService {
           user_id: r.user_id ? String(r.user_id) : String(r.id)
         };
       }) as any;
+    } else if (table === "tbl_land") {
+      rows = rows.map((r: any) => {
+        const kitta = r.kitta_number || r.kitta_no || r.kitta || "";
+        const moth = r.moth_number || r.moth_no || r.moth || "";
+        const area = r.area_sqfeet !== undefined ? Number(r.area_sqfeet) : (r.area_sqft !== undefined ? Number(r.area_sqft) : 0);
+        const unitId = r.land_measuring_unit_id !== undefined ? Number(r.land_measuring_unit_id) : (r.unit_id !== undefined ? Number(r.unit_id) : 1);
+        return {
+          ...r,
+          id: Number(r.id),
+          taxpayer_id: r.taxpayer_id !== undefined && r.taxpayer_id !== null ? Number(r.taxpayer_id) : null,
+          kitta_number: String(kitta),
+          kitta_no: String(kitta),
+          moth_number: String(moth),
+          moth_no: String(moth),
+          area_sqfeet: area,
+          area_sqft: area,
+          land_measuring_unit_id: unitId,
+          unit_id: unitId
+        };
+      }) as any;
     }
 
     // Write to Redis cache with 1-hour TTL
@@ -462,9 +482,15 @@ export class TableCacheDbSyncService {
         const res = await PostgresPoolManager.query<T>(sql, values);
         if (res && res.length > 0) {
           insertedRecord = res[0];
+        } else {
+          const dbErr = PostgresPoolManager.getLastQueryError();
+          if (dbErr) {
+            throw new Error(`Database Insert Failed: ${dbErr}`);
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(`[gtax:CacheSync] Live insert to ${table} failed:`, err);
+        throw err;
       }
     }
 

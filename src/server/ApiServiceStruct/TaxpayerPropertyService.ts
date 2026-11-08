@@ -182,9 +182,12 @@ export interface TblLand extends AuditFields {
   id: number;
   taxpayer_id: number;
   kitta_number: string;
+  kitta_no?: string;
   moth_number: string;
+  moth_no?: string;
   ward_no: number;
   area_sqfeet: number;
+  area_sqft?: number;
   unit_id?: number;
   land_measuring_unit_id: number;
   nature_id: number;
@@ -1351,27 +1354,38 @@ class TaxpayerPropertyDatabase {
   }
 
   public createLand(data: any, userId = "SYSTEM"): TblLand {
-    const id = this.nextId++;
+    const id = data.id ? Number(data.id) : this.nextId++;
+    if (data.id && Number(data.id) >= this.nextId) {
+      this.nextId = Number(data.id) + 1;
+    }
     const now = new Date().toISOString();
     
     // Auto calculate valuation based on selected rate
     const rate = this.landRates.get(Number(data.land_rate_id)) || Array.from(this.landRates.values())[0];
-    const unit = this.units.get(Number(data.land_measuring_unit_id)) || Array.from(this.units.values())[0];
+    const unit = this.units.get(Number(data.land_measuring_unit_id || data.unit_id)) || Array.from(this.units.values())[0];
     
-    const areaSqFt = Number(data.area_sqfeet || 1000);
+    const areaSqFt = Number(data.area_sqfeet !== undefined ? data.area_sqfeet : (data.area_sqft !== undefined ? data.area_sqft : 1000));
     const rateVal = rate ? rate.rate_per_unit : 100000;
     const valuation = Math.round((areaSqFt / (unit?.unit_value || 1)) * rateVal);
+
+    const kitta = data.kitta_number || data.kitta_no || data.kitta || "";
+    const moth = data.moth_number || data.moth_no || data.moth || "";
+    const unitId = Number(data.land_measuring_unit_id || data.unit_id || 1);
 
     const land: TblLand = {
       id,
       taxpayer_id: Number(data.taxpayer_id),
-      kitta_number: data.kitta_number,
-      moth_number: data.moth_number,
+      kitta_number: String(kitta),
+      kitta_no: String(kitta),
+      moth_number: String(moth),
+      moth_no: String(moth),
       ward_no: Number(data.ward_no || 1),
       area_sqfeet: areaSqFt,
+      area_sqft: areaSqFt,
       include_in_evaluation: data.include_in_evaluation !== false,
-      land_measuring_unit_id: Number(data.land_measuring_unit_id || 1),
-      nature_id: Number(data.nature_id || 1),
+      land_measuring_unit_id: unitId,
+      unit_id: unitId,
+      nature_id: Number(data.nature_id || data.land_nature_id || 1),
       land_rate_id: Number(data.land_rate_id || 1),
       malpot_rate_id: Number(data.malpot_rate_id || 1),
       assessed_valuation: valuation,
