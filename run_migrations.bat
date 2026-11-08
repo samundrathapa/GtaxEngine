@@ -211,7 +211,7 @@ set "APPLIED_COUNT=0"
 set "SKIPPED_COUNT=0"
 set "ERROR_COUNT=0"
 
-for /f "delims=" %%F in ('dir /b /a-d /on "%MIGRATION_DIR%\*.sql" 2^>nul') do (
+for /f "delims=" %%F in ('dir /b /a-d /on "%MIGRATION_DIR%\V*.sql" 2^>nul') do (
     set "FILE_NAME=%%F"
     findstr /x /c:"%%F" "%TEMP_APPLIED%" >nul 2>nul
     if !ERRORLEVEL! equ 0 (
@@ -283,7 +283,7 @@ BEGIN
     (2, 2, 'SYSTEM_SEED', 'SYSTEM_SEED'),
     (3, 3, 'SYSTEM_SEED', 'SYSTEM_SEED'),
     (4, 4, 'SYSTEM_SEED', 'SYSTEM_SEED')
-    ON CONFLICT DO NOTHING;
+    ON CONFLICT (user_id, role_id) DO NOTHING;
     PERFORM setval(pg_get_serial_sequence('tbl_user_role', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM tbl_user_role), 0), 1));
   END IF;
 

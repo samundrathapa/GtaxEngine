@@ -290,9 +290,13 @@ export default function App() {
 
   useEffect(() => {
     fetchDbStatus();
-    const interval = setInterval(fetchDbStatus, 15000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (isDbStatusModalOpen) {
+      fetchDbStatus();
+    }
+  }, [isDbStatusModalOpen]);
 
   // Theme & Language (Controlled via User Menu)
   const [currentLang, setCurrentLang] = useState<SupportedLang>("eng");

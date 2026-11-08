@@ -91,21 +91,22 @@ CREATE TABLE IF NOT EXISTS tbl_user_role (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES tbl_user(id) ON DELETE CASCADE NOT NULL,
     role_id INT REFERENCES tbl_role(id) ON DELETE CASCADE NOT NULL,
-    insert_by VARCHAR(64) NOT NULL DEFAULT 'SYSTEM_INIT',
+    insert_by VARCHAR(64) NOT NULL DEFAULT '1',
     insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    update_by VARCHAR(64) NOT NULL DEFAULT 'SYSTEM_INIT',
+    update_by VARCHAR(64) NOT NULL DEFAULT '1',
     update_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     delete_by VARCHAR(64) DEFAULT NULL,
     deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    is_active BOOLEAN DEFAULT TRUE NOT NULL
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    UNIQUE(user_id, role_id)
 );
 
 -- Seed Initial Superadmin and Roles
-INSERT INTO tbl_role (id, role_name, description) VALUES
-(1, 'superadmin', 'Unrestricted Master Control & System Oversight'),
-(2, 'admin', 'Corporate Tax Manager & Department Security Admin'),
-(3, 'operator', 'Tax Operations Specialist & Real-Time Sync Operator'),
-(4, 'user', 'Standard Tax Analyst & Invoicing Reviewer')
+INSERT INTO tbl_role (id, role_name, description, insert_by, update_by) VALUES
+(1, 'superadmin', 'Unrestricted Master Control & System Oversight', '1', '1'),
+(2, 'admin', 'Corporate Tax Manager & Department Security Admin', '1', '1'),
+(3, 'operator', 'Tax Operations Specialist & Real-Time Sync Operator', '1', '1'),
+(4, 'user', 'Standard Tax Analyst & Invoicing Reviewer', '1', '1')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO tbl_user (id, fullname, email, password, mobile, employee_id, insert_by, insert_on, update_by, update_on, is_active) VALUES
@@ -115,9 +116,9 @@ INSERT INTO tbl_user (id, fullname, email, password, mobile, employee_id, insert
 (4, 'Julian Keller (Tax Analyst)', 'user@gtax.enterprise', 'Password123!', '+1 (555) 042-9918', 'EMP-USR-004', 'SYSTEM_SEED', NOW(), 'SYSTEM_SEED', NOW(), true)
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO tbl_user_role (user_id, role_id) VALUES
-(1, 1), (2, 2), (3, 3), (4, 4)
-ON CONFLICT DO NOTHING;
+INSERT INTO tbl_user_role (user_id, role_id, insert_by, update_by) VALUES
+(1, 1, '1', '1'), (2, 2, '1', '1'), (3, 3, '1', '1'), (4, 4, '1', '1')
+ON CONFLICT (user_id, role_id) DO NOTHING;
 
 -- =========================================================================
 -- STEP 5: Synchronize Auto-Increment Sequences (CRITICAL for Navicat & App)

@@ -3,6 +3,8 @@ import { LandModel } from "./LandModel.ts";
 import { landServiceInstance, LandService } from "./LandService.ts";
 import { ApiResponse } from "../../server/BaseFrame/response/ApiResponse.ts";
 
+import { PostgresPoolManager } from "../../server/db/postgresPool.ts";
+
 export class LandController {
   public service: LandService = landServiceInstance;
   public model = LandModel;
@@ -52,7 +54,7 @@ export class LandController {
         );
       }
       const created = await this.service.create(req.body, userId);
-      const dbErr = (import("../../server/db/postgresPool.ts") as any).PostgresPoolManager?.getLastQueryError?.();
+      const dbErr = PostgresPoolManager.getLastQueryError();
       if (dbErr) {
         return res.status(400).json(
           ApiResponse.buildFailure("Land creation failed", [dbErr])
