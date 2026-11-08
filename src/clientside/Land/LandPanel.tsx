@@ -10,7 +10,7 @@ export const LandPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
   const [selectedLand, setSelectedLand] = useState<ILandRecord | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     const unsubscribe = landStoreInstance.subscribe(() => {
@@ -34,15 +34,25 @@ export const LandPanel: React.FC = () => {
     } else {
       res = await LandController.createLand(formData);
     }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    if (res.success) {
+      setActionMessage({ type: "success", text: res.message || "Land record saved successfully!" });
+      loadData(searchQuery);
+    } else {
+      setActionMessage({ type: "error", text: `Validation / Error: ${res.message}` });
+    }
+    setTimeout(() => setActionMessage(null), 6000);
   };
 
   const handleDelete = async (land: ILandRecord) => {
     if (confirm(`Are you sure you want to delete land kitta #${land.kitta_no || land.id}?`)) {
       const res = await LandController.deleteLand(land.id);
-      setActionMessage(res.message);
-      setTimeout(() => setActionMessage(null), 4000);
+      if (res.success) {
+        setActionMessage({ type: "success", text: res.message || "Land record deleted successfully!" });
+        loadData(searchQuery);
+      } else {
+        setActionMessage({ type: "error", text: `Delete Error: ${res.message}` });
+      }
+      setTimeout(() => setActionMessage(null), 6000);
     }
   };
 
@@ -86,12 +96,18 @@ export const LandPanel: React.FC = () => {
       </div>
 
       {actionMessage && (
-        <div className="p-3 text-sm bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg flex items-center justify-between animate-in fade-in">
+        <div
+          className={`p-3 text-sm rounded-lg flex items-center justify-between animate-in fade-in border ${
+            actionMessage.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+              : "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{actionMessage}</span>
+            <CheckCircle2 className={`w-4 h-4 ${actionMessage.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+            <span className="font-medium">{actionMessage.text}</span>
           </div>
-          <button onClick={() => setActionMessage(null)} className="text-xs text-emerald-600 font-semibold hover:underline">
+          <button onClick={() => setActionMessage(null)} className="text-xs font-semibold hover:underline">
             Dismiss
           </button>
         </div>

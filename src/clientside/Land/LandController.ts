@@ -46,7 +46,7 @@ export class LandController {
     return [];
   }
 
-  static async createLand(formData: Partial<ILandRecord>): Promise<{ success: boolean; message: string }> {
+  static async createLand(formData: Partial<ILandRecord>): Promise<{ success: boolean; message: string; errors?: string[] }> {
     try {
       const res = await fetch("/api/Land", {
         method: "POST",
@@ -58,13 +58,14 @@ export class LandController {
         await this.GetSearchTemplate();
         return { success: true, message: json.message || "Land registered successfully" };
       }
-      return { success: false, message: json.message || "Failed to register land" };
+      const errText = Array.isArray(json.errors) && json.errors.length > 0 ? json.errors.join(", ") : (json.message || "Failed to register land");
+      return { success: false, message: errText, errors: json.errors };
     } catch (err: any) {
       return { success: false, message: err.message || "Network error" };
     }
   }
 
-  static async updateLand(id: string | number, formData: Partial<ILandRecord>): Promise<{ success: boolean; message: string }> {
+  static async updateLand(id: string | number, formData: Partial<ILandRecord>): Promise<{ success: boolean; message: string; errors?: string[] }> {
     try {
       const res = await fetch(`/api/Land/${id}`, {
         method: "PUT",
@@ -76,13 +77,14 @@ export class LandController {
         await this.GetSearchTemplate();
         return { success: true, message: json.message || "Land updated successfully" };
       }
-      return { success: false, message: json.message || "Failed to update land" };
+      const errText = Array.isArray(json.errors) && json.errors.length > 0 ? json.errors.join(", ") : (json.message || "Failed to update land");
+      return { success: false, message: errText, errors: json.errors };
     } catch (err: any) {
       return { success: false, message: err.message || "Network error" };
     }
   }
 
-  static async deleteLand(id: string | number): Promise<{ success: boolean; message: string }> {
+  static async deleteLand(id: string | number): Promise<{ success: boolean; message: string; errors?: string[] }> {
     try {
       const res = await fetch(`/api/Land/${id}`, { method: "DELETE" });
       const json = await res.json();
@@ -90,7 +92,8 @@ export class LandController {
         await this.GetSearchTemplate();
         return { success: true, message: json.message || "Land deleted successfully" };
       }
-      return { success: false, message: json.message || "Failed to delete land" };
+      const errText = Array.isArray(json.errors) && json.errors.length > 0 ? json.errors.join(", ") : (json.message || "Failed to delete land");
+      return { success: false, message: errText, errors: json.errors };
     } catch (err: any) {
       return { success: false, message: err.message || "Network error" };
     }

@@ -47,7 +47,12 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   const [activeTab, setActiveTab] = useState<"taxpayer" | "land" | "house" | "calculate">(initialTab);
   const [dossier, setDossier] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const showNotify = (text: string, type: "success" | "error" = "success") => {
+    setStatusMsg({ type, text });
+    setTimeout(() => setStatusMsg(null), 6000);
+  };
 
   // Edit Taxpayer state
   const [tpForm, setTpForm] = useState<any>({});
@@ -252,10 +257,12 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
     const res = await ApiController.updateTaxpayer(taxpayerId, payload);
     if (res.success) {
-      setStatusMsg("Taxpayer details updated successfully!");
+      showNotify("Taxpayer details updated successfully!", "success");
       await loadDossier();
       onRefresh();
-      setTimeout(() => setStatusMsg(null), 3000);
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Taxpayer update failed");
+      showNotify(`Validation / Error: ${errText}`, "error");
     }
   };
 
@@ -306,26 +313,34 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveLand = async (e: React.FormEvent) => {
     e.preventDefault();
+    let res;
     if (landForm.id) {
-      await ApiController.updateLand(landForm.id, landForm);
-      setStatusMsg("Land parcel updated!");
+      res = await ApiController.updateLand(landForm.id, landForm);
     } else {
-      await ApiController.createLand(landForm);
-      setStatusMsg("Land parcel registered!");
+      res = await ApiController.createLand(landForm);
     }
-    setLandModalOpen(false);
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    if (res.success) {
+      showNotify(landForm.id ? "Land parcel updated!" : "Land parcel registered!", "success");
+      setLandModalOpen(false);
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save land");
+      showNotify(`Validation / Error: ${errText}`, "error");
+    }
   };
 
   const handleDeleteLand = async (id: number) => {
     if (!confirm("Delete this land parcel?")) return;
-    await ApiController.deleteLand(id);
-    setStatusMsg("Land parcel deleted.");
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    const res = await ApiController.deleteLand(id);
+    if (res.success) {
+      showNotify("Land parcel deleted.", "success");
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete land");
+      showNotify(`Delete Error: ${errText}`, "error");
+    }
   };
 
   // House actions
@@ -387,26 +402,34 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
       kitta_numbers: kittaStr
     };
 
+    let res;
     if (houseForm.id) {
-      await ApiController.updateHouse(houseForm.id, payload);
-      setStatusMsg(`House structure updated (Linked to Kitta #${kittaStr})!`);
+      res = await ApiController.updateHouse(houseForm.id, payload);
     } else {
-      await ApiController.createHouse(payload);
-      setStatusMsg(`House structure registered (Linked to Kitta #${kittaStr})!`);
+      res = await ApiController.createHouse(payload);
     }
-    setHouseModalOpen(false);
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    if (res.success) {
+      showNotify(houseForm.id ? `House structure updated (Linked to Kitta #${kittaStr})!` : `House structure registered (Linked to Kitta #${kittaStr})!`, "success");
+      setHouseModalOpen(false);
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save house");
+      showNotify(`Validation / Error: ${errText}`, "error");
+    }
   };
 
   const handleDeleteHouse = async (id: number) => {
     if (!confirm("Delete this house structure and its floors?")) return;
-    await ApiController.deleteHouse(id);
-    setStatusMsg("House structure deleted.");
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    const res = await ApiController.deleteHouse(id);
+    if (res.success) {
+      showNotify("House structure deleted.", "success");
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
+      showNotify(`Delete Error: ${errText}`, "error");
+    }
   };
 
   // Floor actions
@@ -434,26 +457,34 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveFloor = async (e: React.FormEvent) => {
     e.preventDefault();
+    let res;
     if (floorForm.id) {
-      await ApiController.updateFloor(floorForm.id, floorForm);
-      setStatusMsg("Floor updated!");
+      res = await ApiController.updateFloor(floorForm.id, floorForm);
     } else {
-      await ApiController.createFloor(floorForm);
-      setStatusMsg("Floor added!");
+      res = await ApiController.createFloor(floorForm);
     }
-    setFloorModalOpen(false);
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    if (res.success) {
+      showNotify(floorForm.id ? "Floor updated!" : "Floor added!", "success");
+      setFloorModalOpen(false);
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save floor");
+      showNotify(`Validation / Error: ${errText}`, "error");
+    }
   };
 
   const handleDeleteFloor = async (id: number) => {
     if (!confirm("Delete this floor?")) return;
-    await ApiController.deleteFloor(id);
-    setStatusMsg("Floor deleted.");
-    loadDossier();
-    onRefresh();
-    setTimeout(() => setStatusMsg(null), 3000);
+    const res = await ApiController.deleteFloor(id);
+    if (res.success) {
+      showNotify("Floor deleted.", "success");
+      loadDossier();
+      onRefresh();
+    } else {
+      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
+      showNotify(`Delete Error: ${errText}`, "error");
+    }
   };
 
   // =========================================================================
@@ -670,12 +701,13 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
         ]
       });
       if (res.success) {
-        setStatusMsg("Calculation saved successfully to database (calc_master, calc_land, calc_house, calc_floor)!");
-        setTimeout(() => setStatusMsg(null), 3500);
+        showNotify("Calculation saved successfully to database (calc_master, calc_land, calc_house, calc_floor)!", "success");
+      } else {
+        showNotify(res.message || "Failed to save calculation.", "error");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setStatusMsg("Failed to save calculation.");
+      showNotify(e?.message || "Failed to save calculation.", "error");
     } finally {
       setIsSavingCalc(false);
     }
@@ -766,10 +798,16 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
         {/* Status Msg Toast */}
         {statusMsg && (
-          <div className="m-4 mb-0 p-3 text-xs bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center justify-between">
+          <div
+            className={`m-4 mb-0 p-3 text-xs rounded-xl flex items-center justify-between border ${
+              statusMsg.type === "success"
+                ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+                : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
+            }`}
+          >
             <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>{statusMsg}</span>
+              <CheckCircle2 className={`w-4 h-4 shrink-0 ${statusMsg.type === "success" ? "text-emerald-600" : "text-rose-600"}`} />
+              <span className="font-semibold">{statusMsg.text}</span>
             </span>
             <button onClick={() => setStatusMsg(null)} className="font-semibold underline ml-2">
               Dismiss

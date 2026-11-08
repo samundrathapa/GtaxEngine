@@ -45,10 +45,22 @@ export class LandController {
   Create = async (req: Request, res: Response) => {
     try {
       const userId = (req.headers["x-user-id"] as string) || "1";
+      const taxpayerId = req.body.taxpayer_id;
+      if (!taxpayerId || Number(taxpayerId) <= 0 || isNaN(Number(taxpayerId))) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Validation Failed", ["Taxpayer ID (taxpayer_id) is required to register a land parcel."])
+        );
+      }
       const created = await this.service.create(req.body, userId);
+      const dbErr = (import("../../server/db/postgresPool.ts") as any).PostgresPoolManager?.getLastQueryError?.();
+      if (dbErr) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Land creation failed", [dbErr])
+        );
+      }
       res.status(201).json(ApiResponse.buildSuccess(created, "Land created successfully", 201));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Land creation failed", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure("Land creation failed", [err.message || String(err)]));
     }
   };
 
@@ -57,9 +69,14 @@ export class LandController {
       const id = req.params.id;
       const userId = (req.headers["x-user-id"] as string) || "1";
       const updated = await this.service.update(id, req.body, userId);
+      if (!updated) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Land update failed", ["Record not found or update rejected."])
+        );
+      }
       res.json(ApiResponse.buildSuccess(updated, "Land updated successfully"));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Land update failed", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure("Land update failed", [err.message || String(err)]));
     }
   };
 
@@ -67,10 +84,15 @@ export class LandController {
     try {
       const id = req.params.id;
       const userId = (req.headers["x-user-id"] as string) || "1";
-      await this.service.delete(id, userId);
+      const ok = await this.service.delete(id, userId);
+      if (!ok) {
+        return res.status(400).json(
+          ApiResponse.buildFailure("Land deletion failed", ["Record not found or deletion rejected."])
+        );
+      }
       res.json(ApiResponse.buildSuccess({ id }, "Land deleted successfully"));
     } catch (err: any) {
-      res.status(500).json(ApiResponse.buildFailure("Land deletion failed", [err.message]));
+      res.status(500).json(ApiResponse.buildFailure("Land deletion failed", [err.message || String(err)]));
     }
   };
 }

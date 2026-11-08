@@ -476,9 +476,19 @@ app.delete("/api/v1/property/taxpayers/:id", async (req, res) => {
 app.post("/api/v1/property/lands", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  const land = await TableCacheDbSyncService.insertRecord("tbl_land", req.body, userId);
-  propertyDb.createLand(land, userId);
-  res.status(201).json(ApiResponse.buildSuccess(land, "Land parcel registered in database and synced to Redis", 201));
+  const taxpayerId = req.body.taxpayer_id;
+  if (!taxpayerId || Number(taxpayerId) <= 0 || isNaN(Number(taxpayerId))) {
+    return res.status(400).json(
+      ApiResponse.buildFailure("Validation Failed", ["Taxpayer ID (taxpayer_id) is required to register a land parcel."])
+    );
+  }
+  try {
+    const land = await TableCacheDbSyncService.insertRecord("tbl_land", req.body, userId);
+    propertyDb.createLand(land, userId);
+    res.status(201).json(ApiResponse.buildSuccess(land, "Land parcel registered in database and synced to Redis", 201));
+  } catch (err: any) {
+    res.status(500).json(ApiResponse.buildFailure("Land registration failed", [err?.message || String(err)]));
+  }
 });
 
 app.put("/api/v1/property/lands/:id", async (req, res) => {
