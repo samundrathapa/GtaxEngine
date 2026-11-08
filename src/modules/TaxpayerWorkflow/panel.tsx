@@ -336,8 +336,9 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleCreateLand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLandKitta || !newLandMoth) return;
+    const targetTpId = selectedTaxpayerId || taxpayerDossier?.taxpayer?.id || (taxpayers && taxpayers.length > 0 ? taxpayers[0].id : 1);
     const res = await ApiController.createLand({
-      taxpayer_id: selectedTaxpayerId,
+      taxpayer_id: targetTpId,
       kitta_number: newLandKitta,
       moth_number: newLandMoth,
       ward_no: newLandWard,
@@ -352,7 +353,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     if (res.success) {
       setStatusMsg(`Land Parcel Kitta ${newLandKitta} registered successfully!`);
       setNewLandModalOpen(false);
-      loadAllData();
+      await loadAllData();
       setTimeout(() => setStatusMsg(null), 3000);
     }
   };
@@ -600,6 +601,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
     const res = await ApiController.updateTaxpayer(editingTaxpayer.id, payload);
     if (res.success) {
+      setSelectedTaxpayerId(editingTaxpayer.id);
       setStatusMsg(`Taxpayer ${resolvedName} updated successfully!`);
       setEditTaxpayerModalOpen(false);
       await loadAllData();
