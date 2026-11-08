@@ -311,12 +311,65 @@ export class TableCacheDbSyncService {
       return clean;
     }
 
+    if (table === "tbl_land") {
+      const kitta = payload.kitta_number || payload.kitta_no || payload.kitta || "101";
+      const moth = payload.moth_number || payload.moth_no || payload.moth || "1";
+      const unitId = payload.land_measuring_unit_id || payload.unit_id || 1;
+      const natureId = payload.nature_id || payload.land_nature_id || 1;
+      const landRateId = payload.land_rate_id || 1;
+      const malpotRateId = payload.malpot_rate_id || 1;
+      const ward = payload.ward_no !== undefined ? Number(payload.ward_no) : 1;
+      const area = payload.area_sqfeet !== undefined ? Number(payload.area_sqfeet) : (payload.area_sqft !== undefined ? Number(payload.area_sqft) : 1000);
+
+      const allowedColumns = new Set([
+        "id", "taxpayer_id", "kitta_number", "moth_number", "ward_no", "area_sqfeet",
+        "include_in_evaluation", "land_measuring_unit_id", "nature_id", "land_rate_id",
+        "malpot_rate_id", "assessed_valuation", "is_deleted", "insert_by", "insert_on",
+        "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+
+      clean.kitta_number = String(kitta);
+      clean.moth_number = String(moth);
+      clean.land_measuring_unit_id = Number(unitId);
+      clean.nature_id = Number(natureId);
+      clean.land_rate_id = Number(landRateId);
+      clean.malpot_rate_id = Number(malpotRateId);
+      clean.ward_no = Number(ward);
+      clean.area_sqfeet = Number(area);
+      if (clean.taxpayer_id !== undefined) clean.taxpayer_id = Number(clean.taxpayer_id);
+
+      return clean;
+    }
+
     if (table === "tbl_house") {
       const allowedColumns = new Set([
         "id", "taxpayer_id", "land_id", "secondary_land_id", "kitta_numbers", "land_ids",
         "house_no", "area_sqfeet", "acquisition_date_bs", "acquisition_date_ad", "plinth_area",
         "floor_no", "include_in_evaluation", "measuring_unit_id", "construction_type_id",
         "assessed_valuation", "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
+      ]);
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (allowedColumns.has(k)) {
+          clean[k] = v;
+        }
+      }
+      return clean;
+    }
+
+    if (table === "tbl_floor") {
+      const allowedColumns = new Set([
+        "id", "house_id", "floor_no", "construction_date_ad", "construction_date_bs",
+        "construction_type_id", "area_sqfeet", "include_in_evaluation", "rate_id", "remarks",
+        "measuring_unit_id", "depreciation_percent", "floor_assessed_valuation", "is_deleted",
+        "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
       ]);
       const clean: Record<string, any> = {};
       for (const [k, v] of Object.entries(payload)) {
