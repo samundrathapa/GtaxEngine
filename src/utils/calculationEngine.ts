@@ -94,7 +94,10 @@ export function calculateLandEvaluation(
   ratePerUnitTwo?: number
 ): number {
   const Land_Area = Measurement.getLandMeasurement(areaInSqFt, unitId);
-  let areaPerUnit = rate.AreaPerUnit > 0 ? Measurement.getLandMeasurement(rate.AreaPerUnit, unitId) : 1;
+  let areaPerUnit = 1;
+  if (rate.AreaPerUnit > 0) {
+    areaPerUnit = rate.AreaPerUnit > 10 ? Measurement.getLandMeasurement(rate.AreaPerUnit, unitId) : rate.AreaPerUnit;
+  }
   if (areaPerUnit <= 0) areaPerUnit = 1;
 
   const ratePerUnit = rate.RatePerUnit;
@@ -135,6 +138,135 @@ export function calculateLandEvaluation(
   }
 
   return __Amount__;
+}
+
+export interface LandValuationBreakdown {
+  areaSqFt: number;
+  unitId: number;
+  unitName: string;
+  unitBaseSqFt: number;
+  normalizedUnits: number;
+  ratePerUnit: number;
+  areaPerUnit: number;
+  formulaText: string;
+  evaluatedAmount: number;
+}
+
+export function getLandValuationBreakdown(
+  areaSqFt: number,
+  unitId: number,
+  ratePerUnit: number,
+  areaPerUnit: number = 1
+): LandValuationBreakdown {
+  const uId = Number(unitId || 1);
+  const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+  const unitName = uId === 1 ? "Ropani / Aana" : uId === 2 ? "Bigha / Katha" : uId === 4 ? "Sq.Metre" : "Sq.Feet";
+  const normalizedUnits = Number((areaSqFt / baseSqFt).toFixed(4));
+  const effectiveAreaPerUnit = areaPerUnit > 0 ? (areaPerUnit > 10 ? areaPerUnit / baseSqFt : areaPerUnit) : 1;
+  const evaluatedAmount = calculateLandEvaluation(
+    areaSqFt,
+    uId,
+    { RatePerUnit: ratePerUnit, AreaPerUnit: effectiveAreaPerUnit }
+  );
+
+  const formulaText = `(${Number(areaSqFt).toLocaleString()} sqft ÷ ${baseSqFt} ${unitName}) × Rs. ${Number(ratePerUnit).toLocaleString()} = Rs. ${evaluatedAmount.toLocaleString()}`;
+
+  return {
+    areaSqFt,
+    unitId: uId,
+    unitName,
+    unitBaseSqFt: baseSqFt,
+    normalizedUnits,
+    ratePerUnit,
+    areaPerUnit: effectiveAreaPerUnit,
+    formulaText,
+    evaluatedAmount
+  };
+}
+
+export interface FloorValuationBreakdown {
+  areaSqFt: number;
+  constructionRate: number;
+  rawAmount: number;
+  depreciationPercent: number;
+  depreciationAmount: number;
+  floorModifierPercent: number;
+  formulaText: string;
+  evaluatedAmount: number;
+}
+
+export function getFloorValuationBreakdown(
+  areaSqFt: number,
+  constructionRate: number,
+  depreciationPercent: number = 5,
+  floorModifierPercent: number = 0
+): FloorValuationBreakdown {
+  const rate = Number(constructionRate || 2800);
+  const area = Number(areaSqFt || 0);
+  const rawAmount = Math.round(area * rate);
+  const depRate = Number(depreciationPercent || 0);
+  const depAmount = Math.round((rawAmount * depRate) / 100);
+  const afterDep = Math.max(0, rawAmount - depAmount);
+  const modRate = Number(floorModifierPercent || 0);
+  const evaluatedAmount = Math.round(afterDep * (1 + modRate / 100));
+
+  const formulaText = `(${area.toLocaleString()} sqft × Rs. ${rate.toLocaleString()}) - ${depRate}% dep. (Rs. ${depAmount.toLocaleString()}) = Rs. ${evaluatedAmount.toLocaleString()}`;
+
+  return {
+    areaSqFt: area,
+    constructionRate: rate,
+    rawAmount,
+    depreciationPercent: depRate,
+    depreciationAmount: depAmount,
+    floorModifierPercent: modRate,
+    formulaText,
+    evaluatedAmount
+  };
+}
+
+export interface HouseValuationBreakdown {
+  plinthArea: number;
+  floorsCount: number;
+  floorTotalAmount: number;
+  plinthMultiplier: number;
+  customAdjustment: number;
+  formulaText: string;
+  evaluatedAmount: number;
+}
+
+export function getHouseValuationBreakdown(
+  plinthArea: number,
+  floorsNetTotal: number,
+  floorsCount: number,
+  defaultRate: number = 2800,
+  plinthMultiplier: number = 1,
+  customAdjustment: number = 0
+): HouseValuationBreakdown {
+  const mult = Number(plinthMultiplier || 1);
+  const adj = Number(customAdjustment || 0);
+  let baseAmount = floorsNetTotal;
+
+  // Fallback if no floors registered yet
+  let isFallback = false;
+  if (floorsCount === 0 || baseAmount <= 0) {
+    baseAmount = Math.round(Number(plinthArea || 1000) * Number(defaultRate || 2800));
+    isFallback = true;
+  }
+
+  const evaluatedAmount = Math.round((baseAmount * mult) + adj);
+  const formulaText = isFallback
+    ? `Plinth Area (${plinthArea} sqft) × Rate (Rs. ${defaultRate}) = Rs. ${evaluatedAmount.toLocaleString()} (Direct Structure Fallback)`
+    : `(∑ ${floorsCount} Floors: Rs. ${floorsNetTotal.toLocaleString()}) × ${mult}${adj !== 0 ? ` + Rs. ${adj.toLocaleString()}` : ""} = Rs. ${evaluatedAmount.toLocaleString()}`;
+
+  return {
+    plinthArea,
+    floorsCount,
+    floorTotalAmount: baseAmount,
+    plinthMultiplier: mult,
+    customAdjustment: adj,
+    formulaText,
+    evaluatedAmount
+  };
 }
 
 /**

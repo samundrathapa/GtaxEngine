@@ -18,8 +18,20 @@ import {
   Home,
   User,
   Sliders,
-  DollarSign
+  DollarSign,
+  BarChart3
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from "recharts";
 
 interface MultiYearTaxEngineProps {
   currentLang?: SupportedLang;
@@ -422,6 +434,55 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium">
               <span className="text-slate-400 mr-1.5 font-bold">Scope:</span>
               <span>{result.targetPropertyDescription}</span>
+            </div>
+          </div>
+
+          {/* Recharts Historical Liability Visualization Card */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                  Historical Tax Liability & Cumulative Progression Chart (कर इतिहास ग्राफ)
+                </h3>
+              </div>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
+                Recharts Multi-Year Analytics
+              </span>
+            </div>
+
+            <div className="w-full h-72 pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={result.yearlyBreakdowns?.map((item: any) => ({
+                    fy: item.fiscalYearCode,
+                    baseTax: item.baseTaxLiability,
+                    netTax: item.netPayableYearTax,
+                    cumulative: item.cumulativeRunningTotal
+                  })) || []}
+                  margin={{ top: 10, right: 30, left: 10, bottom: 25 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.4} />
+                  <XAxis
+                    dataKey="fy"
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    angle={-15}
+                    textAnchor="end"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    tickFormatter={(val) => `Rs. ${(val / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    formatter={(value: any) => [`NPR ${Number(value).toLocaleString()}`, ""]}
+                    contentStyle={{ backgroundColor: "#0f172a", borderRadius: "12px", color: "#fff", fontSize: "12px", border: "none" }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                  <Bar dataKey="baseTax" name="Base Tax Liability" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28} />
+                  <Bar dataKey="netTax" name="Net Year Tax (with Fines/Rebates)" fill="#10b981" radius={[4, 4, 0, 0]} barSize={28} />
+                  <Line type="monotone" dataKey="cumulative" name="Cumulative Running Total" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

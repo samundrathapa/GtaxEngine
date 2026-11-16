@@ -501,7 +501,17 @@ app.post("/api/v1/property/lands", async (req, res) => {
     );
   }
   try {
-    const land = await TableCacheDbSyncService.insertRecord("tbl_land", req.body, userId);
+    let payload = { ...req.body };
+    if (!payload.assessed_valuation || Number(payload.assessed_valuation) <= 0) {
+      const uId = Number(payload.unit_id || payload.land_measuring_unit_id || 1);
+      const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+      const area = Number(payload.area_sqfeet || payload.area_sqft || 1000);
+      const rates = await TableCacheDbSyncService.getTableData<any>("tbl_land_rate", true);
+      const rObj = rates.find((r: any) => Number(r.id) === Number(payload.land_rate_id)) || rates[0];
+      const rateVal = rObj ? Number(rObj.rate_per_unit || 800000) : 800000;
+      payload.assessed_valuation = Math.round((area / baseSqFt) * rateVal);
+    }
+    const land = await TableCacheDbSyncService.insertRecord("tbl_land", payload, userId);
     propertyDb.createLand(land, userId);
     res.status(201).json(ApiResponse.buildSuccess(land, "Land parcel registered in database and synced to Redis", 201));
   } catch (err: any) {
@@ -535,9 +545,18 @@ app.delete("/api/v1/property/lands/:id", async (req, res) => {
 app.post("/api/v1/property/houses", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  const house = await TableCacheDbSyncService.insertRecord("tbl_house", req.body, userId);
-  propertyDb.createHouse(house, userId);
-  res.status(201).json(ApiResponse.buildSuccess(house, "House structure registered in database and synced to Redis", 201));
+  try {
+    let payload = { ...req.body };
+    if (!payload.assessed_valuation || Number(payload.assessed_valuation) <= 0) {
+      const plinth = Number(payload.plinth_area || payload.area_sqfeet || 1000);
+      payload.assessed_valuation = Math.round(plinth * 2800);
+    }
+    const house = await TableCacheDbSyncService.insertRecord("tbl_house", payload, userId);
+    propertyDb.createHouse(house, userId);
+    res.status(201).json(ApiResponse.buildSuccess(house, "House structure registered in database and synced to Redis", 201));
+  } catch (err: any) {
+    res.status(500).json(ApiResponse.buildFailure("House registration failed", [err?.message || String(err)]));
+  }
 });
 
 app.put("/api/v1/property/houses/:id", async (req, res) => {
@@ -566,9 +585,34 @@ app.delete("/api/v1/property/houses/:id", async (req, res) => {
 app.post("/api/v1/property/floors", async (req, res) => {
   const session = AuthSessionService.validateBearerToken(getAuthHeader(req));
   const userId = session?.user?.id ? String(session.user.id) : "1";
-  const floor = await TableCacheDbSyncService.insertRecord("tbl_floor", req.body, userId);
-  propertyDb.createFloor(floor, userId);
-  res.status(201).json(ApiResponse.buildSuccess(floor, "Floor unit registered in database and synced to Redis", 201));
+  try {
+    let payload = { ...req.body };
+    if (!payload.floor_assessed_valuation || Number(payload.floor_assessed_valuation) <= 0) {
+      const area = Number(payload.area_sqfeet || payload.area_sqft || 1000);
+      const dep = Number(payload.depreciation_percent !== undefined ? payload.depreciation_percent : 5);
+      const cRates = await TableCacheDbSyncService.getTableData<any>("tbl_construction_rates", true);
+      const crObj = cRates.find((r: any) => Number(r.id) === Number(payload.rate_id)) || cRates[0];
+      const crVal = crObj ? Number(crObj.rate_per_unit || 2800) : 2800;
+      payload.floor_assessed_valuation = Math.round(area * crVal * (1 - dep / 100));
+    }
+    const floor = await TableCacheDbSyncService.insertRecord("tbl_floor", payload, userId);
+    propertyDb.createFloor(floor, userId);
+
+    // Roll up floor valuations to update parent house valuation
+    if (floor.house_id) {
+      const allFloors = await TableCacheDbSyncService.getTableData<any>("tbl_floor", true);
+      const houseFloors = allFloors.filter((fl: any) => Number(fl.house_id) === Number(floor.house_id) && !fl.is_deleted);
+      const totalFloorVal = houseFloors.reduce((acc: number, f: any) => acc + Number(f.floor_assessed_valuation || 0), 0);
+      if (totalFloorVal > 0) {
+        await TableCacheDbSyncService.updateRecord("tbl_house", Number(floor.house_id), { assessed_valuation: totalFloorVal }, userId);
+        propertyDb.updateHouse(Number(floor.house_id), { assessed_valuation: totalFloorVal }, userId);
+      }
+    }
+
+    res.status(201).json(ApiResponse.buildSuccess(floor, "Floor unit registered in database and synced to Redis", 201));
+  } catch (err: any) {
+    res.status(500).json(ApiResponse.buildFailure("Floor registration failed", [err?.message || String(err)]));
+  }
 });
 
 app.put("/api/v1/property/floors/:id", async (req, res) => {
