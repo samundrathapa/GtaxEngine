@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "code": "APP-CONF-01",
+    "fullname": "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+    "fullanme": "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+    "company_id": 1,
+    "fiscal_year_id": 63,
+    "unit_type_id": 3,
+    "municipality_name": "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+    "ward_count": 32,
+    "theme_preference": "slate",
+    "default_language": "eng",
+    "is_deleted": false,
+    "insert_by": "SYSTEM_SEED",
+    "insert_on": "2026-11-04T16:30:56.956Z",
+    "update_by": "1",
+    "update_on": "2026-11-04T16:32:59.510Z",
+    "delete_by": null,
+    "deleted_on": null,
+    "is_active": true
+  }
+]

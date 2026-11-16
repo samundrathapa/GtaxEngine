@@ -181,28 +181,34 @@ export class TableCacheDbSyncService {
 
     if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
       rows = rows.map((r: any) => {
-        const name = r.full_name || r.fullname || r.fullanme || "";
-        const code = r.taxpayer_code || r.code || "";
-        const phone = r.phone_number || r.mobile_no || r.mobile || "";
-        const pan = r.pan_number || r.pan_vat_no || "";
+        const name = r.full_name || r.fullname || r.fullanme || r.name || "";
+        const code = r.taxpayer_code || r.taxpayer_id || r.code || "";
+        const phone = r.phone_number || r.mobile || r.phone || r.mobile_no || "";
+        const pan = r.pan_number || r.pan_vat_no || r.pan_no || "";
         const citizenship = r.citizenship_number || r.citizenship_no || "";
         return {
           ...r,
+          id: Number(r.id),
           full_name: name,
           fullname: name,
           fullanme: name,
+          name,
           taxpayer_code: code,
+          taxpayer_id: code,
           code,
           phone_number: phone,
-          mobile_no: phone,
           mobile: phone,
+          phone,
+          mobile_no: phone,
           pan_number: pan,
           pan_vat_no: pan,
+          pan_no: pan,
           citizenship_number: citizenship,
-          citizenship_no: citizenship
+          citizenship_no: citizenship,
+          ward_no: r.ward_no !== undefined ? Number(r.ward_no) : 1
         };
       }) as any;
-    } else if (table === "tbl_appication_setting") {
+    } else if (table === "tbl_appication_setting" || table === "tbl_application_setting") {
       rows = rows.map((r: any) => {
         const name = r.fullname || r.fullanme || r.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
         return {
@@ -215,12 +221,91 @@ export class TableCacheDbSyncService {
       }) as any;
     } else if (table === "tbl_user") {
       rows = rows.map((r: any) => {
-        const name = r.full_name || r.fullname || r.fullanme || "User";
+        const name = r.fullname || r.full_name || r.name || "User";
+        const uname = r.username || (r.email ? String(r.email).split("@")[0] : "") || `USR_${r.id}`;
+        const uid = r.user_id ? String(r.user_id) : `USR_${r.id}`;
+        const phone = r.mobile || r.phone || "";
+        const role = r.role || "OPERATOR";
         return {
           ...r,
-          full_name: name,
+          id: Number(r.id),
           fullname: name,
-          user_id: r.user_id ? String(r.user_id) : String(r.id)
+          full_name: name,
+          name,
+          username: uname,
+          user_id: uid,
+          mobile: phone,
+          phone,
+          role,
+          password_hash: r.password_hash || r.password || ""
+        };
+      }) as any;
+    } else if (table === "tbl_company") {
+      rows = rows.map((r: any) => {
+        const name = r.name || r.company_name || r.fullname || r.fullanme || "Company";
+        const phone = r.phone || r.mobile || r.phone_number || "";
+        const pan = r.pan_no || r.pan_number || "";
+        return {
+          ...r,
+          id: Number(r.id),
+          name,
+          company_name: name,
+          fullname: name,
+          phone,
+          mobile: phone,
+          phone_number: phone,
+          pan_no: pan,
+          pan_number: pan
+        };
+      }) as any;
+    } else if (table === "tbl_fiscal_year") {
+      rows = rows.map((r: any) => {
+        const name = r.fullname || r.name || r.code || "Fiscal Year";
+        return {
+          ...r,
+          id: Number(r.id),
+          fullname: name,
+          name,
+          bs_year: r.bs_year || (r.code ? String(r.code).split("/")[0] : ""),
+          ad_year: r.ad_year || ""
+        };
+      }) as any;
+    } else if (table === "tbl_unit") {
+      rows = rows.map((r: any) => {
+        const name = r.fullanme || r.fullname || r.name || r.code || "Unit";
+        const symbol = r.symbol || r.code || "";
+        const unitVal = r.unit_value !== undefined ? Number(r.unit_value) : 1.0;
+        return {
+          ...r,
+          id: Number(r.id),
+          name,
+          fullanme: name,
+          fullname: name,
+          symbol,
+          unit_value: unitVal
+        };
+      }) as any;
+    } else if (table === "tbl_construction_type") {
+      rows = rows.map((r: any) => {
+        const name = r.fullanme || r.fullname || r.name || r.code || "Construction Type";
+        return {
+          ...r,
+          id: Number(r.id),
+          name,
+          fullanme: name,
+          fullname: name,
+          depreciation_rate: r.depreciation_rate !== undefined ? Number(r.depreciation_rate) : 0
+        };
+      }) as any;
+    } else if (table === "tbl_land_nature") {
+      rows = rows.map((r: any) => {
+        const name = r.fullanme || r.fullname || r.name || r.code || "Land Nature";
+        return {
+          ...r,
+          id: Number(r.id),
+          name,
+          fullanme: name,
+          fullname: name
         };
       }) as any;
     } else if (table === "tbl_land") {
@@ -243,6 +328,56 @@ export class TableCacheDbSyncService {
           unit_id: unitId
         };
       }) as any;
+    } else if (table === "tbl_house") {
+      rows = rows.map((r: any) => {
+        const houseNo = r.house_no || r.house_number || "";
+        const area = r.area_sqfeet !== undefined ? Number(r.area_sqfeet) : (r.area_sqft !== undefined ? Number(r.area_sqft) : 0);
+        return {
+          ...r,
+          id: Number(r.id),
+          house_no: String(houseNo),
+          house_number: String(houseNo),
+          area_sqfeet: area,
+          area_sqft: area
+        };
+      }) as any;
+    } else if (table === "tbl_floor") {
+      rows = rows.map((r: any) => {
+        const area = r.area_sqfeet !== undefined ? Number(r.area_sqfeet) : (r.area_sqft !== undefined ? Number(r.area_sqft) : 0);
+        return {
+          ...r,
+          id: Number(r.id),
+          area_sqfeet: area,
+          area_sqft: area
+        };
+      }) as any;
+    } else if (table === "tbl_user_log") {
+      rows = rows.map((r: any) => {
+        const action = r.action_name || r.action_type || "LOG_EVENT";
+        const ip = r.ip_address || r.client_ip || "127.0.0.1";
+        const created = r.insert_on || r.created_at || "";
+        return {
+          ...r,
+          id: Number(r.id),
+          action_name: action,
+          action_type: action,
+          ip_address: ip,
+          client_ip: ip,
+          created_at: created,
+          insert_on: created
+        };
+      }) as any;
+    } else if (table === "tbl_land_rate" || table === "tbl_malpot_rates" || table === "tbl_construction_rates" || table === "tbl_depreciation") {
+      rows = rows.map((r: any) => {
+        const name = r.fullanme || r.fullname || r.name || r.code || "";
+        return {
+          ...r,
+          id: Number(r.id),
+          fullanme: name,
+          fullname: name,
+          name
+        };
+      }) as any;
     }
 
     // Write to Redis cache with 1-hour TTL
@@ -252,186 +387,600 @@ export class TableCacheDbSyncService {
     return rows;
   }
 
+  private static tableColumnsCache: Map<string, Set<string>> = new Map();
+
   /**
-   * Inserts a record directly into PostgreSQL table, ensures audit fields store userId from tbl_user,
-   * auto-syncs with Redis, and returns the response from Redis cache.
+   * Dynamically inspects and caches columns that actually exist in the target PostgreSQL table.
+   * Completely eliminates "column does not exist" SQL errors across legacy/existing databases.
+   */
+  public static async getTableColumns(table: string): Promise<Set<string>> {
+    const tblLower = String(table || "").toLowerCase().trim();
+    if (!tblLower) return new Set();
+
+    if (this.tableColumnsCache.has(tblLower)) {
+      return this.tableColumnsCache.get(tblLower)!;
+    }
+
+    if (!PostgresPoolManager.getStatus().connected) {
+      return new Set();
+    }
+
+    try {
+      const res = await PostgresPoolManager.query<{ column_name: string }>(
+        `SELECT column_name FROM information_schema.columns WHERE LOWER(table_name) = $1;`,
+        [tblLower]
+      );
+      const cols = new Set((res || []).map((r) => String(r.column_name).toLowerCase()));
+      if (cols.size > 0) {
+        this.tableColumnsCache.set(tblLower, cols);
+      }
+      return cols;
+    } catch (err) {
+      console.warn(`[gtax:CacheSync] Failed to query columns for table ${tblLower}:`, err);
+      return new Set();
+    }
+  }
+
+  public static clearTableColumnsCache(): void {
+    this.tableColumnsCache.clear();
+  }
+
   /**
    * Sanitizes payload strictly to columns existing in PostgreSQL table schema.
-   * Eliminates non-existent column errors during INSERT / UPDATE.
+   * Dynamically checks existing table columns and filters out non-existent fields.
    */
-  public static sanitizePayloadForDb(table: string, rawPayload: Record<string, any>): Record<string, any> {
+  public static sanitizePayloadForDb(
+    table: string,
+    rawPayload: Record<string, any>,
+    existingCols?: Set<string>
+  ): Record<string, any> {
     const payload = { ...rawPayload };
 
-    if (table === "tbl_taxpayer" || table === "tbl_taxpayer_master") {
-      const name = payload.full_name || payload.fullname || payload.fullanme || "New Taxpayer";
-      const code = payload.taxpayer_code || payload.code || `TP-${Date.now().toString().slice(-6)}`;
-      const phone = payload.phone_number || payload.mobile_no || payload.mobile || "";
-      const pan = payload.pan_number || payload.pan_vat_no || "";
+    const safeInt = (val: any, defaultVal = 1): number => {
+      if (val === undefined || val === null || val === "") return defaultVal;
+      const num = Number(val);
+      return isNaN(num) ? defaultVal : Math.round(num);
+    };
+
+    const safeNum = (val: any, defaultVal = 0): number => {
+      if (val === undefined || val === null || val === "") return defaultVal;
+      const num = Number(val);
+      return isNaN(num) ? defaultVal : num;
+    };
+
+    const tblLower = String(table || "").toLowerCase();
+
+    // Helper to assign column only if it exists in the target DB table (or if existingCols is unknown)
+    const assignCol = (clean: Record<string, any>, col: string, val: any) => {
+      if (!existingCols || existingCols.size === 0 || existingCols.has(col.toLowerCase())) {
+        clean[col] = val;
+      }
+    };
+
+    if (tblLower === "tbl_taxpayer" || tblLower === "tbl_taxpayer_master") {
+      const name = payload.full_name || payload.fullname || payload.fullanme || payload.name || "New Taxpayer";
+      const code = payload.taxpayer_code || payload.taxpayer_id || payload.code || `TP-${Date.now().toString().slice(-6)}`;
+      const phone = payload.phone_number || payload.mobile || payload.phone || payload.mobile_no || "";
+      const pan = payload.pan_number || payload.pan_vat_no || payload.pan_no || "";
       const citizenship = payload.citizenship_number || payload.citizenship_no || "";
-      const ward = payload.ward_no !== undefined ? Number(payload.ward_no) : 1;
-
-      const allowedColumns = new Set([
-        "id",
-        "taxpayer_code",
-        "full_name",
-        "mobile",
-        "phone_number",
-        "email",
-        "ward_no",
-        "pan_number",
-        "citizenship_number",
-        "tax_type_id",
-        "tole_village",
-        "gender",
-        "registration_date",
-        "is_deleted",
-        "insert_by",
-        "insert_on",
-        "update_by",
-        "update_on",
-        "delete_by",
-        "deleted_on",
-        "is_active"
-      ]);
+      const ward = safeInt(payload.ward_no, 1);
 
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      assignCol(clean, "full_name", name);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "taxpayer_code", code);
+      assignCol(clean, "taxpayer_id", code);
+      assignCol(clean, "phone_number", phone);
+      assignCol(clean, "mobile", phone);
+      assignCol(clean, "phone", phone);
+      assignCol(clean, "mobile_no", phone);
+      assignCol(clean, "pan_number", pan);
+      assignCol(clean, "pan_vat_no", pan);
+      assignCol(clean, "citizenship_number", citizenship);
+      assignCol(clean, "citizenship_no", citizenship);
+      assignCol(clean, "ward_no", ward);
+
+      if (payload.email !== undefined) assignCol(clean, "email", payload.email);
+      if (payload.tole_village !== undefined) assignCol(clean, "tole_village", payload.tole_village);
+      if (payload.gender !== undefined) assignCol(clean, "gender", payload.gender);
+      if (payload.tax_type_id !== undefined) assignCol(clean, "tax_type_id", safeInt(payload.tax_type_id, 1));
+      if (payload.registration_date !== undefined) assignCol(clean, "registration_date", payload.registration_date);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      // Final defensive sweep: ensure no non-existent column is ever returned
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
-
-      clean.full_name = name;
-      clean.taxpayer_code = code;
-      clean.phone_number = phone;
-      clean.mobile = phone;
-      clean.pan_number = pan;
-      clean.citizenship_number = citizenship;
-      clean.ward_no = ward;
-      if (clean.tax_type_id !== undefined) clean.tax_type_id = Number(clean.tax_type_id);
 
       return clean;
     }
 
-    if (table === "tbl_user") {
-      const name = payload.full_name || payload.fullname || payload.fullanme || "User";
-      const allowedColumns = new Set([
-        "id", "fullname", "photo_path", "email", "password", "mobile", "country_id",
-        "effective_from", "effective_to", "employee_id", "is_locked", "is_deleted",
-        "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+    if (tblLower === "tbl_user") {
+      const name = payload.fullname || payload.full_name || payload.name || payload.username || "User";
+      const username = payload.username || (payload.email ? String(payload.email).split("@")[0] : `user_${Date.now()}`);
+      const pwd = payload.password || payload.password_hash || "Password123!";
+      const phone = payload.mobile || payload.phone || "";
+      const role = payload.role || "OPERATOR";
 
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "full_name", name);
+      assignCol(clean, "username", username);
+      if (payload.user_id || payload.id) {
+        assignCol(clean, "user_id", payload.user_id || `USR_${payload.id}`);
+      }
+      if (payload.email !== undefined) assignCol(clean, "email", payload.email);
+      assignCol(clean, "password", pwd);
+      assignCol(clean, "password_hash", pwd);
+      assignCol(clean, "role", role);
+      assignCol(clean, "mobile", phone);
+      assignCol(clean, "phone", phone);
+      if (payload.employee_id !== undefined) assignCol(clean, "employee_id", payload.employee_id);
+      if (payload.country_id !== undefined) assignCol(clean, "country_id", safeInt(payload.country_id, 1));
+      if (payload.photo_path !== undefined) assignCol(clean, "photo_path", payload.photo_path);
+      if (payload.effective_from !== undefined) assignCol(clean, "effective_from", payload.effective_from);
+      if (payload.effective_to !== undefined) assignCol(clean, "effective_to", payload.effective_to);
+      if (payload.is_locked !== undefined) assignCol(clean, "is_locked", Boolean(payload.is_locked));
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
-      clean.fullname = name;
+
       return clean;
     }
 
-    if (table === "tbl_land") {
+    if (tblLower === "tbl_company") {
+      const compName = payload.name || payload.company_name || payload.fullname || payload.fullanme || "Company";
+      const phone = payload.phone || payload.mobile || payload.phone_number || "";
+      const pan = payload.pan_no || payload.pan_number || "";
+
+      const clean: Record<string, any> = {};
+
+      assignCol(clean, "name", compName);
+      assignCol(clean, "company_name", compName);
+      assignCol(clean, "fullname", compName);
+      assignCol(clean, "phone", phone);
+      assignCol(clean, "mobile", phone);
+      assignCol(clean, "phone_number", phone);
+      assignCol(clean, "pan_no", pan);
+      assignCol(clean, "pan_number", pan);
+      if (payload.code !== undefined) assignCol(clean, "code", payload.code);
+      if (payload.address !== undefined) assignCol(clean, "address", payload.address);
+      if (payload.email !== undefined) assignCol(clean, "email", payload.email);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    if (tblLower === "tbl_fiscal_year") {
+      const code = payload.code || "081/82";
+      const name = payload.fullname || payload.name || `Fiscal Year ${code}`;
+      const bsYear = payload.bs_year || (code.includes("/") ? code.split("/")[0] : code);
+      const adYear = payload.ad_year || "2024/2025";
+      const fromBs = payload.date_from_bs || `20${code.slice(0, 2)}-04-01`;
+      const toBs = payload.date_to_bs || `20${code.slice(-2)}-03-31`;
+      const fromAd = payload.date_from_ad || "2024-07-16";
+      const toAd = payload.date_to_ad || "2025-07-15";
+
+      const clean: Record<string, any> = {};
+
+      assignCol(clean, "code", code);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "name", name);
+      assignCol(clean, "bs_year", bsYear);
+      assignCol(clean, "ad_year", adYear);
+      assignCol(clean, "date_from_bs", fromBs);
+      assignCol(clean, "date_to_bs", toBs);
+      assignCol(clean, "date_from_ad", fromAd);
+      assignCol(clean, "date_to_ad", toAd);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    if (tblLower === "tbl_unit") {
+      const code = payload.code || payload.symbol || "UNIT";
+      const name = payload.name || payload.fullanme || payload.fullname || code;
+      const symbol = payload.symbol || code;
+      const unitVal = safeNum(payload.unit_value, 1.0);
+
+      const clean: Record<string, any> = {};
+
+      assignCol(clean, "code", code);
+      assignCol(clean, "fullanme", name);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "name", name);
+      assignCol(clean, "symbol", symbol);
+      assignCol(clean, "unit_value", unitVal);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    if (tblLower === "tbl_construction_type") {
+      const code = payload.code || "CONST_TYPE";
+      const name = payload.name || payload.fullanme || payload.fullname || code;
+      const depRate = safeNum(payload.depreciation_rate, 0);
+
+      const clean: Record<string, any> = {};
+
+      assignCol(clean, "code", code);
+      assignCol(clean, "fullanme", name);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "name", name);
+      assignCol(clean, "depreciation_rate", depRate);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    if (tblLower === "tbl_land_nature") {
+      const code = payload.code || "LAND_NATURE";
+      const name = payload.name || payload.fullanme || payload.fullname || code;
+
+      const clean: Record<string, any> = {};
+
+      assignCol(clean, "code", code);
+      assignCol(clean, "fullanme", name);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "name", name);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    if (tblLower === "tbl_land") {
       const kitta = payload.kitta_number || payload.kitta_no || payload.kitta || "101";
       const moth = payload.moth_number || payload.moth_no || payload.moth || "1";
-      const unitId = payload.land_measuring_unit_id || payload.unit_id || 1;
-      const natureId = payload.nature_id || payload.land_nature_id || 1;
-      const landRateId = payload.land_rate_id || 1;
-      const malpotRateId = payload.malpot_rate_id || 1;
-      const ward = payload.ward_no !== undefined ? Number(payload.ward_no) : 1;
-      const area = payload.area_sqfeet !== undefined ? Number(payload.area_sqfeet) : (payload.area_sqft !== undefined ? Number(payload.area_sqft) : 1000);
-
-      const allowedColumns = new Set([
-        "id", "taxpayer_id", "kitta_number", "moth_number", "ward_no", "area_sqfeet",
-        "include_in_evaluation", "land_measuring_unit_id", "nature_id", "land_rate_id",
-        "malpot_rate_id", "assessed_valuation", "is_deleted", "insert_by", "insert_on",
-        "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+      const unitId = safeInt(payload.land_measuring_unit_id || payload.unit_id, 1);
+      const natureId = safeInt(payload.nature_id || payload.land_nature_id, 1);
+      const landRateId = safeInt(payload.land_rate_id, 1);
+      const malpotRateId = safeInt(payload.malpot_rate_id, 1);
+      const ward = safeInt(payload.ward_no, 1);
+      const area = safeNum(payload.area_sqfeet !== undefined ? payload.area_sqfeet : payload.area_sqft, 1000);
+      const tpId = payload.taxpayer_id !== undefined && payload.taxpayer_id !== null ? safeInt(payload.taxpayer_id, 1) : null;
 
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      if (tpId !== null) assignCol(clean, "taxpayer_id", tpId);
+      assignCol(clean, "kitta_number", String(kitta));
+      assignCol(clean, "kitta_no", String(kitta));
+      assignCol(clean, "moth_number", String(moth));
+      assignCol(clean, "moth_no", String(moth));
+      assignCol(clean, "ward_no", ward);
+      assignCol(clean, "area_sqfeet", area);
+      assignCol(clean, "area_sqft", area);
+      assignCol(clean, "land_measuring_unit_id", unitId);
+      assignCol(clean, "unit_id", unitId);
+      assignCol(clean, "nature_id", natureId);
+      assignCol(clean, "land_rate_id", landRateId);
+      assignCol(clean, "malpot_rate_id", malpotRateId);
+      assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
+      assignCol(clean, "assessed_valuation", safeNum(payload.assessed_valuation, 0));
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
-
-      clean.kitta_number = String(kitta);
-      clean.moth_number = String(moth);
-      clean.land_measuring_unit_id = Number(unitId);
-      clean.nature_id = Number(natureId);
-      clean.land_rate_id = Number(landRateId);
-      clean.malpot_rate_id = Number(malpotRateId);
-      clean.ward_no = Number(ward);
-      clean.area_sqfeet = Number(area);
-      if (clean.taxpayer_id !== undefined) clean.taxpayer_id = Number(clean.taxpayer_id);
 
       return clean;
     }
 
-    if (table === "tbl_house") {
-      const allowedColumns = new Set([
-        "id", "taxpayer_id", "land_id", "secondary_land_id", "kitta_numbers", "land_ids",
-        "house_no", "area_sqfeet", "acquisition_date_bs", "acquisition_date_ad", "plinth_area",
-        "floor_no", "include_in_evaluation", "measuring_unit_id", "construction_type_id",
-        "assessed_valuation", "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+    if (tblLower === "tbl_house") {
+      const houseNo = payload.house_no || payload.house_number || "H-1";
+      const area = safeNum(payload.area_sqfeet !== undefined ? payload.area_sqfeet : payload.area_sqft, 500);
+      const unitId = safeInt(payload.measuring_unit_id || payload.unit_id, 1);
+      const constTypeId = safeInt(payload.construction_type_id, 1);
+      const tpId = safeInt(payload.taxpayer_id, 1);
+      const landId = payload.land_id !== undefined && payload.land_id !== null ? safeInt(payload.land_id, 1) : null;
+
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      assignCol(clean, "taxpayer_id", tpId);
+      if (landId !== null) assignCol(clean, "land_id", landId);
+      if (payload.secondary_land_id) assignCol(clean, "secondary_land_id", safeInt(payload.secondary_land_id, 1));
+      if (payload.kitta_numbers) assignCol(clean, "kitta_numbers", String(payload.kitta_numbers));
+      if (payload.land_ids) assignCol(clean, "land_ids", String(payload.land_ids));
+      assignCol(clean, "house_no", String(houseNo));
+      assignCol(clean, "house_number", String(houseNo));
+      assignCol(clean, "area_sqfeet", area);
+      assignCol(clean, "area_sqft", area);
+      assignCol(clean, "plinth_area", safeNum(payload.plinth_area, area));
+      assignCol(clean, "floor_no", safeInt(payload.floor_no, 1));
+      assignCol(clean, "measuring_unit_id", unitId);
+      assignCol(clean, "construction_type_id", constTypeId);
+      assignCol(clean, "acquisition_date_bs", payload.acquisition_date_bs || "2078-01-01");
+      assignCol(clean, "acquisition_date_ad", payload.acquisition_date_ad || "2021-04-14");
+      assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
+      assignCol(clean, "assessed_valuation", safeNum(payload.assessed_valuation, 0));
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
+
       return clean;
     }
 
-    if (table === "tbl_floor") {
-      const allowedColumns = new Set([
-        "id", "house_id", "floor_no", "construction_date_ad", "construction_date_bs",
-        "construction_type_id", "area_sqfeet", "include_in_evaluation", "rate_id", "remarks",
-        "measuring_unit_id", "depreciation_percent", "floor_assessed_valuation", "is_deleted",
-        "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+    if (tblLower === "tbl_floor") {
+      const houseId = safeInt(payload.house_id, 1);
+      const floorNo = safeInt(payload.floor_no, 0);
+      const constTypeId = safeInt(payload.construction_type_id, 1);
+      const area = safeNum(payload.area_sqfeet !== undefined ? payload.area_sqfeet : payload.area_sqft, 500);
+      const rateId = safeInt(payload.rate_id, 1);
+      const unitId = safeInt(payload.measuring_unit_id || payload.unit_id, 1);
+
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      assignCol(clean, "house_id", houseId);
+      assignCol(clean, "floor_no", floorNo);
+      assignCol(clean, "construction_type_id", constTypeId);
+      assignCol(clean, "area_sqfeet", area);
+      assignCol(clean, "area_sqft", area);
+      assignCol(clean, "rate_id", rateId);
+      assignCol(clean, "measuring_unit_id", unitId);
+      assignCol(clean, "construction_date_ad", payload.construction_date_ad || "2021-04-14");
+      assignCol(clean, "construction_date_bs", payload.construction_date_bs || "2078-01-01");
+      assignCol(clean, "remarks", payload.remarks || "");
+      assignCol(clean, "depreciation_percent", safeNum(payload.depreciation_percent, 0));
+      assignCol(clean, "floor_assessed_valuation", safeNum(payload.floor_assessed_valuation, 0));
+      assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+      if (payload.delete_by !== undefined) assignCol(clean, "delete_by", payload.delete_by);
+      if (payload.deleted_on !== undefined) assignCol(clean, "deleted_on", payload.deleted_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
+
       return clean;
     }
 
-    if (table === "tbl_malpot_rates" || table === "tbl_land_rate" || table === "tbl_construction_rates") {
-      const allowedColumns = new Set([
-        "id", "code", "fullanme", "fiscal_year_id", "is_parent", "parent_id", "unit_id",
-        "const_type_id", "rate_per_unit", "area_upto", "area_per_unit", "ward_no_ids",
-        "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+    if (tblLower === "tbl_user_log") {
+      const action = payload.action_type || payload.action_name || "AUDIT_EVENT";
+      const ip = payload.client_ip || payload.ip_address || "127.0.0.1";
+      const uname = payload.username_attempt || payload.user_id || "SYSTEM";
+      const uid = payload.user_id !== undefined ? safeInt(payload.user_id, 1) : null;
+
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+
+      if (uid !== null) assignCol(clean, "user_id", uid);
+      assignCol(clean, "action_name", action);
+      assignCol(clean, "action_type", action);
+      assignCol(clean, "ip_address", ip);
+      assignCol(clean, "client_ip", ip);
+      assignCol(clean, "username_attempt", String(uname));
+      if (payload.module_name !== undefined) assignCol(clean, "module_name", payload.module_name);
+      if (payload.user_agent !== undefined) assignCol(clean, "user_agent", payload.user_agent);
+      if (payload.details !== undefined) assignCol(clean, "details", typeof payload.details === "string" ? payload.details : JSON.stringify(payload.details));
+      if (payload.created_at !== undefined) assignCol(clean, "created_at", payload.created_at);
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
+
       return clean;
     }
 
-    if (table === "tbl_appication_setting" || table === "tbl_application_setting") {
-      const allowedColumns = new Set([
-        "id", "code", "fullname", "municipality_name", "company_id", "fiscal_year_id",
-        "unit_type_id", "ward_count", "theme_preference", "default_language",
-        "is_deleted", "insert_by", "insert_on", "update_by", "update_on", "delete_by", "deleted_on", "is_active"
-      ]);
+    if (tblLower === "tbl_malpot_rates" || tblLower === "tbl_land_rate" || tblLower === "tbl_construction_rates" || tblLower === "tbl_depreciation") {
       const clean: Record<string, any> = {};
-      for (const [k, v] of Object.entries(payload)) {
-        if (allowedColumns.has(k)) {
-          clean[k] = v;
+      const name = payload.fullname || payload.fullanme || payload.name || payload.code || "Rate";
+
+      assignCol(clean, "code", payload.code || "RATE");
+      assignCol(clean, "fullanme", name);
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "name", name);
+      if (payload.fiscal_year_id !== undefined) assignCol(clean, "fiscal_year_id", payload.fiscal_year_id ? safeInt(payload.fiscal_year_id, 2) : null);
+      if (payload.is_parent !== undefined) assignCol(clean, "is_parent", Boolean(payload.is_parent));
+      if (payload.parent_id !== undefined) assignCol(clean, "parent_id", payload.parent_id ? safeInt(payload.parent_id, 1) : null);
+      if (payload.unit_id !== undefined) assignCol(clean, "unit_id", safeInt(payload.unit_id, 1));
+      if (payload.const_type_id !== undefined) assignCol(clean, "const_type_id", safeInt(payload.const_type_id, 1));
+      if (payload.rate_per_unit !== undefined) assignCol(clean, "rate_per_unit", safeNum(payload.rate_per_unit, 0));
+      if (payload.area_upto !== undefined) assignCol(clean, "area_upto", safeNum(payload.area_upto, 0));
+      if (payload.area_per_unit !== undefined) assignCol(clean, "area_per_unit", safeNum(payload.area_per_unit, 1));
+      if (payload.ward_no_ids !== undefined) assignCol(clean, "ward_no_ids", String(payload.ward_no_ids));
+      if (payload.sn !== undefined) assignCol(clean, "sn", safeInt(payload.sn, 1));
+      if (payload.year_from !== undefined) assignCol(clean, "year_from", safeInt(payload.year_from, 0));
+      if (payload.year_to !== undefined) assignCol(clean, "year_to", safeInt(payload.year_to, 10));
+      if (payload.percent !== undefined) assignCol(clean, "percent", safeNum(payload.percent, 0));
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
         }
       }
-      clean.fullname = payload.fullname || payload.fullanme || payload.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
+
       return clean;
     }
 
-    return payload;
+    if (tblLower === "tbl_appication_setting" || tblLower === "tbl_application_setting") {
+      const clean: Record<string, any> = {};
+      const name = payload.fullname || payload.fullanme || payload.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
+
+      assignCol(clean, "code", payload.code || "APP-CONF-01");
+      assignCol(clean, "fullname", name);
+      assignCol(clean, "fullanme", name);
+      assignCol(clean, "municipality_name", payload.municipality_name || name);
+      if (payload.company_id !== undefined) assignCol(clean, "company_id", safeInt(payload.company_id, 1));
+      if (payload.fiscal_year_id !== undefined) assignCol(clean, "fiscal_year_id", safeInt(payload.fiscal_year_id, 2));
+      if (payload.unit_type_id !== undefined) assignCol(clean, "unit_type_id", safeInt(payload.unit_type_id, 3));
+      if (payload.ward_count !== undefined) assignCol(clean, "ward_count", safeInt(payload.ward_count, 32));
+      if (payload.theme_preference !== undefined) assignCol(clean, "theme_preference", payload.theme_preference);
+      if (payload.default_language !== undefined) assignCol(clean, "default_language", payload.default_language);
+      if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
+      if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
+      if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
+      if (payload.insert_on !== undefined) assignCol(clean, "insert_on", payload.insert_on);
+      if (payload.update_by !== undefined) assignCol(clean, "update_by", String(payload.update_by));
+      if (payload.update_on !== undefined) assignCol(clean, "update_on", payload.update_on);
+
+      if (existingCols && existingCols.size > 0) {
+        for (const k of Object.keys(clean)) {
+          if (!existingCols.has(k.toLowerCase())) {
+            delete clean[k];
+          }
+        }
+      }
+
+      return clean;
+    }
+
+    // Generic defensive fallback: only keep columns that actually exist in PostgreSQL
+    const clean: Record<string, any> = {};
+    for (const [k, v] of Object.entries(payload)) {
+      if (!existingCols || existingCols.size === 0 || existingCols.has(k.toLowerCase())) {
+        clean[k] = v;
+      }
+    }
+    return clean;
   }
 
   /**
@@ -472,7 +1021,8 @@ export class TableCacheDbSyncService {
           // Table may use string ID (e.g. tax_jurisdictions)
         }
 
-        const dbPayload = this.sanitizePayloadForDb(table, payload);
+        const existingCols = await this.getTableColumns(table);
+        const dbPayload = this.sanitizePayloadForDb(table, payload, existingCols);
         const keys = Object.keys(dbPayload);
         const columns = keys.map((k) => `"${k}"`).join(", ");
         const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
@@ -526,6 +1076,35 @@ export class TableCacheDbSyncService {
     const now = new Date().toISOString();
     const finalUserId = String(userId || "1").trim() || "1";
 
+    if (id === undefined || id === null || String(id).trim() === "" || String(id).toLowerCase() === "nan") {
+      console.warn(`[gtax:CacheSync] updateRecord on ${table} rejected due to invalid ID: ${id}`);
+      return null;
+    }
+
+    let targetId: string | number = id;
+    let targetNum = Number(id);
+    if (isNaN(targetNum) && (typeof id !== "string" || !id.startsWith("tax_"))) {
+      const list = (this.inMemoryStores.get(table) || []) as any[];
+      const found = list.find(
+        (item: any) =>
+          String(item.id) === String(id) ||
+          String(item.user_id) === String(id) ||
+          String(item.taxpayer_id) === String(id) ||
+          String(item.taxpayer_code) === String(id) ||
+          String(item.username) === String(id) ||
+          String(item.code) === String(id)
+      );
+      if (found && !isNaN(Number(found.id)) && Number(found.id) > 0) {
+        targetId = Number(found.id);
+        targetNum = Number(found.id);
+      } else {
+        console.warn(`[gtax:CacheSync] updateRecord on ${table} rejected due to unresolvable ID: ${id}`);
+        return null;
+      }
+    } else if (!isNaN(targetNum)) {
+      targetId = targetNum;
+    }
+
     const payload: Record<string, any> = {
       ...patchData,
       update_by: finalUserId,
@@ -536,12 +1115,13 @@ export class TableCacheDbSyncService {
 
     if (PostgresPoolManager.getStatus().connected) {
       try {
-        const dbPayload = this.sanitizePayloadForDb(table, payload);
-        const idCol = typeof id === "number" || !isNaN(Number(id)) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
+        const existingCols = await this.getTableColumns(table);
+        const dbPayload = this.sanitizePayloadForDb(table, payload, existingCols);
+        const idCol = typeof targetId === "number" || (!isNaN(Number(targetId)) && !String(targetId).includes("_")) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
         const keys = Object.keys(dbPayload).filter((k) => k !== "id" && k !== idCol);
         const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(", ");
         const values = keys.map((k) => dbPayload[k]);
-        values.push(id);
+        values.push(targetId);
 
         const sql = `UPDATE ${table} SET ${setClauses} WHERE "${idCol}" = $${values.length} RETURNING *;`;
         const res = await PostgresPoolManager.query<T>(sql, values);
@@ -585,15 +1165,44 @@ export class TableCacheDbSyncService {
     const now = new Date().toISOString();
     const finalUserId = String(userId || "1").trim() || "1";
 
+    if (id === undefined || id === null || String(id).trim() === "" || String(id).toLowerCase() === "nan") {
+      console.warn(`[gtax:CacheSync] deleteRecord on ${table} rejected due to invalid ID: ${id}`);
+      return false;
+    }
+
+    let targetId: string | number = id;
+    let targetNum = Number(id);
+    if (isNaN(targetNum) && (typeof id !== "string" || !id.startsWith("tax_"))) {
+      const list = (this.inMemoryStores.get(table) || []) as any[];
+      const found = list.find(
+        (item: any) =>
+          String(item.id) === String(id) ||
+          String(item.user_id) === String(id) ||
+          String(item.taxpayer_id) === String(id) ||
+          String(item.taxpayer_code) === String(id) ||
+          String(item.username) === String(id) ||
+          String(item.code) === String(id)
+      );
+      if (found && !isNaN(Number(found.id)) && Number(found.id) > 0) {
+        targetId = Number(found.id);
+        targetNum = Number(found.id);
+      } else {
+        console.warn(`[gtax:CacheSync] deleteRecord on ${table} rejected due to unresolvable ID: ${id}`);
+        return false;
+      }
+    } else if (!isNaN(targetNum)) {
+      targetId = targetNum;
+    }
+
     if (PostgresPoolManager.getStatus().connected) {
       try {
-        const idCol = typeof id === "number" || !isNaN(Number(id)) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
+        const idCol = typeof targetId === "number" || !isNaN(Number(targetId)) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
         const sql = `
           UPDATE ${table}
           SET is_deleted = TRUE, is_active = FALSE, delete_by = $1, deleted_on = $2
           WHERE "${idCol}" = $3;
         `;
-        await PostgresPoolManager.query(sql, [finalUserId, now, id]);
+        await PostgresPoolManager.query(sql, [finalUserId, now, targetId]);
       } catch (err) {
         console.error(`[gtax:CacheSync] Live delete in ${table} failed:`, err);
       }
@@ -636,7 +1245,8 @@ export class TableCacheDbSyncService {
   }> {
     const startTime = Date.now();
 
-    // 1. Flush Redis cache completely
+    // 1. Flush Redis cache and clear column definitions cache
+    this.clearTableColumnsCache();
     await RedisCacheManager.clearAll();
 
     const tableCounts: Record<string, number> = {};

@@ -38,8 +38,8 @@
 DO
 $do$
 DECLARE
-  v_user text := :'db_user';
-  v_pass text := :'db_pass';
+  v_user text := 'gtax_user';
+  v_pass text := 'gtax_password';
 BEGIN
    IF NOT EXISTS (
       SELECT FROM pg_catalog.pg_roles

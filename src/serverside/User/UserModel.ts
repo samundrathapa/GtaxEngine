@@ -6,10 +6,15 @@ export interface IUserRecord {
   username?: string;
   fullname?: string;
   full_name?: string;
+  name?: string;
   email?: string;
   role?: string;
   mobile?: string;
+  phone_number?: string;
+  phone?: string;
   employee_id?: string;
+  password?: string;
+  password_hash?: string;
   is_active?: boolean;
   insert_by?: string;
   insert_on?: string;
@@ -27,10 +32,15 @@ export const UserModel: IEntityModel = {
     user_id: "VARCHAR(50)",
     username: "VARCHAR(100)",
     fullname: "VARCHAR(255)",
+    full_name: "VARCHAR(255)",
+    name: "VARCHAR(255)",
     email: "VARCHAR(150)",
+    password: "VARCHAR(255)",
     password_hash: "VARCHAR(255)",
     role: "VARCHAR(50)",
-    mobile: "VARCHAR(20)",
+    mobile: "VARCHAR(32)",
+    phone_number: "VARCHAR(32)",
+    phone: "VARCHAR(32)",
     employee_id: "VARCHAR(50)",
     is_active: "BOOLEAN",
     insert_by: "VARCHAR(50)",

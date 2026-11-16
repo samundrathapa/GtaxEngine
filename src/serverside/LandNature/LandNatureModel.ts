@@ -4,6 +4,8 @@ export interface ILandNatureRecord {
   id: number;
   code?: string;
   name?: string;
+  fullanme?: string;
+  fullname?: string;
   is_active?: boolean;
   insert_by?: string;
   insert_on?: string;
@@ -20,6 +22,8 @@ export const LandNatureModel: IEntityModel = {
     id: "INTEGER PRIMARY KEY",
     code: "VARCHAR(50)",
     name: "VARCHAR(100)",
+    fullanme: "VARCHAR(100)",
+    fullname: "VARCHAR(100)",
     is_active: "BOOLEAN",
     insert_by: "VARCHAR(50)",
     insert_on: "TIMESTAMP",

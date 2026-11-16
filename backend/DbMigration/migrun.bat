@@ -1,9 +1,9 @@
 @echo off
-title gtax Enterprise - Dynamic Migration Creator (migrun)
+title Gtax Enterprise - Dynamic Migration Creator (migrun)
 setlocal enabledelayedexpansion
 
 echo =========================================================================
-echo       gtax Enterprise - Dynamic Migration File Generator
+echo       Gtax Enterprise - Dynamic Migration File Generator
 echo =========================================================================
 echo.
 

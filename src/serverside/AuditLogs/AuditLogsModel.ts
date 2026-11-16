@@ -4,10 +4,13 @@ export interface IAuditLogRecord {
   id: number;
   user_id?: string;
   action_type?: string;
+  action_name?: string;
   module_name?: string;
   client_ip?: string;
+  ip_address?: string;
   details?: string;
   created_at?: string;
+  insert_on?: string;
   [key: string]: any;
 }
 
@@ -19,9 +22,12 @@ export const AuditLogsModel: IEntityModel = {
     id: "INTEGER PRIMARY KEY",
     user_id: "VARCHAR(50)",
     action_type: "VARCHAR(100)",
+    action_name: "VARCHAR(100)",
     module_name: "VARCHAR(100)",
     client_ip: "VARCHAR(50)",
+    ip_address: "VARCHAR(50)",
     details: "TEXT",
-    created_at: "TIMESTAMP"
+    created_at: "TIMESTAMP",
+    insert_on: "TIMESTAMP"
   }
 };

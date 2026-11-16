@@ -68,11 +68,37 @@ export class UserRepo {
   }
 
   async update(id: number | string, record: Partial<IUserRecord>, userId: string = "1"): Promise<IUserRecord | null> {
-    const updated = await TableCacheDbSyncService.updateRecord(this.tableName as any, Number(id), record, userId);
+    let targetNum = Number(id);
+    if (isNaN(targetNum)) {
+      const list = await TableCacheDbSyncService.getTableData<IUserRecord>(this.tableName as any, true);
+      const found = list.find(
+        (item) => String(item.user_id) === String(id) || String(item.id) === String(id) || String(item.username) === String(id)
+      );
+      if (found) {
+        targetNum = Number(found.id);
+      }
+    }
+    if (isNaN(targetNum)) {
+      return null;
+    }
+    const updated = await TableCacheDbSyncService.updateRecord(this.tableName as any, targetNum, record, userId);
     return updated ? this.sanitizeRecord(updated) : null;
   }
 
   async delete(id: number | string, userId: string = "1"): Promise<boolean> {
-    return await TableCacheDbSyncService.deleteRecord(this.tableName as any, Number(id), userId);
+    let targetNum = Number(id);
+    if (isNaN(targetNum)) {
+      const list = await TableCacheDbSyncService.getTableData<IUserRecord>(this.tableName as any, true);
+      const found = list.find(
+        (item) => String(item.user_id) === String(id) || String(item.id) === String(id)
+      );
+      if (found) {
+        targetNum = Number(found.id);
+      }
+    }
+    if (isNaN(targetNum)) {
+      return false;
+    }
+    return await TableCacheDbSyncService.deleteRecord(this.tableName as any, targetNum, userId);
   }
 }

@@ -24,6 +24,18 @@
       "nep": "पूरा नाम / विवरण",
       "ind": "पूरा नाम"
     },
+    "full_name": {
+      "table": "tbl_taxpayer",
+      "eng": "Full Name",
+      "nep": "पूरा नाम / विवरण",
+      "ind": "पूरा नाम"
+    },
+    "name": {
+      "table": "common",
+      "eng": "Name",
+      "nep": "नाम",
+      "ind": "नाम"
+    },
     "taxpayer_type_id": {
       "table": "tbl_taxpayer",
       "eng": "Taxpayer Category / Entity",
@@ -138,6 +150,24 @@
       "nep": "मोबाइल नम्बर",
       "ind": "मोबाइल नंबर"
     },
+    "mobile": {
+      "table": "tbl_taxpayer",
+      "eng": "Mobile Number",
+      "nep": "मोबाइल नम्बर",
+      "ind": "मोबाइल नंबर"
+    },
+    "phone_number": {
+      "table": "tbl_taxpayer",
+      "eng": "Phone Number",
+      "nep": "फोन नम्बर",
+      "ind": "फ़ोन नंबर"
+    },
+    "phone": {
+      "table": "tbl_taxpayer",
+      "eng": "Phone / Mobile",
+      "nep": "फोन / मोबाइल",
+      "ind": "फ़ोन / मोबाइल"
+    },
     "email": {
       "table": "tbl_taxpayer",
       "eng": "Email Address",
@@ -162,7 +192,19 @@
       "nep": "कित्ता नम्बर",
       "ind": "खसरा / कित्ता संख्या"
     },
+    "kitta_no": {
+      "table": "tbl_land",
+      "eng": "Kitta Number (Plot No)",
+      "nep": "कित्ता नम्बर",
+      "ind": "खसरा / कित्ता संख्या"
+    },
     "moth_number": {
+      "table": "tbl_land",
+      "eng": "Moth Number (Ledger No)",
+      "nep": "मोठ नम्बर",
+      "ind": "खाता / मोठ संख्या"
+    },
+    "moth_no": {
       "table": "tbl_land",
       "eng": "Moth Number (Ledger No)",
       "nep": "मोठ नम्बर",
@@ -175,6 +217,12 @@
       "ind": "स्थान / टोला"
     },
     "area_sqfeet": {
+      "table": "common",
+      "eng": "Area (Sq. Feet)",
+      "nep": "क्षेत्रफल (वर्गफुट)",
+      "ind": "क्षेत्रफल (वर्गफुट)"
+    },
+    "area_sqft": {
       "table": "common",
       "eng": "Area (Sq. Feet)",
       "nep": "क्षेत्रफल (वर्गफुट)",
