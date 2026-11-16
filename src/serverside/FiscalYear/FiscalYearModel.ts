@@ -4,8 +4,13 @@ export interface IFiscalYearRecord {
   id: number;
   code?: string;
   name?: string;
+  fullname?: string;
   bs_year?: string;
   ad_year?: string;
+  date_from_bs?: string;
+  date_to_bs?: string;
+  date_from_ad?: string;
+  date_to_ad?: string;
   is_active?: boolean;
   insert_by?: string;
   insert_on?: string;
@@ -22,8 +27,13 @@ export const FiscalYearModel: IEntityModel = {
     id: "INTEGER PRIMARY KEY",
     code: "VARCHAR(50)",
     name: "VARCHAR(100)",
+    fullname: "VARCHAR(100)",
     bs_year: "VARCHAR(50)",
     ad_year: "VARCHAR(50)",
+    date_from_bs: "VARCHAR(50)",
+    date_to_bs: "VARCHAR(50)",
+    date_from_ad: "VARCHAR(50)",
+    date_to_ad: "VARCHAR(50)",
     is_active: "BOOLEAN",
     insert_by: "VARCHAR(50)",
     insert_on: "TIMESTAMP",

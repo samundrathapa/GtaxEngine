@@ -89,21 +89,9 @@ export class MigrationRunner {
           const startTime = Date.now();
           try {
             const sqlContent = fs.readFileSync(filePath, "utf-8");
-            const statements = sqlContent
-              .split(";")
-              .map((s) => s.trim())
-              .filter((s) => {
-                const linesWithoutComments = s
-                  .split("\n")
-                  .filter((line) => !line.trim().startsWith("--"))
-                  .join("\n")
-                  .trim();
-                return linesWithoutComments.length > 0;
-              });
-
-            for (const stmt of statements) {
-              await PostgresPoolManager.query(stmt);
-            }
+            // Execute the migration SQL script directly without naive semicolon splitting
+            // This prevents syntax errors inside DO $$ blocks and functions containing internal semicolons
+            await PostgresPoolManager.query(sqlContent);
 
             const durationMs = Date.now() - startTime;
             await PostgresPoolManager.query(

@@ -4,7 +4,10 @@ export interface IMeasurementUnitRecord {
   id: number;
   code?: string;
   name?: string;
+  fullanme?: string;
+  fullname?: string;
   symbol?: string;
+  unit_value?: number;
   is_active?: boolean;
   insert_by?: string;
   insert_on?: string;
@@ -21,7 +24,10 @@ export const MeasurementUnitModel: IEntityModel = {
     id: "INTEGER PRIMARY KEY",
     code: "VARCHAR(50)",
     name: "VARCHAR(100)",
+    fullanme: "VARCHAR(100)",
+    fullname: "VARCHAR(100)",
     symbol: "VARCHAR(50)",
+    unit_value: "NUMERIC",
     is_active: "BOOLEAN",
     insert_by: "VARCHAR(50)",
     insert_on: "TIMESTAMP",

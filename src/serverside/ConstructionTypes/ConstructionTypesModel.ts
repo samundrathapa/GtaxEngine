@@ -4,6 +4,8 @@ export interface IConstructionTypeRecord {
   id: number;
   code?: string;
   name?: string;
+  fullanme?: string;
+  fullname?: string;
   depreciation_rate?: number;
   is_active?: boolean;
   insert_by?: string;
@@ -21,6 +23,8 @@ export const ConstructionTypesModel: IEntityModel = {
     id: "INTEGER PRIMARY KEY",
     code: "VARCHAR(50)",
     name: "VARCHAR(100)",
+    fullanme: "VARCHAR(100)",
+    fullname: "VARCHAR(100)",
     depreciation_rate: "NUMERIC",
     is_active: "BOOLEAN",
     insert_by: "VARCHAR(50)",

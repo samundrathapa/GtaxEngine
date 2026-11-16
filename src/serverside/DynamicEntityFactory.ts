@@ -65,11 +65,47 @@ export class EntityRepo {
   }
 
   async update(id: string | number, record: Record<string, any>, userId: string = "1"): Promise<any> {
-    return await TableCacheDbSyncService.updateRecord(this.model.tableName as any, Number(id), record, userId);
+    let targetId: string | number = id;
+    const targetNum = Number(id);
+    if (isNaN(targetNum)) {
+      const list = await TableCacheDbSyncService.getTableData<any>(this.model.tableName as any, true);
+      const found = list.find(
+        (item) =>
+          String(item.id) === String(id) ||
+          String(item[this.model.primaryKey]) === String(id) ||
+          String(item.code) === String(id) ||
+          String(item.user_id) === String(id) ||
+          String(item.taxpayer_id) === String(id)
+      );
+      if (found && !isNaN(Number(found.id))) {
+        targetId = Number(found.id);
+      }
+    } else {
+      targetId = targetNum;
+    }
+    return await TableCacheDbSyncService.updateRecord(this.model.tableName as any, targetId, record, userId);
   }
 
   async delete(id: string | number, userId: string = "1"): Promise<boolean> {
-    return await TableCacheDbSyncService.deleteRecord(this.model.tableName as any, Number(id), userId);
+    let targetId: string | number = id;
+    const targetNum = Number(id);
+    if (isNaN(targetNum)) {
+      const list = await TableCacheDbSyncService.getTableData<any>(this.model.tableName as any, true);
+      const found = list.find(
+        (item) =>
+          String(item.id) === String(id) ||
+          String(item[this.model.primaryKey]) === String(id) ||
+          String(item.code) === String(id) ||
+          String(item.user_id) === String(id) ||
+          String(item.taxpayer_id) === String(id)
+      );
+      if (found && !isNaN(Number(found.id))) {
+        targetId = Number(found.id);
+      }
+    } else {
+      targetId = targetNum;
+    }
+    return await TableCacheDbSyncService.deleteRecord(this.model.tableName as any, targetId, userId);
   }
 }
 
@@ -164,17 +200,20 @@ export class EntityController {
           ApiResponse.buildFailure("Validation Failed", ["Taxpayer selection (taxpayer_id) is required to register a land parcel."])
         );
       }
-      if ((tbl === "tbl_taxpayer" || tbl === "tbl_taxpayer_master") && !req.body.fullname && !req.body.full_name && !req.body.fullanme) {
+      const tpName = req.body.fullname || req.body.full_name || req.body.fullanme || req.body.name;
+      if ((tbl === "tbl_taxpayer" || tbl === "tbl_taxpayer_master") && !tpName) {
         return res.status(400).json(
           ApiResponse.buildFailure("Validation Failed", ["Full Name is required for taxpayer registration."])
         );
       }
-      if (tbl === "tbl_user" && (!req.body.fullname || !req.body.email)) {
+      const userName = req.body.fullname || req.body.full_name || req.body.name || req.body.username;
+      if (tbl === "tbl_user" && !userName) {
         return res.status(400).json(
-          ApiResponse.buildFailure("Validation Failed", ["Full Name and Email are required for user registration."])
+          ApiResponse.buildFailure("Validation Failed", ["Full Name or Username is required for user registration."])
         );
       }
-      if (tbl === "tbl_company" && !req.body.name) {
+      const compName = req.body.name || req.body.company_name || req.body.fullname || req.body.fullanme;
+      if (tbl === "tbl_company" && !compName) {
         return res.status(400).json(
           ApiResponse.buildFailure("Validation Failed", ["Company Name is required."])
         );
