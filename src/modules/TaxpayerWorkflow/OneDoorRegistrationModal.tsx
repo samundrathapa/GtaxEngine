@@ -3,7 +3,10 @@ import { ApiController } from "../../api/controller.ts";
 import {
   calculateLandEvaluation,
   getDepreciationAmount,
-  getIPTAmount
+  getIPTAmount,
+  getLandValuationBreakdown,
+  getHouseValuationBreakdown,
+  getFloorValuationBreakdown
 } from "../../utils/calculationEngine.ts";
 import { tCol, SupportedLang } from "../../utils/i18n.ts";
 import {
@@ -299,14 +302,24 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
     setLoading(true);
     setStatusMsg(null);
     try {
+      const uId = Number(landForm.unit_id || 1);
+      const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+      const lr = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
+      const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
+      const computedValuation = Math.round((Number(landForm.area_sqfeet || 1000) / baseSqFt) * rateVal);
+      const assessedValuation = landForm.assessed_valuation && Number(landForm.assessed_valuation) > 0
+        ? Number(landForm.assessed_valuation)
+        : computedValuation;
+
       const res = await ApiController.createLand({
         ...landForm,
+        assessed_valuation: assessedValuation,
         taxpayer_id: taxpayerId
       });
       if (res.success && res.data) {
         setStatusMsg({
           type: "success",
-          text: `Land Parcel Kitta #${landForm.kitta_number || "New"} added successfully! Add another or continue.`
+          text: `Land Parcel Kitta #${landForm.kitta_number || "New"} added successfully! (Assessed Valuation: Rs. ${assessedValuation.toLocaleString()})`
         });
         await refreshTaxpayerAssets(taxpayerId);
         // Reset land form for adding next parcel
@@ -318,7 +331,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           land_rate_id: masters.landRates[0]?.id || 1,
           malpot_rate_id: masters.malpotRates[0]?.id || 1,
           unit_id: 1,
-          area_sqfeet: 1369
+          area_sqfeet: 1369,
+          assessed_valuation: 0
         });
         setLandMeasureUnit("ropani");
         setRopaniParts({ ropani: 0, aana: 4, paisa: 0, dam: 0 });
@@ -331,6 +345,28 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add land parcel." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleObtainLandValue = async (land: any) => {
+    setLoading(true);
+    setStatusMsg(null);
+    try {
+      const uId = Number(land.unit_id || land.land_measuring_unit_id || 1);
+      const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+      const lr = masters.landRates.find((r: any) => r.id === land.land_rate_id) || masters.landRates[0];
+      const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
+      const newVal = Math.round((Number(land.area_sqfeet || 1000) / baseSqFt) * rateVal);
+      await ApiController.updateLand(land.id, { assessed_valuation: newVal });
+      setStatusMsg({
+        type: "success",
+        text: `Obtained Value for Kitta #${land.kitta_number}: Rs. ${newVal.toLocaleString()} (Formula: (${land.area_sqfeet} ÷ ${baseSqFt}) × Rs. ${rateVal.toLocaleString()})`
+      });
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    } catch (e: any) {
+      setStatusMsg({ type: "error", text: e?.message || "Failed to obtain land value" });
     } finally {
       setLoading(false);
     }
@@ -371,8 +407,15 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           : pLand.kitta_number;
       }
 
+      const plinthVal = Number(houseForm.plinth_area || houseForm.area_sqfeet || 1200);
+      const computedHouseValuation = Math.round(plinthVal * 2800);
+      const assessedValuation = houseForm.assessed_valuation && Number(houseForm.assessed_valuation) > 0
+        ? Number(houseForm.assessed_valuation)
+        : computedHouseValuation;
+
       const res = await ApiController.createHouse({
         ...houseForm,
+        assessed_valuation: assessedValuation,
         taxpayer_id: taxpayerId,
         land_id: pLandId,
         secondary_land_id: sLandId,
@@ -381,6 +424,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
       });
       if (res.success && res.data) {
         // Automatically provision ground floor for the house
+        const groundFloorRate = masters.constructionRates[0]?.rate_per_unit || 2800;
+        const groundFloorVal = Math.round(plinthVal * groundFloorRate * 0.95);
         await ApiController.createFloor({
           house_id: res.data.id,
           floor_no: 0,
@@ -391,12 +436,13 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           construction_date_bs: houseForm.acquisition_date_bs || "2076-02-15",
           construction_date_ad: houseForm.acquisition_date_ad || "2019-05-29",
           remarks: `Ground Floor (Linked to House #${houseForm.house_no} on Kitta #${kittaStr})`,
-          depreciation_percent: 5
+          depreciation_percent: 5,
+          floor_assessed_valuation: groundFloorVal
         });
 
         setStatusMsg({
           type: "success",
-          text: `House #${houseForm.house_no} (Linked to Kitta #${kittaStr}${sLandId ? " - Spans 2 Lands" : ""}) & ground floor added! Add another house or continue.`
+          text: `House #${houseForm.house_no} (Linked to Kitta #${kittaStr}${sLandId ? " - Spans 2 Lands" : ""}) & ground floor added! Valuation: Rs. ${assessedValuation.toLocaleString()}`
         });
         await refreshTaxpayerAssets(taxpayerId);
         // Reset house form for next house
@@ -411,7 +457,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           floor_no: 2,
           construction_type_id: masters.constructionTypes[0]?.id || 1,
           acquisition_date_bs: "2076-02-15",
-          acquisition_date_ad: "2019-05-29"
+          acquisition_date_ad: "2019-05-29",
+          assessed_valuation: 0
         });
       } else {
         const errText = res.errors?.join(", ") || res.message || "Failed to add house structure.";
@@ -419,6 +466,28 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add house structure." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleObtainHouseValue = async (house: any) => {
+    setLoading(true);
+    setStatusMsg(null);
+    try {
+      const houseFloors = floors.filter((fl: any) => fl.house_id === house.id);
+      let newVal = houseFloors.reduce((acc: number, fl: any) => acc + Number(fl.floor_assessed_valuation || (Number(fl.area_sqfeet || 1000) * 2800 * 0.95)), 0);
+      if (newVal <= 0) {
+        newVal = Math.round(Number(house.plinth_area || house.area_sqfeet || 1000) * 2800);
+      }
+      await ApiController.updateHouse(house.id, { assessed_valuation: newVal });
+      setStatusMsg({
+        type: "success",
+        text: `Obtained Value for House #${house.house_no}: Rs. ${newVal.toLocaleString()} (${houseFloors.length > 0 ? `Sum of ${houseFloors.length} floors` : `Plinth Area × Rs. 2,800`})`
+      });
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    } catch (e: any) {
+      setStatusMsg({ type: "error", text: e?.message || "Failed to obtain house value" });
     } finally {
       setLoading(false);
     }
@@ -450,14 +519,24 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
     setLoading(true);
     setStatusMsg(null);
     try {
+      const flArea = Number(floorForm.area_sqfeet || 1200);
+      const cr = masters.constructionRates.find((r: any) => r.id === floorForm.rate_id) || masters.constructionRates[0];
+      const crVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+      const depPercent = Number(floorForm.depreciation_percent !== undefined ? floorForm.depreciation_percent : 5);
+      const computedFloorValuation = Math.round(flArea * crVal * (1 - depPercent / 100));
+      const floorAssessedValuation = floorForm.floor_assessed_valuation && Number(floorForm.floor_assessed_valuation) > 0
+        ? Number(floorForm.floor_assessed_valuation)
+        : computedFloorValuation;
+
       const res = await ApiController.createFloor({
         ...floorForm,
+        floor_assessed_valuation: floorAssessedValuation,
         house_id: targetHouseId
       });
       if (res.success && res.data) {
         setStatusMsg({
           type: "success",
-          text: `Floor #${floorForm.floor_no} added successfully! Add another floor or continue.`
+          text: `Floor #${floorForm.floor_no} added successfully! Assessed Valuation: Rs. ${floorAssessedValuation.toLocaleString()}`
         });
         await refreshTaxpayerAssets(taxpayerId);
         // Increment floor number for convenience
@@ -465,7 +544,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
         setFloorForm((prev: any) => ({
           ...prev,
           floor_no: nextFloorNo,
-          remarks: `Floor Level ${nextFloorNo}`
+          remarks: `Floor Level ${nextFloorNo}`,
+          floor_assessed_valuation: 0
         }));
       } else {
         const errText = res.errors?.join(", ") || res.message || "Failed to add floor unit.";
@@ -473,6 +553,27 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
       }
     } catch (err: any) {
       setStatusMsg({ type: "error", text: err?.message || "Failed to add floor unit." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleObtainFloorValue = async (floor: any) => {
+    setLoading(true);
+    setStatusMsg(null);
+    try {
+      const cr = masters.constructionRates.find((r: any) => r.id === floor.rate_id) || masters.constructionRates[0];
+      const rateVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+      const dep = Number(floor.depreciation_percent !== undefined ? floor.depreciation_percent : 5);
+      const newVal = Math.round(Number(floor.area_sqfeet || 1000) * rateVal * (1 - dep / 100));
+      await ApiController.updateFloor(floor.id, { floor_assessed_valuation: newVal });
+      setStatusMsg({
+        type: "success",
+        text: `Obtained Value for Floor #${floor.floor_no}: Rs. ${newVal.toLocaleString()} (Formula: (${floor.area_sqfeet} sqft × Rs. ${rateVal}) - ${dep}%)`
+      });
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    } catch (e: any) {
+      setStatusMsg({ type: "error", text: e?.message || "Failed to obtain floor value" });
     } finally {
       setLoading(false);
     }
@@ -490,15 +591,73 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
     if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
   };
 
+  // Obtain All Values across Land, House, and Floors
+  const handleObtainAllValues = async () => {
+    if (!taxpayerId) return;
+    setLoading(true);
+    setStatusMsg(null);
+    try {
+      for (const l of lands) {
+        const uId = Number(l.unit_id || l.land_measuring_unit_id || 1);
+        const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+        const lr = calcUseMalpot 
+          ? masters.malpotRates.find((r: any) => r.id === l.malpot_rate_id) || masters.malpotRates[0]
+          : masters.landRates.find((r: any) => r.id === l.land_rate_id) || masters.landRates[0];
+        const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
+        const lVal = Math.round((Number(l.area_sqfeet || 1000) / baseSqFt) * rateVal);
+        await ApiController.updateLand(l.id, { assessed_valuation: lVal });
+      }
+
+      for (const fl of floors) {
+        const cr = masters.constructionRates.find((r: any) => r.id === fl.rate_id) || masters.constructionRates[0];
+        const rateVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+        const dep = Number(fl.depreciation_percent !== undefined ? fl.depreciation_percent : 5);
+        const flVal = Math.round(Number(fl.area_sqfeet || 1000) * rateVal * (1 - dep / 100));
+        await ApiController.updateFloor(fl.id, { floor_assessed_valuation: flVal });
+      }
+
+      for (const h of houses) {
+        const hFloors = floors.filter((f: any) => f.house_id === h.id);
+        let hVal = hFloors.reduce((acc: number, f: any) => {
+          const cr = masters.constructionRates.find((r: any) => r.id === f.rate_id) || masters.constructionRates[0];
+          const rateVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+          const dep = Number(f.depreciation_percent !== undefined ? f.depreciation_percent : 5);
+          return acc + Math.round(Number(f.area_sqfeet || 1000) * rateVal * (1 - dep / 100));
+        }, 0);
+        if (hVal <= 0) {
+          hVal = Math.round(Number(h.plinth_area || h.area_sqfeet || 1000) * 2800);
+        }
+        await ApiController.updateHouse(h.id, { assessed_valuation: hVal });
+      }
+
+      await refreshTaxpayerAssets(taxpayerId);
+      setStatusMsg({
+        type: "success",
+        text: "Successfully calculated and obtained all valuation values for Land, House, and Floors!"
+      });
+    } catch (e: any) {
+      setStatusMsg({ type: "error", text: e?.message || "Failed to obtain all values" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // =========================================================================
   // STEP 5: CALCULATION DERIVATIONS WITH CLEAR EDITABLE FORMULAS
   // =========================================================================
   const currentFiscalYear = masters.fiscalYears.find((f: any) => f.id === calcFiscalYearId) || masters.fiscalYears.find((f: any) => f.id === (masters as any).applicationSettings?.[0]?.fiscal_year_id) || masters.fiscalYears[0];
   const fyCode = currentFiscalYear?.code || "Active FY";
 
+  // Auto-sync selection whenever lands list updates
+  useEffect(() => {
+    if (lands.length > 0) {
+      setCalcSelectedLandIds(lands.map((l: any) => l.id));
+    }
+  }, [lands.length]);
+
   // Computed Lands with Clear Editable Formula Parameters
   const computedLands = lands.map((l: any) => {
-    const isSelected = calcSelectedLandIds.includes(l.id);
+    const isSelected = calcSelectedLandIds.length === 0 || calcSelectedLandIds.includes(l.id);
     const applicableRate = calcUseMalpot
       ? masters.malpotRates.find((r: any) => r.id === l.malpot_rate_id)
       : masters.landRates.find((r: any) => r.id === l.land_rate_id);
@@ -579,9 +738,17 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   // Computed Houses with Clear Editable Formula Parameters
   const computedHouses = houses.map((h: any) => {
     const houseFloors = computedFloors.filter((fl: any) => fl.house_id === h.id);
-    const floorTotal = houseFloors.reduce((acc: number, f: any) => acc + f.total_amount, 0);
-    const houseCalc = houseFloors.reduce((acc: number, f: any) => acc + f.calculated_amount, 0);
-    const houseDep = houseFloors.reduce((acc: number, f: any) => acc + f.depreciation_amount, 0);
+    let floorTotal = houseFloors.reduce((acc: number, f: any) => acc + f.total_amount, 0);
+    let houseCalc = houseFloors.reduce((acc: number, f: any) => acc + f.calculated_amount, 0);
+    let houseDep = houseFloors.reduce((acc: number, f: any) => acc + f.depreciation_amount, 0);
+
+    // If house has no floors registered yet or floor total is 0, fallback to plinth area * 2800
+    if (floorTotal <= 0) {
+      const plinth = Number(h.plinth_area || h.area_sqfeet || 1000);
+      houseCalc = plinth * 2800;
+      houseDep = Math.round(houseCalc * 0.05);
+      floorTotal = houseCalc - houseDep;
+    }
 
     const formulaOverride = editableHouseFormulas[h.id] || {};
     const plinthMult = formulaOverride.plinthMultiplier !== undefined ? Number(formulaOverride.plinthMultiplier) : 1;
@@ -1251,6 +1418,48 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                     </div>
                   )}
 
+                  {/* Formula Display & Obtain Value Action Box */}
+                  {(() => {
+                    const uId = Number(landForm.unit_id || 1);
+                    const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+                    const unitName = uId === 1 ? "Ropani / Aana" : uId === 2 ? "Bigha / Katha" : uId === 4 ? "Sq.Metre" : "Sq.Feet";
+                    const selRate = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
+                    const rateVal = selRate ? Number(selRate.rate_per_unit || 800000) : 800000;
+                    const liveVal = Math.round((Number(landForm.area_sqfeet || 0) / baseSqFt) * rateVal);
+                    return (
+                      <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-1.5">
+                              <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Land Valuation Formula (जग्गा मूल्याङ्कन सूत्र):</span>
+                            </span>
+                            <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                              ({Number(landForm.area_sqfeet || 0).toLocaleString()} sqft ÷ {baseSqFt} [{unitName}]) × Rs. {rateVal.toLocaleString()} = <span className="text-emerald-600 dark:text-emerald-400 font-black">Rs. {liveVal.toLocaleString()}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLandForm((prev: any) => ({ ...prev, assessed_valuation: liveVal }));
+                              setStatusMsg({ type: "success", text: `Land value obtained: Rs. ${liveVal.toLocaleString()} using formula: (${landForm.area_sqfeet} ÷ ${baseSqFt}) × Rs. ${rateVal.toLocaleString()}` });
+                            }}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
+                          >
+                            <Calculator className="w-3.5 h-3.5" />
+                            <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
+                          </button>
+                        </div>
+                        {landForm.assessed_valuation > 0 && (
+                          <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Locked Assessed Valuation: Rs. {Number(landForm.assessed_valuation).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Auto-Conversion Result Banner */}
                   <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
                     <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
@@ -1284,8 +1493,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         <th className="p-3">Area (Sq.Ft)</th>
                         <th className="p-3">Measuring Unit</th>
                         <th className="p-3">Land Rate</th>
-                        <th className="p-3">Malpot Rate</th>
-                        <th className="p-3">Assessed Valuation</th>
+                        <th className="p-3">Valuation Formula</th>
+                        <th className="p-3 font-bold">Assessed Valuation (land_amount)</th>
                         <th className="p-3 text-right">Action</th>
                       </tr>
                     </thead>
@@ -1299,7 +1508,12 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                       ) : (
                         lands.map((l: any) => {
                           const lr = masters.landRates.find((r: any) => r.id === l.land_rate_id);
-                          const mr = masters.malpotRates.find((r: any) => r.id === l.malpot_rate_id);
+                          const rateVal = Number(lr?.rate_per_unit || 800000);
+                          const uId = Number(l.unit_id || 1);
+                          const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+                          const calcVal = Math.round((Number(l.area_sqfeet || 0) / baseSqFt) * rateVal);
+                          const displayVal = Number(l.assessed_valuation && Number(l.assessed_valuation) > 0 ? l.assessed_valuation : calcVal);
+
                           return (
                             <tr key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                               <td className="p-3 font-bold text-slate-900 dark:text-white">
@@ -1312,17 +1526,32 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                                   {l.unit_id === 1 ? "Ropani" : l.unit_id === 2 ? "Bigha" : l.unit_id === 4 ? "Sq.Metre" : "Sq.Ft"}
                                 </span>
                               </td>
-                              <td className="p-3 text-slate-600 dark:text-slate-400">Rs. {Number(lr?.rate_per_unit || 800000).toLocaleString()}</td>
-                              <td className="p-3 text-slate-600 dark:text-slate-400">Rs. {Number(mr?.rate_per_unit || 600000).toLocaleString()}</td>
-                              <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">Rs. {Number(l.assessed_valuation || 0).toLocaleString()}</td>
+                              <td className="p-3 text-slate-600 dark:text-slate-400">Rs. {rateVal.toLocaleString()}</td>
+                              <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                ({Number(l.area_sqfeet || 0).toLocaleString()} ÷ {baseSqFt}) × Rs. {rateVal.toLocaleString()}
+                              </td>
+                              <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                                Rs. {displayVal.toLocaleString()}
+                              </td>
                               <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteLand(l.id)}
-                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5 font-sans">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleObtainLandValue(l)}
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                    title="Obtain & Lock Value"
+                                  >
+                                    <Calculator className="w-3 h-3" />
+                                    <span>Obtain Value</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteLand(l.id)}
+                                    className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1592,6 +1821,44 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   </div>
                 </div>
 
+                {/* Formula Display & Obtain House Value Action Box */}
+                {(() => {
+                  const plinth = Number(houseForm.plinth_area || houseForm.area_sqfeet || 1200);
+                  const liveHouseVal = Math.round(plinth * 2800);
+                  return (
+                    <div className="p-3.5 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <span className="text-[11px] font-bold text-purple-900 dark:text-purple-200 uppercase tracking-wider flex items-center gap-1.5">
+                            <Calculator className="w-3.5 h-3.5 text-purple-600" />
+                            <span>House Valuation Formula (घर मूल्याङ्कन सूत्र):</span>
+                          </span>
+                          <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                            Plinth Area ({plinth.toLocaleString()} sqft) × Construction Rate (Rs. 2,800/sqft) = <span className="text-purple-600 dark:text-purple-400 font-black">Rs. {liveHouseVal.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHouseForm((prev: any) => ({ ...prev, assessed_valuation: liveHouseVal }));
+                            setStatusMsg({ type: "success", text: `House value obtained: Rs. ${liveHouseVal.toLocaleString()} (Plinth Area ${plinth} sqft × Rs. 2,800)` });
+                          }}
+                          className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
+                        >
+                          <Calculator className="w-3.5 h-3.5" />
+                          <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
+                        </button>
+                      </div>
+                      {houseForm.assessed_valuation > 0 && (
+                        <div className="text-[11px] font-mono text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Locked Assessed Valuation: Rs. {Number(houseForm.assessed_valuation).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="flex justify-end pt-2">
                   <button
                     type="submit"
@@ -1617,9 +1884,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         <th className="p-3">House No</th>
                         <th className="p-3">Located on Land(s) & Auto Kitta #</th>
                         <th className="p-3">Plinth Area</th>
-                        <th className="p-3">Total Area</th>
                         <th className="p-3">Structure Type</th>
-                        <th className="p-3">Built Year BS</th>
+                        <th className="p-3">Valuation Formula</th>
+                        <th className="p-3 font-bold">House Amount (house_amount)</th>
                         <th className="p-3 text-right">Action</th>
                       </tr>
                     </thead>
@@ -1636,6 +1903,12 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                           const secLand = lands.find((l: any) => l.id === h.secondary_land_id);
                           const cType = masters.constructionTypes.find((c: any) => c.id === h.construction_type_id);
                           const isSpanning = Boolean(h.secondary_land_id || (h.kitta_numbers && h.kitta_numbers.includes(",")));
+                          const houseFloors = floors.filter((fl: any) => fl.house_id === h.id);
+                          const floorSum = houseFloors.reduce((acc: number, fl: any) => acc + Number(fl.floor_assessed_valuation || (Number(fl.area_sqfeet || 1000) * 2800 * 0.95)), 0);
+                          const fallbackVal = Math.round(Number(h.plinth_area || h.area_sqfeet || 1000) * 2800);
+                          const evaluatedHouseVal = Number(h.assessed_valuation && Number(h.assessed_valuation) > 0 ? h.assessed_valuation : (floorSum > 0 ? floorSum : fallbackVal));
+                          const formulaDesc = floorSum > 0 ? `∑ ${houseFloors.length} Floors: Rs. ${floorSum.toLocaleString()}` : `${h.plinth_area} sqft × Rs. 2,800`;
+
                           return (
                             <tr key={h.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                               <td className="p-3 font-bold text-slate-900 dark:text-white">{h.house_no}</td>
@@ -1653,17 +1926,32 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                                 )}
                               </td>
                               <td className="p-3 font-bold">{h.plinth_area} sqft</td>
-                              <td className="p-3">{h.area_sqfeet} sqft</td>
                               <td className="p-3 font-sans">{cType?.fullanme || "RCC Frame"}</td>
-                              <td className="p-3">{h.acquisition_date_bs || "2076-02-15"}</td>
+                              <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                {formulaDesc}
+                              </td>
+                              <td className="p-3 font-bold text-purple-600 dark:text-purple-400">
+                                Rs. {evaluatedHouseVal.toLocaleString()}
+                              </td>
                               <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteHouse(h.id)}
-                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5 font-sans">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleObtainHouseValue(h)}
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-[10px] rounded-lg border border-purple-200 dark:border-purple-800 transition-colors"
+                                    title="Obtain & Lock House Value"
+                                  >
+                                    <Calculator className="w-3 h-3" />
+                                    <span>Obtain Value</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteHouse(h.id)}
+                                    className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1865,6 +2153,47 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   </div>
                 </div>
 
+                {/* Formula Display & Obtain Floor Value Action Box */}
+                {(() => {
+                  const flArea = Number(floorForm.area_sqfeet || 1200);
+                  const cr = masters.constructionRates.find((r: any) => r.id === floorForm.rate_id) || masters.constructionRates[0];
+                  const crVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+                  const depPercent = Number(floorForm.depreciation_percent !== undefined ? floorForm.depreciation_percent : 5);
+                  const liveFloorVal = Math.round(flArea * crVal * (1 - depPercent / 100));
+                  return (
+                    <div className="p-3.5 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
+                            <Calculator className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Floor Valuation Formula (तला मूल्याङ्कन सूत्र):</span>
+                          </span>
+                          <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                            ({flArea.toLocaleString()} sqft × Rs. {crVal.toLocaleString()}) - {depPercent}% dep. = <span className="text-indigo-600 dark:text-indigo-400 font-black">Rs. {liveFloorVal.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFloorForm((prev: any) => ({ ...prev, floor_assessed_valuation: liveFloorVal }));
+                            setStatusMsg({ type: "success", text: `Floor value obtained: Rs. ${liveFloorVal.toLocaleString()} ((${flArea} × ${crVal}) - ${depPercent}%)` });
+                          }}
+                          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
+                        >
+                          <Calculator className="w-3.5 h-3.5" />
+                          <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
+                        </button>
+                      </div>
+                      {floorForm.floor_assessed_valuation > 0 && (
+                        <div className="text-[11px] font-mono text-indigo-700 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Locked Assessed Valuation: Rs. {Number(floorForm.floor_assessed_valuation).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <div className="flex justify-end pt-2">
                   <button
                     type="submit"
@@ -1892,14 +2221,15 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         <th className="p-3">Area (Sq.Ft)</th>
                         <th className="p-3">Rate (Rs./Sq.Ft)</th>
                         <th className="p-3">Depreciation %</th>
-                        <th className="p-3">Remarks</th>
+                        <th className="p-3">Valuation Formula</th>
+                        <th className="p-3 font-bold">Floor Amount (floor_amount)</th>
                         <th className="p-3 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
                       {floors.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="p-6 text-center text-slate-400 font-sans">
+                          <td colSpan={8} className="p-6 text-center text-slate-400 font-sans">
                             No floors registered yet. Register floor units above.
                           </td>
                         </tr>
@@ -1907,6 +2237,11 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         floors.map((fl: any) => {
                           const linkedHouse = houses.find((h: any) => h.id === fl.house_id);
                           const cr = masters.constructionRates.find((r: any) => r.id === fl.rate_id);
+                          const rateVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+                          const dep = Number(fl.depreciation_percent !== undefined ? fl.depreciation_percent : 5);
+                          const calcVal = Math.round(Number(fl.area_sqfeet || 0) * rateVal * (1 - dep / 100));
+                          const displayVal = Number(fl.floor_assessed_valuation && Number(fl.floor_assessed_valuation) > 0 ? fl.floor_assessed_valuation : calcVal);
+
                           return (
                             <tr key={fl.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                               <td className="p-3 font-bold text-slate-900 dark:text-white">Floor #{fl.floor_no}</td>
@@ -1919,18 +2254,34 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                                   <span className="text-slate-400">House #{fl.house_id}</span>
                                 )}
                               </td>
-                              <td className="p-3 font-bold">{fl.area_sqfeet} sqft</td>
-                              <td className="p-3 text-slate-700 dark:text-slate-300">Rs. {cr?.rate_per_unit || 2800}</td>
-                              <td className="p-3 text-amber-600 font-bold">-{fl.depreciation_percent}%</td>
-                              <td className="p-3 font-sans text-slate-500">{fl.remarks || "-"}</td>
+                              <td className="p-3 font-bold">{Number(fl.area_sqfeet || 0).toLocaleString()} sqft</td>
+                              <td className="p-3 text-slate-700 dark:text-slate-300">Rs. {rateVal.toLocaleString()}</td>
+                              <td className="p-3 text-amber-600 font-bold">-{dep}%</td>
+                              <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                ({Number(fl.area_sqfeet || 0).toLocaleString()} × {rateVal}) - {dep}%
+                              </td>
+                              <td className="p-3 font-bold text-indigo-600 dark:text-indigo-400">
+                                Rs. {displayVal.toLocaleString()}
+                              </td>
                               <td className="p-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteFloor(fl.id)}
-                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5 font-sans">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleObtainFloorValue(fl)}
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold text-[10px] rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+                                    title="Obtain & Lock Floor Value"
+                                  >
+                                    <Calculator className="w-3 h-3" />
+                                    <span>Obtain Value</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteFloor(fl.id)}
+                                    className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

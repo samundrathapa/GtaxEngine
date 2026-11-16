@@ -1072,9 +1072,9 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                           <Home className="w-4 h-4 text-purple-600" />
                           <span>Building & House Structures (घर विवरण)</span>
                         </h3>
-                        <p className="text-xs text-slate-500">
+                        {/* <p className="text-xs text-slate-500">
                           Structures registered with plinth areas, floors, and construction types.
-                        </p>
+                        </p> */}
                       </div>
 
                       <button
@@ -1182,9 +1182,9 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                           <Layers className="w-4 h-4 text-indigo-600" />
                           <span>Floor Slabs (तला इकाइहरू)</span>
                         </h4>
-                        <p className="text-xs text-slate-500">
+                        {/* <p className="text-xs text-slate-500">
                           Individual floor units evaluated by construction rate and annual depreciation.
-                        </p>
+                        </p> */}
                       </div>
 
                       <button
@@ -1286,9 +1286,9 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         <h3 className="text-base font-bold text-slate-900 dark:text-white">
                           Multi-Fiscal-Year Range Assessment & Valuation Source
                         </h3>
-                        <p className="text-xs text-slate-500">
+                        {/* <p className="text-xs text-slate-500">
                           Select a multi-year range from starting fiscal year to ending fiscal year to evaluate cumulative municipal property tax.
-                        </p>
+                        </p> */}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3">

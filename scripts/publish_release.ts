@@ -296,9 +296,9 @@ CONFIGURATION FILES:
 
     // Write install_apk.bat
     const installBat = `@echo off
-title gtax Mobile - ADB Android Device Installer
+title Gtax Mobile - ADB Android Device Installer
 echo =========================================================================
-echo   gtax Mobile - Android ADB Deployment Utility
+echo   Gtax Mobile - Android ADB Deployment Utility
 echo =========================================================================
 echo.
 where adb >nul 2>&1

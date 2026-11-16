@@ -58,7 +58,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
   >([
     {
       role: "assistant",
-      text: "Namaste! I am the gtax Mobile AI Tax Advisor (Gemini 2.5 Flash). You can speak or tap commands:\n• 'open taxpayer' → Opens 1-Door registration\n• 'list taxpayer today registered' → Shows today's citizens\n• 'add landrate 1 to land rate' → Auto-inserts Land Rate 1\n• 'calculate tax' → Launches calculation engine"
+      text: "Namaste! I am the Gtax Mobile AI Tax Advisor . You can speak or tap commands:\n• 'open taxpayer' → Opens 1-Door registration\n• 'list taxpayer today registered' → Shows today's citizens\n• 'add landrate 1 to land rate' → Auto-inserts Land Rate 1\n• 'calculate tax' → Launches calculation engine"
     }
   ]);
   const [chatInput, setChatInput] = useState("");
@@ -403,7 +403,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-wide">
-                  Flutter Mobile App (iOS & Android Deployment Hub)
+                  Mobile App
                 </h2>
                 <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                   Ready to Deploy
@@ -494,7 +494,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                   <div>
                     <h3 className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      gtax Mobile (Flutter 3.x)
+                      Gtax Mobile
                     </h3>
                     <p className="text-[10px] text-blue-200/80">FY {localStorage.getItem("gtax_active_fy_code") || "Active"} • Common Entry Engine</p>
                   </div>
@@ -599,7 +599,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                             <Bot className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-semibold text-[11px] text-purple-200">Gemini Voice & Tax Workflows</div>
+                            <div className="font-semibold text-[11px] text-purple-200">Voice & Tax Workflows</div>
                             <div className="text-[9px] text-purple-300/80">"open taxpayer", "list today", "add landrate 1"</div>
                           </div>
                         </div>
@@ -1063,7 +1063,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                         </div>
                       </div>
 
-                      <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
+                      {/* <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
                         <span className="font-bold text-[10px] text-white block mb-1">Mobile Build Specification</span>
                         <div className="text-[9px] text-slate-300 space-y-0.5 font-mono">
                           <div>Flutter SDK: 3.2.0+</div>
@@ -1071,7 +1071,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                           <div>Calculation Engine: Complete 5-Step Logic</div>
                           <div>Voice Assistant: Auto-Executing Commands</div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   )}
 
@@ -1165,9 +1165,9 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                     <span className="text-xs font-bold text-blue-300">1. client (Web SPA)</span>
                   </div>
                   <p className="text-[11px] text-slate-400 mb-2">React 19, calculation window, dynamic i18n JSON mapping.</p>
-                  <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
+                  {/* <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
                     Entry: src/main.tsx / client/index.ts
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="p-3 bg-slate-900 rounded-xl border border-emerald-500/30">
@@ -1176,9 +1176,9 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                     <span className="text-xs font-bold text-emerald-300">2. server (REST Engine)</span>
                   </div>
                   <p className="text-[11px] text-slate-400 mb-2">Node.js Express, Multi-Jurisdiction rates, calculation/save APIs.</p>
-                  <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
+                  {/* <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
                     Entry: server.ts / server/entry.ts (Port 3000)
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="p-3 bg-slate-900 rounded-xl border border-purple-500/30">
@@ -1187,9 +1187,9 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                     <span className="text-xs font-bold text-purple-300">3. ai (Gemini LLM)</span>
                   </div>
                   <p className="text-[11px] text-slate-400 mb-2">Google Gemini 2.5 Flash, automated speech commands & workflows.</p>
-                  <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
+                  {/* <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
                     Entry: ai/index.ts (/api/v1/ai)
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="p-3 bg-slate-900 rounded-xl border border-amber-500/30">
@@ -1198,9 +1198,9 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                     <span className="text-xs font-bold text-amber-300">4. mobileapp (Flutter 3.x)</span>
                   </div>
                   <p className="text-[11px] text-slate-400 mb-2">Full 5-step calculation screen, manual adjustment sliders & voice AI.</p>
-                  <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
+                  {/* <div className="text-[10px] font-mono text-slate-300 bg-slate-950 p-1.5 rounded">
                     Entry: mobileapp/lib/screens/calculation_screen.dart
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -1235,14 +1235,14 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
             </div>
 
             {/* Flutter Deployment Commands */}
-            <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-4 space-y-4">
-              <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            {/* <div className="bg-slate-900/90 rounded-xl border border-slate-800 p-4 space-y-4"> */}
+              {/* <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                 <Code className="w-4 h-4 text-blue-400" />
                 iOS & Android Flutter Build & Deployment Commands
-              </h4>
+              </h4> */}
 
               {/* Android Section */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-emerald-400">🤖 Google Android (.apk & .aab bundle)</span>
                   <span className="text-[10px] text-slate-400">Target SDK: 34 (Android 14)</span>
@@ -1254,10 +1254,10 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                   <div className="text-slate-500"># Or generate App Bundle for Google Play Store:</div>
                   <div>flutter build appbundle --release</div>
                 </div>
-              </div>
+              </div> */}
 
               {/* iOS Section */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-blue-400">🍎 Apple iOS (.ipa Archive for App Store & TestFlight)</span>
                   <span className="text-[10px] text-slate-400">Target iOS: 14.0+</span>
@@ -1269,8 +1269,8 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
                   <div className="text-slate-500"># Open in Xcode for Apple Developer Team signing:</div>
                   <div>open ios/Runner.xcworkspace</div>
                 </div>
-              </div>
-            </div>
+              </div> */}
+            {/* </div> */}
 
           </div>
 

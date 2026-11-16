@@ -755,8 +755,16 @@ export class TableCacheDbSyncService {
       assignCol(clean, "nature_id", natureId);
       assignCol(clean, "land_rate_id", landRateId);
       assignCol(clean, "malpot_rate_id", malpotRateId);
+      let assessedVal = safeNum(payload.assessed_valuation, 0);
+      if (assessedVal <= 0) {
+        const baseSqFt = unitId === 1 ? 342.25 : unitId === 2 ? 3645 : unitId === 4 ? 10.7639 : 1;
+        const cachedRates = this.inMemoryStores.get("tbl_land_rate") || [];
+        const foundRate = cachedRates.find((r: any) => Number(r.id) === landRateId);
+        const ratePerUnit = foundRate ? Number(foundRate.rate_per_unit || 800000) : 800000;
+        assessedVal = Math.round((area / baseSqFt) * ratePerUnit);
+      }
       assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
-      assignCol(clean, "assessed_valuation", safeNum(payload.assessed_valuation, 0));
+      assignCol(clean, "assessed_valuation", assessedVal);
       if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
       if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
       if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
@@ -796,14 +804,20 @@ export class TableCacheDbSyncService {
       assignCol(clean, "house_number", String(houseNo));
       assignCol(clean, "area_sqfeet", area);
       assignCol(clean, "area_sqft", area);
-      assignCol(clean, "plinth_area", safeNum(payload.plinth_area, area));
+      const plinth = safeNum(payload.plinth_area, area);
+      assignCol(clean, "plinth_area", plinth);
       assignCol(clean, "floor_no", safeInt(payload.floor_no, 1));
       assignCol(clean, "measuring_unit_id", unitId);
       assignCol(clean, "construction_type_id", constTypeId);
       assignCol(clean, "acquisition_date_bs", payload.acquisition_date_bs || "2078-01-01");
       assignCol(clean, "acquisition_date_ad", payload.acquisition_date_ad || "2021-04-14");
       assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
-      assignCol(clean, "assessed_valuation", safeNum(payload.assessed_valuation, 0));
+
+      let houseVal = safeNum(payload.assessed_valuation, 0);
+      if (houseVal <= 0) {
+        houseVal = Math.round(plinth * 2800);
+      }
+      assignCol(clean, "assessed_valuation", houseVal);
       if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
       if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
       if (payload.insert_by !== undefined) assignCol(clean, "insert_by", String(payload.insert_by));
@@ -844,8 +858,17 @@ export class TableCacheDbSyncService {
       assignCol(clean, "construction_date_ad", payload.construction_date_ad || "2021-04-14");
       assignCol(clean, "construction_date_bs", payload.construction_date_bs || "2078-01-01");
       assignCol(clean, "remarks", payload.remarks || "");
-      assignCol(clean, "depreciation_percent", safeNum(payload.depreciation_percent, 0));
-      assignCol(clean, "floor_assessed_valuation", safeNum(payload.floor_assessed_valuation, 0));
+      const depPercent = safeNum(payload.depreciation_percent, 5);
+      assignCol(clean, "depreciation_percent", depPercent);
+
+      let floorVal = safeNum(payload.floor_assessed_valuation, 0);
+      if (floorVal <= 0) {
+        const cachedRates = this.inMemoryStores.get("tbl_construction_rates") || [];
+        const foundRate = cachedRates.find((r: any) => Number(r.id) === rateId);
+        const ratePerSq = foundRate ? Number(foundRate.rate_per_unit || 2800) : 2800;
+        floorVal = Math.round(area * ratePerSq * (1 - depPercent / 100));
+      }
+      assignCol(clean, "floor_assessed_valuation", floorVal);
       assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
       if (payload.is_active !== undefined) assignCol(clean, "is_active", Boolean(payload.is_active));
       if (payload.is_deleted !== undefined) assignCol(clean, "is_deleted", Boolean(payload.is_deleted));
