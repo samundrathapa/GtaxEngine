@@ -90,13 +90,11 @@ export const UserPanel: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <span>User Management</span>
-            <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-full font-mono">
+            {/* <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-full font-mono">
               clientside/User & serverside/User
-            </span>
+            </span> */}
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Powered by UserController, UserService, UserModel & UserRepo with GetSearchTemplate & GetComboTemplate
-          </p>
+      
         </div>
 
         <div className="flex items-center gap-2.5">
