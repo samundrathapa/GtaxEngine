@@ -2299,34 +2299,38 @@ class TaxpayerPropertyDatabase {
   }
 
   public calculateMultiYearTaxAssessment(params: {
-    taxpayerId: number;
-    fromFiscalYearId: number;
-    toFiscalYearId: number;
+    taxpayerId?: number;
+    fromFiscalYearId?: number;
+    toFiscalYearId?: number;
     scope?: "all" | "land" | "house";
     propertyId?: number;
     userId?: string;
   }): MultiYearCalculationResult | null {
-    const tp = this.taxpayers.get(Number(params.taxpayerId));
+    const allTaxpayers = Array.from(this.taxpayers.values()).filter((t) => !t.is_deleted);
+    const tpId = params?.taxpayerId ? Number(params.taxpayerId) : (allTaxpayers[0]?.id || 1);
+    const tp = this.taxpayers.get(tpId) || allTaxpayers[0];
     if (!tp || tp.is_deleted) return null;
 
-    const fromFy = this.fiscalYears.get(Number(params.fromFiscalYearId));
-    const toFy = this.fiscalYears.get(Number(params.toFiscalYearId));
-    if (!fromFy || !toFy) return null;
-
-    const scope = params.scope || "all";
-    const propertyId = params.propertyId ? Number(params.propertyId) : undefined;
-
-    // Get active fiscal years and sort chronologically
+    // Get all non-deleted fiscal years and sort chronologically
     const allActiveFys = Array.from(this.fiscalYears.values())
-      .filter((f) => !f.is_deleted && f.is_active)
-      .sort((a, b) => a.date_from_bs.localeCompare(b.date_from_bs));
+      .filter((f) => !f.is_deleted)
+      .sort((a, b) => (a.date_from_bs || a.code || "").localeCompare(b.date_from_bs || b.code || ""));
+
+    if (allActiveFys.length === 0) return null;
+
+    const fromFyId = params?.fromFiscalYearId ? Number(params.fromFiscalYearId) : allActiveFys[0].id;
+    const toFyId = params?.toFiscalYearId ? Number(params.toFiscalYearId) : allActiveFys[allActiveFys.length - 1].id;
+
+    const fromFy = this.fiscalYears.get(fromFyId) || allActiveFys[0];
+    const toFy = this.fiscalYears.get(toFyId) || allActiveFys[allActiveFys.length - 1];
+
+    const scope = params?.scope || "all";
+    const propertyId = params?.propertyId ? Number(params.propertyId) : undefined;
 
     const fromIdx = allActiveFys.findIndex((f) => f.id === fromFy.id);
     const toIdx = allActiveFys.findIndex((f) => f.id === toFy.id);
-    if (fromIdx === -1 || toIdx === -1) return null;
-
-    const startIdx = Math.min(fromIdx, toIdx);
-    const endIdx = Math.max(fromIdx, toIdx);
+    const startIdx = Math.min(fromIdx >= 0 ? fromIdx : 0, toIdx >= 0 ? toIdx : allActiveFys.length - 1);
+    const endIdx = Math.max(fromIdx >= 0 ? fromIdx : 0, toIdx >= 0 ? toIdx : allActiveFys.length - 1);
     const targetFys = allActiveFys.slice(startIdx, endIdx + 1);
 
     // Retrieve taxpayer assets

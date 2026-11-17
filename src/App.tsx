@@ -299,8 +299,24 @@ export default function App() {
   }, [isDbStatusModalOpen]);
 
   // Theme & Language (Controlled via User Menu)
-  const [currentLang, setCurrentLang] = useState<SupportedLang>("eng");
-  const [currentTheme, setCurrentTheme] = useState<SupportedTheme>("slate");
+  const [currentLang, setCurrentLang] = useState<SupportedLang>(() => {
+    return (localStorage.getItem("gtax_active_lang") as SupportedLang) || "eng";
+  });
+  const [currentTheme, setCurrentTheme] = useState<SupportedTheme>(() => {
+    return (localStorage.getItem("gtax_active_theme") as SupportedTheme) || "slate";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("gtax_active_lang", currentLang);
+    } catch (_) {}
+  }, [currentLang]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("gtax_active_theme", currentTheme);
+    } catch (_) {}
+  }, [currentTheme]);
 
   // Global Dynamic Active Fiscal Year State (Derived from application_settings & tbl_fiscal_year)
   const [activeFiscalYearCode, setActiveFiscalYearCode] = useState<string>(() => {
