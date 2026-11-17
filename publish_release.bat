@@ -115,23 +115,32 @@ echo -------------------------------------------------------------------------
 echo [BUILD 1/3] Compiling and packaging Windows IIS Server release...
 echo -------------------------------------------------------------------------
 
-:: Build frontend if npm is available
+:: Clean previous stale build so no outdated files get packaged
+echo [BUILD] Cleaning previous build output...
+if exist "%ROOT_DIR%\dist" rmdir /s /q "%ROOT_DIR%\dist"
+
+:: Build frontend using npm run build
 where npm >nul 2>&1
 if !ERRORLEVEL! equ 0 (
-    echo [INFO] Running 'npm run build' for production client bundle...
+    echo [INFO] Running 'npm run build' for fresh production client bundle...
     call npm run build
     if !ERRORLEVEL! neq 0 (
-        echo [WARN] npm run build returned an exit code, checking if dist/ exists...
+        echo [WARN] npm run build returned an exit code, attempting npx vite build...
+        call npx vite build
     )
 ) else (
-    echo [INFO] npm not found in current PATH. Using pre-existing dist/ directory.
+    echo [INFO] npm not found in PATH, attempting npx vite build...
+    call npx vite build
 )
 
-if not exist "dist" (
-    echo [ERROR] 'dist' folder is missing! Please build frontend first.
+if not exist "%ROOT_DIR%\dist\index.html" (
+    echo [ERROR] Build failed! 'dist\index.html' was not generated!
+    echo Please ensure dependencies are installed via 'npm install'.
     pause
     exit /b 1
 )
+
+echo [SUCCESS] Production frontend compiled successfully.
 
 set "WIN_FOLDER_NAME=gtax_windows_v%RELEASE_VERSION%_%TIMESTAMP%"
 set "WIN_PKG_DIR=%ROOT_DIR%\release\windows\%WIN_FOLDER_NAME%"
@@ -144,16 +153,25 @@ mkdir "%WIN_PKG_DIR%"
 echo [COPY] Assembling IIS production files into:
 echo        %WIN_PKG_DIR%
 
-:: 1. Copy Frontend dist/
+:: 1. Copy Frontend Build:
+:: CRITICAL: Copy compiled index.html and assets directly to release ROOT so
+:: that when manually copied to IIS (C:\inetpub\wwwroot\gtax), it replaces
+:: the old root index.html and assets! ALSO keep in dist\ for dual compatibility.
 if exist "%ROOT_DIR%\dist" (
+    echo [COPY] Copying production dist\ subfolder and root entry files...
     mkdir "%WIN_PKG_DIR%\dist"
     xcopy "%ROOT_DIR%\dist" "%WIN_PKG_DIR%\dist\" /E /Y /I /Q >nul
+
+    copy /y "%ROOT_DIR%\dist\index.html" "%WIN_PKG_DIR%\index.html" >nul
+    mkdir "%WIN_PKG_DIR%\assets"
+    xcopy "%ROOT_DIR%\dist\assets" "%WIN_PKG_DIR%\assets\" /E /Y /I /Q >nul
 )
 
-:: 1b. Copy Public Assets (images, icons, static assets)
+:: 1b. Copy Public Assets (images, icons, static assets) to public\ and root
 if exist "%ROOT_DIR%\public" (
     mkdir "%WIN_PKG_DIR%\public"
     xcopy "%ROOT_DIR%\public" "%WIN_PKG_DIR%\public\" /E /Y /I /Q >nul
+    xcopy "%ROOT_DIR%\public" "%WIN_PKG_DIR%\" /E /Y /I /Q >nul
 )
 
 :: 2. Copy IIS Configuration, Asset Copier & Update Scripts (Drop-in replacements)
@@ -205,31 +223,23 @@ if exist "%ROOT_DIR%\src" (
 :: 4. Write Quick Start & In-Place Update Instructions
 (
     echo =========================================================================
-    echo   gtax Enterprise - Windows IIS In-Place Update Guide
+    echo   gtax Enterprise - Windows IIS Manual Deployment Guide
     echo   Version: %RELEASE_VERSION%  ^|  Build Timestamp: %TIMESTAMP%
     echo =========================================================================
     echo.
-    echo HOW TO UPDATE YOUR RUNNING IIS SERVER:
+    echo HOW TO MANUALLY DEPLOY TO WINDOWS IIS:
     echo -------------------------------------------------------------------------
-    echo Option A ^(Direct Overwrite - Recommended^):
-    echo   1. Stop your IIS Application Pool ^(or let update_iis.bat do it for you^).
-    echo   2. Extract all contents of this ZIP file directly into your IIS website root:
-    echo      Default path: C:\inetpub\wwwroot\gtax
-    echo   3. Select 'Yes to All' when prompted to replace existing files.
-    echo   4. Right-click 'update_iis.bat' and select 'Run as Administrator'.
-    echo      This script will:
-    echo        - Ensure AppPool locks are released
-    echo        - Synchronize files
-    echo        - Run any pending database migrations
-    echo        - Restart the IIS AppPool and Site
-    echo.
-    echo Option B ^(Automated Synchronizer^):
-    echo   1. Extract this zip into any temporary folder ^(e.g., C:\Deploy\v%RELEASE_VERSION%^).
-    echo   2. Run 'update_iis.bat' and select option [2] or enter your IIS folder.
+    echo 1. Stop your IIS Application Pool ^(gtax^) in IIS Manager, or run 'update_iis.bat'.
+    echo 2. Copy all files and folders inside this directory:
+    echo    directly into your IIS website root folder ^(e.g. C:\inetpub\wwwroot\gtax^\^).
+    echo    When Windows prompts to replace existing files, choose 'Replace all files'.
+    echo 3. Start your backend server using 'start_server.bat'.
+    echo 4. Restart your IIS Application Pool in IIS Manager.
+    echo 5. Open your browser and press Ctrl+F5 ^(Hard Refresh^) to load the new build!
     echo.
     echo CONFIGURATION FILES:
-    echo   - web.config: Pre-configured with SPA fallback ^& Reverse Proxy to port 3000.
-    echo   - start_server.bat: Launches backend Node.js server.
+    echo   - web.config: SPA routing fallback, API proxy ^& caching disabled for immediate updates.
+    echo   - start_server.bat: Launches production backend Node.js server.
     echo   - run_migrations.bat: Manages PostgreSQL schemas and seed data.
     echo =========================================================================
 ) > "%WIN_PKG_DIR%\README_IIS_UPDATE.txt"
@@ -241,7 +251,7 @@ if exist "%ROOT_DIR%\src" (
     echo   "target": "iis_web_server",
     echo   "version": "%RELEASE_VERSION%",
     echo   "timestamp": "%TIMESTAMP%",
-    echo   "updateMethod": "extract_and_replace",
+    echo   "updateMethod": "manual_copy_or_extract",
     echo   "updateScript": "update_iis.bat",
     echo   "config": "web.config"
     echo }
@@ -261,25 +271,7 @@ if !ERRORLEVEL! equ 0 (
 )
 
 echo [SUCCESS] Windows IIS package created: %WIN_ZIP_FILE%
-echo.
-echo -------------------------------------------------------------------------
-echo AUTO-DEPLOYMENT TO WINDOWS IIS INETPUB
-echo -------------------------------------------------------------------------
-set /p "AUTO_DEPLOY=Do you want to automatically deploy and sync all latest workspace and release changes to C:\inetpub\wwwroot\gtax now? (Y/N) [Default=Y]: "
-if "!AUTO_DEPLOY!"=="" set "AUTO_DEPLOY=Y"
-if /i "!AUTO_DEPLOY!"=="Y" (
-    echo [INFO] Synchronizing latest changes to C:\inetpub\wwwroot\gtax...
-    if exist "%WIN_PKG_DIR%\update_iis.bat" (
-        cd /d "%WIN_PKG_DIR%"
-        call update_iis.bat --auto
-        cd /d "%ROOT_DIR%"
-    ) else (
-        if not exist "C:\inetpub\wwwroot\gtax" mkdir "C:\inetpub\wwwroot\gtax"
-        robocopy "%WIN_PKG_DIR%" "C:\inetpub\wwwroot\gtax" /MIR /XD "logs" "node_modules" >nul 2>&1
-        echo [SUCCESS] Deployment synchronized to C:\inetpub\wwwroot\gtax.
-    )
-)
-
+echo [INFO] Ready for manual copy to your IIS deployment folder.
 if "%TARGET_OPTION%"=="1" goto FINISH
 goto CONTINUE_AFTER_WINDOWS
 

@@ -976,8 +976,8 @@ app.post("/api/v1/reports/export", async (req, res) => {
 });
 
 // Mount Vite middleware in development or serve dist in production
-const isProduction = process.env.NODE_ENV === "production";
 const distIndexPath = path.resolve(__dirname, "dist", "index.html");
+const isProduction = process.env.NODE_ENV === "production" || (process.env.NODE_ENV !== "development" && fs.existsSync(distIndexPath));
 
 if (isProduction && fs.existsSync(distIndexPath)) {
   console.log(`[gtax] Serving production build from ${path.resolve(__dirname, "dist")}`);

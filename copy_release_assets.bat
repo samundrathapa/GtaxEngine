@@ -39,18 +39,24 @@ echo.
 
 if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
 
-:: 1. Copy Frontend Build (dist/)
+:: 1. Copy Frontend Build (both to root and to dist/ for full IIS compatibility)
 if exist "%ROOT_DIR%\dist" (
-    echo [COPY] Synchronizing dist\ ...
+    echo [COPY] Synchronizing dist\ and root entry files ...
     if not exist "%TARGET_DIR%\dist" mkdir "%TARGET_DIR%\dist"
     xcopy "%ROOT_DIR%\dist" "%TARGET_DIR%\dist\" /E /Y /I /Q >nul
+
+    :: Also copy directly into root of target so IIS immediately serves updated index.html & assets
+    copy /y "%ROOT_DIR%\dist\index.html" "%TARGET_DIR%\index.html" >nul
+    if not exist "%TARGET_DIR%\assets" mkdir "%TARGET_DIR%\assets"
+    xcopy "%ROOT_DIR%\dist\assets" "%TARGET_DIR%\assets\" /E /Y /I /Q >nul
 )
 
-:: 2. Copy Public Assets (public/)
+:: 2. Copy Public Assets (public/ and root)
 if exist "%ROOT_DIR%\public" (
     echo [COPY] Synchronizing public\ assets ...
     if not exist "%TARGET_DIR%\public" mkdir "%TARGET_DIR%\public"
     xcopy "%ROOT_DIR%\public" "%TARGET_DIR%\public\" /E /Y /I /Q >nul
+    xcopy "%ROOT_DIR%\public" "%TARGET_DIR%\" /E /Y /I /Q >nul
 )
 
 :: 3. Copy Data Stores (data/)

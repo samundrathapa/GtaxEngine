@@ -210,13 +210,16 @@ async function run() {
       }
     }
 
-    // Copy server, ai, database, dbmigration, src
-    const dirsToCopy = ['server', 'ai', 'database', 'dbmigration', 'src'];
+    // Copy server, ai, database, dbmigration, DbMigration, data, scripts, public, src
+    const dirsToCopy = ['server', 'ai', 'database', 'dbmigration', 'DbMigration', 'data', 'scripts', 'public', 'src'];
     for (const d of dirsToCopy) {
       const srcPath = path.join(ROOT_DIR, d);
       if (fs.existsSync(srcPath)) {
         copyRecursiveSync(srcPath, path.join(winDir, d), ['node_modules', '.git', 'logs']);
       }
+    }
+    if (fs.existsSync(path.join(ROOT_DIR, 'public'))) {
+      copyRecursiveSync(path.join(ROOT_DIR, 'public'), winDir, ['node_modules', '.git']);
     }
 
     // Write README_IIS_UPDATE.txt

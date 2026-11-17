@@ -10,6 +10,9 @@ echo.
 :: Change to script directory
 cd /d "%~dp0"
 
+:: Enforce production environment so built frontend dist and production caches are served
+set "NODE_ENV=production"
+
 :: Check for Node.js
 where node >nul 2>&1
 if %ERRORLEVEL% neq 0 (
@@ -30,13 +33,13 @@ if not exist ".env" (
 :: Ensure logs directory exists
 if not exist "logs" mkdir "logs"
 
-:: Check dependencies
+:: Check dependencies (ensure tsx and runtime modules are installed)
 if not exist "node_modules" (
     echo [INFO] Installing required dependencies...
-    call npm install --omit=dev
+    call npm install
 )
 
-echo [INFO] Starting gtax Enterprise backend server on port 3000...
+echo [INFO] Starting gtax Enterprise backend server on port 3000 (NODE_ENV=production)...
 echo [INFO] Server logs writing to logs\server.log...
 echo.
 
@@ -44,7 +47,7 @@ echo.
 if exist "node_modules\tsx\dist\cli.mjs" (
     node "node_modules\tsx\dist\cli.mjs" server.ts
 ) else (
-    npx tsx server.ts
+    call npx tsx server.ts
 )
 
 pause
