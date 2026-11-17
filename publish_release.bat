@@ -261,6 +261,25 @@ if !ERRORLEVEL! equ 0 (
 )
 
 echo [SUCCESS] Windows IIS package created: %WIN_ZIP_FILE%
+echo.
+echo -------------------------------------------------------------------------
+echo AUTO-DEPLOYMENT TO WINDOWS IIS INETPUB
+echo -------------------------------------------------------------------------
+set /p "AUTO_DEPLOY=Do you want to automatically deploy and sync all latest workspace and release changes to C:\inetpub\wwwroot\gtax now? (Y/N) [Default=Y]: "
+if "!AUTO_DEPLOY!"=="" set "AUTO_DEPLOY=Y"
+if /i "!AUTO_DEPLOY!"=="Y" (
+    echo [INFO] Synchronizing latest changes to C:\inetpub\wwwroot\gtax...
+    if exist "%WIN_PKG_DIR%\update_iis.bat" (
+        cd /d "%WIN_PKG_DIR%"
+        call update_iis.bat --auto
+        cd /d "%ROOT_DIR%"
+    ) else (
+        if not exist "C:\inetpub\wwwroot\gtax" mkdir "C:\inetpub\wwwroot\gtax"
+        robocopy "%WIN_PKG_DIR%" "C:\inetpub\wwwroot\gtax" /MIR /XD "logs" "node_modules" >nul 2>&1
+        echo [SUCCESS] Deployment synchronized to C:\inetpub\wwwroot\gtax.
+    )
+)
+
 if "%TARGET_OPTION%"=="1" goto FINISH
 goto CONTINUE_AFTER_WINDOWS
 
