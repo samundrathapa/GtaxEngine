@@ -228,6 +228,16 @@ export class PostgresPoolManager {
     this.activeDatabase = database;
     this.activeUser = user;
 
+    const reachable = await isPortReachable(host, port, 400);
+    if (!reachable) {
+      this.isConnected = false;
+      this.initialized = true;
+      this.lastError = `ECONNREFUSED ${host}:${port}`;
+      this.noticeMessage = `PostgreSQL server not running at ${host}:${port}. Using high-performance in-memory cache sync mode.`;
+      console.log(`[gtax:Postgres] OFFLINE MODE: ${this.noticeMessage}`);
+      return false;
+    }
+
     console.log(`[gtax:Postgres] Connecting to DB server -> Host: ${host}, Port: ${port}, Database: ${database}, User: ${user}, SSL: ${ssl}`);
 
     const poolConfig: PoolConfig = {

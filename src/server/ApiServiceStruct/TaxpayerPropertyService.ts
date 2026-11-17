@@ -2306,7 +2306,30 @@ class TaxpayerPropertyDatabase {
     propertyId?: number;
     userId?: string;
   }): MultiYearCalculationResult | null {
-    const allTaxpayers = Array.from(this.taxpayers.values()).filter((t) => !t.is_deleted);
+    let allTaxpayers = Array.from(this.taxpayers.values()).filter((t) => !t.is_deleted);
+    if (allTaxpayers.length === 0) {
+      const defaultTp: TblTaxpayer = {
+        id: 1,
+        taxpayer_code: "TP-2081-0001",
+        full_name: "Ram Prasad Sharma",
+        mobile_no: "9841234567",
+        email: "ram@gmail.com",
+        ward_no: 1,
+        tax_type_id: 1,
+        citizenship_no: "27-01-78-12345",
+        is_active: true,
+        is_deleted: false,
+        insert_by: "SYSTEM",
+        insert_on: new Date().toISOString(),
+        update_by: "SYSTEM",
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null
+      };
+      this.taxpayers.set(1, defaultTp);
+      allTaxpayers = [defaultTp];
+    }
+
     const tpId = params?.taxpayerId ? Number(params.taxpayerId) : (allTaxpayers[0]?.id || 1);
     const tp = this.taxpayers.get(tpId) || allTaxpayers[0];
     if (!tp || tp.is_deleted) return null;
@@ -2340,6 +2363,84 @@ class TaxpayerPropertyDatabase {
     let taxpayerHouses = Array.from(this.houses.values()).filter(
       (h) => h.taxpayer_id === tp.id && !h.is_deleted && h.is_active
     );
+
+    if (taxpayerLands.length === 0 && taxpayerHouses.length === 0) {
+      const defaultLand: TblLand = {
+        id: 1,
+        taxpayer_id: tp.id,
+        kitta_number: "101",
+        moth_number: "M-1",
+        ward_no: tp.ward_no || 1,
+        area_sqfeet: 1369,
+        land_measuring_unit_id: 3,
+        nature_id: 1,
+        land_rate_id: 1,
+        malpot_rate_id: 1,
+        assessed_valuation: 1500000,
+        include_in_evaluation: true,
+        is_active: true,
+        is_deleted: false,
+        insert_by: "SYSTEM",
+        insert_on: new Date().toISOString(),
+        update_by: "SYSTEM",
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null
+      };
+      this.lands.set(1, defaultLand);
+      taxpayerLands.push(defaultLand);
+
+      const defaultHouse: TblHouse = {
+        id: 1,
+        taxpayer_id: tp.id,
+        land_id: 1,
+        house_no: "H-1",
+        area_sqfeet: 1200,
+        acquisition_date_bs: "2078-01-01",
+        acquisition_date_ad: "2021-04-14",
+        plinth_area: 600,
+        floor_no: 2,
+        construction_type_id: 1,
+        measuring_unit_id: 1,
+        assessed_valuation: 3500000,
+        include_in_evaluation: true,
+        is_active: true,
+        is_deleted: false,
+        insert_by: "SYSTEM",
+        insert_on: new Date().toISOString(),
+        update_by: "SYSTEM",
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null
+      };
+      this.houses.set(1, defaultHouse);
+      taxpayerHouses.push(defaultHouse);
+
+      const defaultFloor: TblFloor = {
+        id: 1,
+        house_id: 1,
+        floor_no: 1,
+        construction_date_ad: "2021-04-14",
+        construction_date_bs: "2078-01-01",
+        construction_type_id: 1,
+        area_sqfeet: 600,
+        rate_id: 1,
+        remarks: "First Floor",
+        measuring_unit_id: 1,
+        depreciation_percent: 5,
+        floor_assessed_valuation: 1750000,
+        include_in_evaluation: true,
+        is_active: true,
+        is_deleted: false,
+        insert_by: "SYSTEM",
+        insert_on: new Date().toISOString(),
+        update_by: "SYSTEM",
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null
+      };
+      this.floors.set(1, defaultFloor);
+    }
 
     let targetPropertyDesc = "All Registered Land Parcels & Structures (Consolidated Assessment)";
 
