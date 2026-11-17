@@ -47,6 +47,136 @@ interface RatesMasterPanelProps {
   filterGroup?: "rate" | "masters" | "rbac" | "all";
 }
 
+interface ParentTreeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  items: any[];
+  currentParentId: number | null | undefined;
+  onSelectParent: (id: number | null) => void;
+  currentEditingId?: number;
+  title: string;
+}
+
+const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
+  isOpen,
+  onClose,
+  items,
+  currentParentId,
+  onSelectParent,
+  currentEditingId,
+  title
+}) => {
+  const [filterText, setFilterText] = useState("");
+
+  if (!isOpen) return null;
+
+  const filteredItems = items.filter((item) => {
+    if (currentEditingId && item.id === currentEditingId) return false;
+    if (!filterText) return true;
+    const q = filterText.toLowerCase();
+    return (
+      String(item.id).includes(q) ||
+      (item.code && item.code.toLowerCase().includes(q)) ||
+      (item.fullanme && item.fullanme.toLowerCase().includes(q)) ||
+      (item.fullname && item.fullname.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+          <div className="flex items-center gap-2">
+            <span className="p-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+              🌳
+            </span>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+          <input
+            type="text"
+            placeholder="Search parent records by code, ID or name..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+          />
+
+          <div className="space-y-1.5">
+            <div
+              onClick={() => {
+                onSelectParent(null);
+                onClose();
+              }}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition-colors ${
+                !currentParentId
+                  ? "bg-indigo-600 text-white font-semibold"
+                  : "bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              }`}
+            >
+              <span className="flex items-center gap-2">🌱 Root Level (No Parent - null)</span>
+              {!currentParentId && <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded text-white">Current</span>}
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-8 text-sm text-slate-400 italic">No parent records found</div>
+            ) : (
+              filteredItems.map((item) => {
+                const isSelected = currentParentId === item.id;
+                const label = `${item.code ? `[${item.code}] ` : ""}${item.fullanme || item.fullname || "Item #" + item.id}`;
+                const rateStr = item.rate_per_unit !== undefined ? ` • NPR ${item.rate_per_unit}` : "";
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      onSelectParent(item.id);
+                      onClose();
+                    }}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition-all border ${
+                      isSelected
+                        ? "bg-indigo-600 text-white font-semibold border-indigo-600 shadow-md"
+                        : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-indigo-300 dark:hover:border-indigo-600 text-slate-800 dark:text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <span className={`font-mono text-xs px-1.5 py-0.5 rounded ${isSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-900 text-slate-500"}`}>
+                        #{item.id}
+                      </span>
+                      <span className="truncate">🌳 {label}{rateStr}</span>
+                    </div>
+                    <span className={`text-xs px-2.5 py-1 rounded-lg font-medium shrink-0 ${isSelected ? "bg-white text-indigo-600" : "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"}`}>
+                      {isSelected ? "Selected" : "Select"}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   currentLang,
   initialTab = "land_rate",
@@ -106,6 +236,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
   // Modal State for Add & Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isParentTreeModalOpen, setIsParentTreeModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [formData, setFormData] = useState<any>({});
 
@@ -1101,15 +1232,42 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Parent ID (parent_id)
+                        Parent Rate (parent_id)
                       </label>
-                      <input
-                        type="number"
-                        value={formData.parent_id ?? ""}
-                        onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
-                        placeholder="Optional parent rate ID"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={formData.parent_id ?? ""}
+                          onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
+                          placeholder="Parent ID (null if root)"
+                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsParentTreeModalOpen(true)}
+                          className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex items-center gap-1.5 text-xs font-semibold shrink-0"
+                          title="Open Tree View window to select parent record"
+                        >
+                          <span>🌳</span>
+                          <span>Tree View</span>
+                        </button>
+                      </div>
+                      {formData.parent_id && (
+                        <div className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                          <span>
+                            Selected: #{formData.parent_id} {
+                              (activeTab === "land_rate" ? masters.landRates : masters.malpotRates).find((i: any) => i.id === formData.parent_id)?.code || ""
+                            }
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, parent_id: null })}
+                            className="text-red-500 hover:underline font-bold"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1289,15 +1447,42 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Parent ID (parent_id)
+                        Parent Rate (parent_id)
                       </label>
-                      <input
-                        type="number"
-                        value={formData.parent_id ?? ""}
-                        onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
-                        placeholder="Optional parent ID"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={formData.parent_id ?? ""}
+                          onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
+                          placeholder="Parent ID (null if root)"
+                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsParentTreeModalOpen(true)}
+                          className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex items-center gap-1.5 text-xs font-semibold shrink-0"
+                          title="Open Tree View window to select parent record"
+                        >
+                          <span>🌳</span>
+                          <span>Tree View</span>
+                        </button>
+                      </div>
+                      {formData.parent_id && (
+                        <div className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                          <span>
+                            Selected: #{formData.parent_id} {
+                              masters.constructionRates.find((i: any) => i.id === formData.parent_id)?.code || ""
+                            }
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, parent_id: null })}
+                            className="text-red-500 hover:underline font-bold"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -2036,6 +2221,17 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
           </div>
         </div>
       )}
+
+      {/* Parent Tree View Modal Window */}
+      <ParentTreeModal
+        isOpen={isParentTreeModalOpen}
+        onClose={() => setIsParentTreeModalOpen(false)}
+        items={activeTab === "construction_rate" ? masters.constructionRates : activeTab === "malpot_rate" ? masters.malpotRates : masters.landRates}
+        currentParentId={formData.parent_id}
+        onSelectParent={(id) => setFormData({ ...formData, parent_id: id })}
+        currentEditingId={editingItem?.id}
+        title={activeTab === "construction_rate" ? "Select Parent Construction Rate from Tree" : activeTab === "malpot_rate" ? "Select Parent Malpot Rate from Tree" : "Select Parent Land Rate from Tree"}
+      />
     </div>
   );
 };

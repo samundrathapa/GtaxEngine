@@ -10,7 +10,7 @@ title gtax Enterprise - IIS Server In-Place Updater
 ::   2. Replaces all production files (web.config, dist/, server runtime)
 ::   3. Restarts IIS AppPool/Service
 ::   4. Optional database migration auto-check
-::   5. Verifies service health via HTTP check
+::   5. Supports --auto for seamless script-driven release deployment
 :: =========================================================================
 
 echo =========================================================================
@@ -25,25 +25,32 @@ if "%CURRENT_DIR:~-1%"=="\" set "CURRENT_DIR=%CURRENT_DIR:~0,-1%"
 set "APP_POOL_NAME=gtax"
 set "IIS_SITE_NAME=gtax"
 set "TARGET_DIR=%CURRENT_DIR%"
+set "AUTO_MODE=0"
+
+if "%~1"=="--auto" set "AUTO_MODE=1"
 
 echo [INFO] Current Release Source Folder: %CURRENT_DIR%
 echo.
 
-:: Ask user if updating current folder or custom IIS path
-echo Choose Update Mode:
-echo   [1] Update current folder in-place (%CURRENT_DIR%)
-echo   [2] Deploy/Overwrite to C:\inetpub\wwwroot\gtax
-echo   [3] Specify custom IIS directory path
-echo.
-set /p "UPDATE_CHOICE=Select option [1-3, Default=1]: "
-if "%UPDATE_CHOICE%"=="" set "UPDATE_CHOICE=1"
-
-if "%UPDATE_CHOICE%"=="2" (
+if "%AUTO_MODE%"=="1" (
     set "TARGET_DIR=C:\inetpub\wwwroot\gtax"
-)
-if "%UPDATE_CHOICE%"=="3" (
-    set /p "CUSTOM_PATH=Enter full target path: "
-    if not "!CUSTOM_PATH!"=="" set "TARGET_DIR=!CUSTOM_PATH!"
+    echo [AUTO] Deploying directly to target: C:\inetpub\wwwroot\gtax
+) else (
+    echo Choose Update Mode:
+    echo   [1] Update current folder in-place (%CURRENT_DIR%)
+    echo   [2] Deploy/Overwrite to C:\inetpub\wwwroot\gtax
+    echo   [3] Specify custom IIS directory path
+    echo.
+    set /p "UPDATE_CHOICE=Select option [1-3, Default=1]: "
+    if "!UPDATE_CHOICE!"=="" set "UPDATE_CHOICE=1"
+
+    if "!UPDATE_CHOICE!"=="2" (
+        set "TARGET_DIR=C:\inetpub\wwwroot\gtax"
+    )
+    if "!UPDATE_CHOICE!"=="3" (
+        set /p "CUSTOM_PATH=Enter full target path: "
+        if not "!CUSTOM_PATH!"=="" set "TARGET_DIR=!CUSTOM_PATH!"
+    )
 )
 
 echo.
@@ -73,11 +80,11 @@ timeout /t 2 /nobreak >nul
 
 :: Step 2: In-place file replacement
 echo.
-echo [STEP 2/4] Replacing and updating production files...
+echo [STEP 2/4] Replacing and updating production files (including latest changes)...
 if /i not "%CURRENT_DIR%"=="%TARGET_DIR%" (
     if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
     echo [INFO] Copying updated release files to %TARGET_DIR%...
-    robocopy "%CURRENT_DIR%" "%TARGET_DIR%" /MIR /XD "logs" "node_modules" /XF ".env" >nul 2>&1
+    robocopy "%CURRENT_DIR%" "%TARGET_DIR%" /MIR /XD "logs" "node_modules" >nul 2>&1
     if !ERRORLEVEL! geq 8 (
         echo [WARN] Robocopy reported errors, attempting fallback copy...
         xcopy "%CURRENT_DIR%\*" "%TARGET_DIR%\" /E /Y /I /Q >nul 2>&1
@@ -92,10 +99,14 @@ echo.
 echo [STEP 3/4] Checking database schema and versioned migrations...
 if exist "%TARGET_DIR%\run_migrations.bat" (
     echo [INFO] Database migration script found.
-    set /p "RUN_MIG=Would you like to run database migrations now? (Y/N) [Default=Y]: "
-    if "!RUN_MIG!"=="" set "RUN_MIG=Y"
-    if /i "!RUN_MIG!"=="Y" (
+    if "%AUTO_MODE%"=="1" (
         call "%TARGET_DIR%\run_migrations.bat" --auto
+    ) else (
+        set /p "RUN_MIG=Would you like to run database migrations now? (Y/N) [Default=Y]: "
+        if "!RUN_MIG!"=="" set "RUN_MIG=Y"
+        if /i "!RUN_MIG!"=="Y" (
+            call "%TARGET_DIR%\run_migrations.bat" --auto
+        )
     )
 )
 
@@ -113,7 +124,7 @@ if "%HAS_IIS%"=="1" (
 echo.
 echo =========================================================================
 echo   [COMPLETE] gtax Enterprise has been updated successfully!
-echo   Ready to serve on Windows IIS Server.
+echo   All recent workspace changes have been synchronized to Windows IIS.
 echo =========================================================================
 echo.
-pause
+if not "%AUTO_MODE%"=="1" pause
