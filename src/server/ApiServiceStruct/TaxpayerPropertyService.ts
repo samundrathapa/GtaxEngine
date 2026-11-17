@@ -2306,6 +2306,30 @@ class TaxpayerPropertyDatabase {
     propertyId?: number;
     userId?: string;
   }): MultiYearCalculationResult | null {
+    if (this.fiscalYears.size === 0) {
+      const seedFys = generateFiscalYears2021To2086();
+      const now = new Date().toISOString();
+      for (const fy of seedFys) {
+        this.fiscalYears.set(fy.id, {
+          id: fy.id,
+          code: fy.code,
+          fullname: fy.fullname,
+          date_from_bs: fy.date_from_bs,
+          date_from_ad: fy.date_from_ad,
+          date_to_ad: fy.date_to_ad,
+          date_to_bs: fy.date_to_bs,
+          is_deleted: false,
+          insert_by: "SYSTEM",
+          insert_on: now,
+          update_by: "SYSTEM",
+          update_on: now,
+          delete_by: null,
+          deleted_on: null,
+          is_active: true
+        });
+      }
+    }
+
     let allTaxpayers = Array.from(this.taxpayers.values()).filter((t) => !t.is_deleted);
     if (allTaxpayers.length === 0) {
       const defaultTp: TblTaxpayer = {
@@ -2332,7 +2356,7 @@ class TaxpayerPropertyDatabase {
 
     const tpId = params?.taxpayerId ? Number(params.taxpayerId) : (allTaxpayers[0]?.id || 1);
     const tp = this.taxpayers.get(tpId) || allTaxpayers[0];
-    if (!tp || tp.is_deleted) return null;
+    if (!tp) return null;
 
     // Get all non-deleted fiscal years and sort chronologically
     const allActiveFys = Array.from(this.fiscalYears.values())
