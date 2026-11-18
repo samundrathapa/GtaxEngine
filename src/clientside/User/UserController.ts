@@ -1,5 +1,6 @@
 import { userStoreInstance } from "./UserStore.ts";
 import { IUserRecord } from "../../serverside/User/UserModel.ts";
+import { ApiController } from "../../api/controller.ts";
 
 export class UserController {
   static async GetSearchTemplate(query: string = ""): Promise<IUserRecord[]> {
@@ -94,5 +95,29 @@ export class UserController {
     } catch (err: any) {
       return { success: false, message: err.message || "Network error" };
     }
+  }
+
+  static async resetUserPassword(
+    targetUserId: string | number,
+    newPassword: string,
+    token?: string
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await ApiController.adminResetUserPassword(targetUserId, newPassword, token);
+    return {
+      success: Boolean(res.success),
+      message: res.message || (res.success ? "User password reset successfully" : "Failed to reset user password")
+    };
+  }
+
+  static async resetAllUsersPassword(
+    newPassword: string,
+    excludeSelf: boolean = true,
+    token?: string
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await ApiController.adminResetAllPasswords(newPassword, excludeSelf, token);
+    return {
+      success: Boolean(res.success),
+      message: res.message || (res.success ? "All user passwords reset successfully" : "Failed to reset passwords")
+    };
   }
 }

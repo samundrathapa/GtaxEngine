@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { AuthSessionState } from "../modules/Auth/model.ts";
 import { SupportedLang, SupportedTheme, translations } from "../utils/i18n.ts";
+import { ApiController } from "../api/controller.ts";
 import {
   User,
   LogOut,
@@ -8,6 +9,11 @@ import {
   Languages,
   Shield,
   Key,
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
   Check,
   ChevronDown,
   X,
@@ -47,8 +53,69 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [syncingCache, setSyncingCache] = useState(false);
   const [syncSuccessModal, setSyncSuccessModal] = useState<any | null>(null);
+  const [isResetPwdOpen, setIsResetPwdOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrPwd, setShowCurrPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const t = translations[currentLang];
+
+  const handleOpenResetPassword = () => {
+    setIsOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetError(null);
+    setResetSuccess(null);
+    setShowCurrPwd(false);
+    setShowNewPwd(false);
+    setIsResetPwdOpen(true);
+  };
+
+  const handleResetOwnPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    setResetSuccess(null);
+
+    if (!currentPassword) {
+      setResetError("Please enter your current password.");
+      return;
+    }
+    if (newPassword.trim().length < 4) {
+      setResetError("New password must be at least 4 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError("New password and confirmation do not match.");
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setResetError("New password must be different from your current password.");
+      return;
+    }
+
+    setResetSubmitting(true);
+    try {
+      const res = await ApiController.resetOwnPassword(currentPassword, newPassword, session.token || undefined);
+      if (res.success) {
+        setResetSuccess(res.message || "Your password has been updated successfully.");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setResetError(res.message || "Failed to reset password.");
+      }
+    } catch (err: any) {
+      setResetError(err?.message || "Network error updating password.");
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
 
   const handleClearCacheAndSync = async () => {
     setSyncingCache(true);
@@ -306,8 +373,20 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           
           </div>
 
-          {/* Footer Actions: Privacy Policy & Sign Out */}
+          {/* Footer Actions: Reset Password, Privacy Policy & Sign Out */}
           <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <button
+              type="button"
+              onClick={handleOpenResetPassword}
+              className="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/60 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Reset Password</span>
+              </div>
+              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">Own Account</span>
+            </button>
+
             {onOpenPrivacy && (
               <button
                 type="button"
@@ -336,6 +415,135 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               <LogOut className="w-3.5 h-3.5" />
               <span>{loggingOut ? "Signing out..." : "Sign Out (Clear Session)"}</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Self Reset Password Modal */}
+      {isResetPwdOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                    Reset Your Password
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[230px]">
+                    {session.user?.fullname} ({session.user?.email})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsResetPwdOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetOwnPasswordSubmit} className="p-6 space-y-4">
+              {resetError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              {resetSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
+                  <span>{resetSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Current Password *
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showCurrPwd ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    className="w-full pl-9 pr-10 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrPwd(!showCurrPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showCurrPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  New Password *
+                </label>
+                <div className="relative">
+                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Minimum 4 characters"
+                    className="w-full pl-9 pr-10 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPwd(!showNewPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Confirm New Password *
+                </label>
+                <div className="relative">
+                  <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsResetPwdOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                >
+                  {resetSuccess ? "Close" : "Cancel"}
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>{resetSubmitting ? "Updating..." : "Update Own Password"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

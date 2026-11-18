@@ -1,7 +1,6 @@
 import { IApiResponse } from "../server/BaseFrame/response/ApiResponse.ts";
 
 export class ApiController {
-  private static baseUrl = "/api/v1";
   private static token = "Bearer bearer_adm_token";
 
   static setAuthToken(token: string) {
@@ -12,10 +11,28 @@ export class ApiController {
     return this.token;
   }
 
+  public static get baseUrl(): string {
+    return this.getBaseUrl();
+  }
+
+  public static getBaseUrl(): string {
+    if (typeof window !== "undefined") {
+      // If deployed inside an IIS Application / Virtual Directory (e.g. /gtax)
+      const pathname = window.location.pathname.replace(/\/index\.html$/i, "").replace(/\/+$/, "");
+      if (pathname && !pathname.startsWith("/api") && pathname !== "/") {
+        return `${pathname}/api/v1`;
+      }
+    }
+    return "/api/v1";
+  }
+
   private static async request<T = any>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<IApiResponse<T>> {
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${this.getBaseUrl()}${cleanEndpoint}`;
+
     const headers = {
       "Content-Type": "application/json",
       Authorization: this.token,
@@ -23,19 +40,78 @@ export class ApiController {
     };
 
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(url, {
         ...options,
         headers
       });
 
-      const data = await response.json();
+      // Safely read response as raw text first to avoid 'Unexpected end of JSON input' on empty bodies or HTML error pages
+      const responseText = await response.text();
+      let data: any = null;
+      if (responseText && responseText.trim().length > 0) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok) {
+        if (data && typeof data === "object" && (data.message || data.errors)) {
+          return {
+            success: false,
+            failure: true,
+            status: response.status,
+            message: data.message || `Server returned error (${response.status})`,
+            data: data.data || null,
+            errors: Array.isArray(data.errors) ? data.errors : [data.message || `HTTP ${response.status}`],
+            validation_errors: data.validation_errors || {},
+            timestamp: data.timestamp || new Date().toISOString()
+          };
+        }
+
+        // Actionable messages for reverse proxy & network error codes
+        let friendlyMessage = `Server request failed with HTTP ${response.status}.`;
+        if (response.status === 400) {
+          friendlyMessage = "HTTP 400 Bad Request: Request was rejected by the server or IIS ARR proxy. Verify that Node.js backend is running on port 3000 and URL rewrite rules in web.config are active.";
+        } else if (response.status === 502 || response.status === 503) {
+          friendlyMessage = "Backend server is offline (HTTP 502/503). Please launch 'start_server.bat' to run the Node.js service on port 3000.";
+        } else if (response.status === 404) {
+          friendlyMessage = `API endpoint not found: ${url}. Verify IIS rewrite rules in web.config.`;
+        }
+
+        return {
+          success: false,
+          failure: true,
+          status: response.status,
+          message: friendlyMessage,
+          data: null,
+          errors: [responseText ? responseText.slice(0, 300) : friendlyMessage],
+          validation_errors: {},
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      if (!data) {
+        return {
+          success: false,
+          failure: true,
+          status: response.status || 500,
+          message: "Server returned an empty response.",
+          data: null,
+          errors: ["Empty response received from backend"],
+          validation_errors: {},
+          timestamp: new Date().toISOString()
+        };
+      }
+
       return data as IApiResponse<T>;
     } catch (err: any) {
       return {
         success: false,
         failure: true,
         status: 500,
-        message: err?.message || "Network request failed",
+        message: err?.message || "Network request failed. Ensure backend server is running on port 3000.",
         data: null,
         errors: [err?.message || "Unknown communication error"],
         validation_errors: {},
@@ -327,6 +403,51 @@ export class ApiController {
     return this.request("/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email_or_mobile: emailOrMobile })
+    });
+  }
+
+  static async resetOwnPassword(currentPassword: string, newPassword: string, token?: string) {
+    const authToken = token
+      ? token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`
+      : this.token;
+    return this.request("/auth/reset-own-password", {
+      method: "POST",
+      headers: {
+        Authorization: authToken
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+  }
+
+  static async adminResetUserPassword(targetUserId: number | string, newPassword: string, token?: string) {
+    const authToken = token
+      ? token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`
+      : this.token;
+    return this.request("/auth/admin/reset-password", {
+      method: "POST",
+      headers: {
+        Authorization: authToken
+      },
+      body: JSON.stringify({ targetUserId, newPassword })
+    });
+  }
+
+  static async adminResetAllPasswords(newPassword: string, excludeSelf: boolean = true, token?: string) {
+    const authToken = token
+      ? token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`
+      : this.token;
+    return this.request("/auth/admin/reset-all-passwords", {
+      method: "POST",
+      headers: {
+        Authorization: authToken
+      },
+      body: JSON.stringify({ newPassword, excludeSelf })
     });
   }
 

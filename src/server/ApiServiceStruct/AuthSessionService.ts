@@ -1,6 +1,7 @@
 import { AuditFields } from "../BaseFrame/repo/BaseRepo.ts";
 import { ApiResponse, IApiResponse } from "../BaseFrame/response/ApiResponse.ts";
 import { PostgresPoolManager } from "../db/postgresPool.ts";
+import { TableCacheDbSyncService } from "../db/TableCacheDbSyncService.ts";
 
 export interface TblUser extends AuditFields {
   id: number;
@@ -456,18 +457,20 @@ export class AuthSessionService {
           FROM tbl_user u
           LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true
           LEFT JOIN tbl_role r ON ur.role_id = r.id
-          WHERE (LOWER(u.email) = $1 OR u.mobile = $1) AND u.is_active = true
+          WHERE (LOWER(u.email) = $1 OR LOWER(COALESCE(u.username, '')) = $1 OR u.mobile = $1 OR LOWER(COALESCE(u.employee_id, '')) = $1)
+            AND u.is_active = true AND COALESCE(u.is_deleted, false) = false
           LIMIT 1;
         `, [cleanId]);
 
         if (dbUsers && dbUsers.length > 0) {
           const dbU = dbUsers[0];
+          const resolvedPassword = dbU.password || dbU.password_hash || "Password123!";
           const mappedUser: TblUser = {
             id: dbU.id,
-            fullname: dbU.fullname,
+            fullname: dbU.fullname || dbU.full_name || dbU.username || dbU.email,
             photo_path: dbU.photo_path,
             email: dbU.email,
-            password: dbU.password,
+            password: resolvedPassword,
             mobile: dbU.mobile || "",
             country_id: dbU.country_id || 1,
             effective_from: dbU.effective_from,
@@ -504,19 +507,85 @@ export class AuthSessionService {
     // Find by email, mobile, username prefix, or employee ID
     let matchedUser: TblUser | null = null;
     for (const u of authDb.users.values()) {
-      const emailPrefix = u.email.split("@")[0].toLowerCase();
+      const emailPrefix = u.email ? u.email.split("@")[0].toLowerCase() : "";
       const mobileDigits = u.mobile ? u.mobile.replace(/\D/g, "") : "";
       const inputDigits = cleanId.replace(/\D/g, "");
 
       if (
         u.is_active &&
-        (u.email.toLowerCase() === cleanId ||
+        ((u.email && u.email.toLowerCase() === cleanId) ||
           emailPrefix === cleanId ||
           (u.employee_id && u.employee_id.toLowerCase() === cleanId) ||
           (inputDigits.length >= 7 && mobileDigits === inputDigits))
       ) {
         matchedUser = u;
         break;
+      }
+    }
+
+    // Also check TableCacheDbSyncService tbl_user in case user was created via UserPanel
+    if (!matchedUser) {
+      try {
+        const cachedUsers = await TableCacheDbSyncService.getTableData<any>("tbl_user");
+        const foundCached = cachedUsers.find((cu) => {
+          if (cu.is_deleted || cu.is_active === false) return false;
+          const cEmail = (cu.email || "").toLowerCase();
+          const cUsername = (cu.username || "").toLowerCase();
+          const cEmp = (cu.employee_id || "").toLowerCase();
+          const cMobile = (cu.mobile || "").replace(/\D/g, "");
+          const inputDigits = cleanId.replace(/\D/g, "");
+          return (
+            cEmail === cleanId ||
+            cUsername === cleanId ||
+            (cEmail && cEmail.split("@")[0] === cleanId) ||
+            (cEmp && cEmp === cleanId) ||
+            (inputDigits.length >= 7 && cMobile === inputDigits)
+          );
+        });
+
+        if (foundCached) {
+          const uId = Number(foundCached.id);
+          const roleName = String(foundCached.role || "operator").toLowerCase();
+          const mappedRoleId = roleName.includes("superadmin") ? 1 : roleName.includes("admin") ? 2 : roleName.includes("operator") ? 3 : 4;
+          const syncedUser: TblUser = {
+            id: uId,
+            fullname: foundCached.fullname || foundCached.full_name || foundCached.username || "User",
+            photo_path: foundCached.photo_path || null,
+            email: foundCached.email || `${foundCached.username || `user${uId}`}@gtax.enterprise`,
+            password: foundCached.password || foundCached.password_hash || "Password123!",
+            mobile: foundCached.mobile || "",
+            country_id: foundCached.country_id || 1,
+            effective_from: foundCached.effective_from || "2026-01-01",
+            effective_to: foundCached.effective_to || null,
+            employee_id: foundCached.employee_id || `EMP-${uId}`,
+            is_locked: Boolean(foundCached.is_locked),
+            insert_by: foundCached.insert_by || "SYSTEM",
+            insert_on: foundCached.insert_on || new Date().toISOString(),
+            update_by: foundCached.update_by || "SYSTEM",
+            update_on: foundCached.update_on || new Date().toISOString(),
+            delete_by: null,
+            deleted_on: null,
+            is_active: true
+          };
+          authDb.users.set(uId, syncedUser);
+          if (!authDb.userRoles.has(uId)) {
+            authDb.userRoles.set(uId, {
+              id: uId,
+              user_id: uId,
+              role_id: mappedRoleId,
+              insert_by: "CACHE_SYNC",
+              insert_on: new Date().toISOString(),
+              update_by: "CACHE_SYNC",
+              update_on: new Date().toISOString(),
+              delete_by: null,
+              deleted_on: null,
+              is_active: true
+            });
+          }
+          matchedUser = syncedUser;
+        }
+      } catch {
+        // Ignore cache lookup failure
       }
     }
 
@@ -530,12 +599,13 @@ export class AuthSessionService {
       return ApiResponse.buildFailure("This account has been administratively locked. Please contact security admin.", ["Account locked"], {}, 403);
     }
 
+    const hasDefaultSeedPassword = matchedUser.password === "Password123!" || !matchedUser.password;
     const isPasswordValid =
       matchedUser.password === passwordAttempt ||
-      matchedUser.password.toLowerCase() === passwordAttempt.toLowerCase() ||
-      passwordAttempt === "Password123!" ||
-      passwordAttempt === "password123" ||
-      passwordAttempt === "admin123";
+      (hasDefaultSeedPassword &&
+        (passwordAttempt === "Password123!" ||
+          passwordAttempt === "password123" ||
+          passwordAttempt === "admin123"));
 
     if (!isPasswordValid) {
       authDb.logUserAction(matchedUser.id, matchedUser.email, "LOGIN_FAILED", ip, agent, "Incorrect password attempt");
@@ -796,5 +866,283 @@ export class AuthSessionService {
     const rights = authDb.getUserRights(user.id);
 
     return { user, role, rights };
+  }
+
+  /**
+   * Helper: Persist new password across authDb, TableCacheDbSyncService, and PostgreSQL tbl_user
+   */
+  private static async applyPasswordUpdate(
+    userId: number,
+    newPassword: string,
+    actorIdentifier: string
+  ): Promise<void> {
+    const now = new Date().toISOString();
+
+    // 1. Update authDb.users
+    const memUser = authDb.users.get(userId);
+    if (memUser) {
+      memUser.password = newPassword;
+      memUser.update_by = actorIdentifier;
+      memUser.update_on = now;
+    }
+
+    // 2. Update TableCacheDbSyncService tbl_user
+    try {
+      await TableCacheDbSyncService.updateRecord(
+        "tbl_user",
+        userId,
+        {
+          password: newPassword,
+          password_hash: newPassword
+        },
+        actorIdentifier
+      );
+    } catch (err) {
+      console.warn(`[AuthSessionService] Cache update warning for user ${userId}:`, err);
+    }
+
+    // 3. Update live PostgreSQL tbl_user if connected
+    if (PostgresPoolManager.getStatus().connected) {
+      try {
+        await PostgresPoolManager.query(
+          `UPDATE tbl_user
+           SET password = $1,
+               password_hash = $1,
+               update_by = $2,
+               update_on = CURRENT_TIMESTAMP
+           WHERE id = $3;`,
+          [newPassword, actorIdentifier, userId]
+        );
+      } catch {
+        // Fallback if password_hash column does not exist yet
+        try {
+          await PostgresPoolManager.query(
+            `UPDATE tbl_user
+             SET password = $1,
+                 update_by = $2,
+                 update_on = CURRENT_TIMESTAMP
+             WHERE id = $3;`,
+            [newPassword, actorIdentifier, userId]
+          );
+        } catch (pgErr) {
+          console.warn(`[AuthSessionService] PostgreSQL password update fallback for user ${userId}:`, pgErr);
+        }
+      }
+    }
+  }
+
+  /**
+   * Self Password Reset (for logged-in user resetting their own password from top-right menu)
+   */
+  static async resetOwnPassword(
+    tokenOrHeader: string,
+    currentPassword: string,
+    newPassword: string,
+    ip = "127.0.0.1",
+    agent = "browser"
+  ): Promise<IApiResponse<any>> {
+    const sessionData = this.validateBearerToken(tokenOrHeader);
+    if (!sessionData || !sessionData.user) {
+      return ApiResponse.buildFailure("Your session has expired. Please log in again.", ["Unauthorized"], {}, 401);
+    }
+
+    const user = sessionData.user;
+    if (!currentPassword) {
+      return ApiResponse.buildFailure("Current password is required.", ["Missing current password"], {}, 400);
+    }
+    if (!newPassword || newPassword.trim().length < 4) {
+      return ApiResponse.buildFailure("New password must be at least 4 characters long.", ["Password too short"], {}, 400);
+    }
+
+    const hasDefaultSeedPassword = user.password === "Password123!" || !user.password;
+    const currentMatches =
+      user.password === currentPassword ||
+      (hasDefaultSeedPassword &&
+        (currentPassword === "Password123!" ||
+          currentPassword === "password123" ||
+          currentPassword === "admin123"));
+
+    if (!currentMatches) {
+      authDb.logUserAction(user.id, user.email, "SELF_PASSWORD_RESET_FAILED", ip, agent, "Incorrect current password");
+      return ApiResponse.buildFailure("Current password is incorrect.", ["Invalid current password"], {}, 400);
+    }
+
+    await this.applyPasswordUpdate(user.id, newPassword, user.email);
+    authDb.logUserAction(user.id, user.email, "SELF_PASSWORD_RESET", ip, agent, "User successfully reset their own password");
+
+    return ApiResponse.buildSuccess(
+      {
+        user_id: user.id,
+        email: user.email,
+        fullname: user.fullname,
+        updated_on: new Date().toISOString()
+      },
+      "Your password has been updated successfully."
+    );
+  }
+
+  /**
+   * Superadmin: Reset a specific user's password
+   */
+  static async adminResetUserPassword(
+    tokenOrHeader: string,
+    targetUserId: number | string,
+    newPassword: string,
+    ip = "127.0.0.1",
+    agent = "browser"
+  ): Promise<IApiResponse<any>> {
+    const actorSession = this.validateBearerToken(tokenOrHeader);
+    if (!actorSession || !actorSession.user) {
+      return ApiResponse.buildFailure("Authentication required.", ["Unauthorized"], {}, 401);
+    }
+
+    const actorRoleName = (actorSession.role?.role_name || "").toLowerCase();
+    if (actorRoleName !== "superadmin") {
+      authDb.logUserAction(
+        actorSession.user.id,
+        actorSession.user.email,
+        "ADMIN_PASSWORD_RESET_DENIED",
+        ip,
+        agent,
+        `Non-superadmin attempted to reset user ${targetUserId}`
+      );
+      return ApiResponse.buildFailure("Access denied. Only Superadmin can reset user passwords.", ["Forbidden"], {}, 403);
+    }
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      return ApiResponse.buildFailure("New password must be at least 4 characters long.", ["Password too short"], {}, 400);
+    }
+
+    let resolvedId = Number(targetUserId);
+    let targetEmail = "";
+    let targetFullname = "";
+
+    // Find in authDb.users or TableCacheDbSyncService
+    if (!isNaN(resolvedId) && authDb.users.has(resolvedId)) {
+      const u = authDb.users.get(resolvedId)!;
+      targetEmail = u.email;
+      targetFullname = u.fullname;
+    } else {
+      const cachedUsers = await TableCacheDbSyncService.getTableData<any>("tbl_user", true);
+      const found = cachedUsers.find(
+        (cu) =>
+          Number(cu.id) === resolvedId ||
+          String(cu.id) === String(targetUserId) ||
+          String(cu.user_id) === String(targetUserId)
+      );
+      if (found) {
+        resolvedId = Number(found.id);
+        targetEmail = found.email || found.username || `User #${resolvedId}`;
+        targetFullname = found.fullname || found.full_name || targetEmail;
+      }
+    }
+
+    if (isNaN(resolvedId) || resolvedId <= 0) {
+      return ApiResponse.buildFailure("Target user record not found.", ["User not found"], {}, 404);
+    }
+
+    await this.applyPasswordUpdate(resolvedId, newPassword, actorSession.user.email);
+    authDb.logUserAction(
+      actorSession.user.id,
+      actorSession.user.email,
+      "ADMIN_PASSWORD_RESET",
+      ip,
+      agent,
+      `Superadmin reset password for user #${resolvedId} (${targetEmail})`
+    );
+
+    return ApiResponse.buildSuccess(
+      {
+        user_id: resolvedId,
+        email: targetEmail,
+        fullname: targetFullname,
+        reset_by: actorSession.user.email
+      },
+      `Password reset successfully for ${targetFullname || targetEmail}.`
+    );
+  }
+
+  /**
+   * Superadmin: Reset ALL users' passwords at once
+   */
+  static async adminResetAllUsersPassword(
+    tokenOrHeader: string,
+    newPassword: string,
+    excludeSelf = true,
+    ip = "127.0.0.1",
+    agent = "browser"
+  ): Promise<IApiResponse<any>> {
+    const actorSession = this.validateBearerToken(tokenOrHeader);
+    if (!actorSession || !actorSession.user) {
+      return ApiResponse.buildFailure("Authentication required.", ["Unauthorized"], {}, 401);
+    }
+
+    const actorRoleName = (actorSession.role?.role_name || "").toLowerCase();
+    if (actorRoleName !== "superadmin") {
+      authDb.logUserAction(
+        actorSession.user.id,
+        actorSession.user.email,
+        "ADMIN_BULK_PASSWORD_RESET_DENIED",
+        ip,
+        agent,
+        "Non-superadmin attempted bulk password reset"
+      );
+      return ApiResponse.buildFailure("Access denied. Only Superadmin can reset all user passwords.", ["Forbidden"], {}, 403);
+    }
+
+    if (!newPassword || newPassword.trim().length < 4) {
+      return ApiResponse.buildFailure("New password must be at least 4 characters long.", ["Password too short"], {}, 400);
+    }
+
+    const targetIds = new Map<number, string>();
+
+    for (const u of authDb.users.values()) {
+      if (u.is_active) {
+        targetIds.set(u.id, u.email);
+      }
+    }
+
+    try {
+      const cachedUsers = await TableCacheDbSyncService.getTableData<any>("tbl_user", true);
+      for (const cu of cachedUsers) {
+        if (!cu.is_deleted && cu.is_active !== false && cu.id) {
+          const cid = Number(cu.id);
+          if (!isNaN(cid) && !targetIds.has(cid)) {
+            targetIds.set(cid, cu.email || cu.username || `User #${cid}`);
+          }
+        }
+      }
+    } catch {
+      // Ignore cache error
+    }
+
+    const updatedUsers: Array<{ id: number; email: string }> = [];
+
+    for (const [uid, email] of targetIds.entries()) {
+      if (excludeSelf && uid === actorSession.user.id) {
+        continue;
+      }
+      await this.applyPasswordUpdate(uid, newPassword, actorSession.user.email);
+      updatedUsers.push({ id: uid, email });
+    }
+
+    authDb.logUserAction(
+      actorSession.user.id,
+      actorSession.user.email,
+      "ADMIN_BULK_PASSWORD_RESET",
+      ip,
+      agent,
+      `Superadmin reset passwords for ${updatedUsers.length} user(s) (excludeSelf=${excludeSelf})`
+    );
+
+    return ApiResponse.buildSuccess(
+      {
+        reset_count: updatedUsers.length,
+        excluded_self: excludeSelf,
+        updated_users: updatedUsers,
+        reset_by: actorSession.user.email
+      },
+      `Successfully reset password for ${updatedUsers.length} user account(s).`
+    );
   }
 }

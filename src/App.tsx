@@ -1205,7 +1205,7 @@ export default function App() {
           {activeTab === "ai_agent" && <AiAgentPanel />}
           {activeTab === "realtime_sync" && <RealtimeSyncPanel />}
           {activeTab === "jurisdictions" && <JurisdictionPanel />}
-          {activeTab === "users" && <UserPanel />}
+          {activeTab === "users" && <UserPanel currentSession={session} />}
           {activeTab === "security_logs" && <SessionLogsPanel />}
           {activeTab === "rbac" && (
             <RatesMasterPanel

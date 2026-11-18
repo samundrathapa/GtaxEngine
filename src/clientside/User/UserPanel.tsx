@@ -3,14 +3,49 @@ import { userStoreInstance } from "./UserStore.ts";
 import { UserController } from "./UserController.ts";
 import { UserWindow } from "./UserWindow.tsx";
 import { IUserRecord } from "../../serverside/User/UserModel.ts";
-import { Plus, Search, Trash2, Edit2, Shield, RefreshCw, CheckCircle2, UserCheck, Phone, BadgeCheck } from "lucide-react";
+import { AuthSessionState } from "../../modules/Auth/model.ts";
+import {
+  Plus,
+  Search,
+  Trash2,
+  Edit2,
+  Shield,
+  RefreshCw,
+  CheckCircle2,
+  UserCheck,
+  Phone,
+  BadgeCheck,
+  KeyRound,
+  Eye,
+  EyeOff,
+  X,
+  AlertCircle,
+  AlertTriangle
+} from "lucide-react";
 
-export const UserPanel: React.FC = () => {
+interface UserPanelProps {
+  currentSession?: AuthSessionState | null;
+}
+
+export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
   const [storeState, setStoreState] = useState(userStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUserRecord | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Superadmin Reset Password modal state (mode: "single" or "all")
+  const [resetModalMode, setResetModalMode] = useState<"single" | "all" | null>(null);
+  const [resetTargetUser, setResetTargetUser] = useState<IUserRecord | null>(null);
+  const [resetNewPassword, setResetNewPassword] = useState("Password123!");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("Password123!");
+  const [resetExcludeSelf, setResetExcludeSelf] = useState(true);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetModalError, setResetModalError] = useState<string | null>(null);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+
+  const isSuperAdmin = (currentSession?.role?.role_name || "").toLowerCase() === "superadmin";
 
   useEffect(() => {
     const unsubscribe = userStoreInstance.subscribe(() => {
@@ -43,8 +78,70 @@ export const UserPanel: React.FC = () => {
     const targetId = user.user_id || user.id;
     if (confirm(`Are you sure you want to delete user ${user.fullname || user.username || targetId}?`)) {
       const res = await UserController.deleteUser(targetId);
-      setActionMessage(res.message);
+      if (res.success) {
+        setActionMessage(res.message);
+        setActionError(null);
+      } else {
+        setActionError(res.message);
+      }
       setTimeout(() => setActionMessage(null), 4000);
+    }
+  };
+
+  const openSingleResetModal = (user: IUserRecord) => {
+    setResetModalMode("single");
+    setResetTargetUser(user);
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetModalError(null);
+    setShowResetPassword(false);
+  };
+
+  const openResetAllModal = () => {
+    setResetModalMode("all");
+    setResetTargetUser(null);
+    setResetNewPassword("Password123!");
+    setResetConfirmPassword("Password123!");
+    setResetExcludeSelf(true);
+    setResetModalError(null);
+    setShowResetPassword(false);
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetModalError(null);
+
+    if (!resetNewPassword || resetNewPassword.trim().length < 4) {
+      setResetModalError("New password must be at least 4 characters long.");
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetModalError("New password and confirmation do not match.");
+      return;
+    }
+
+    setResetSubmitting(true);
+    try {
+      let res;
+      if (resetModalMode === "single" && resetTargetUser) {
+        const targetId = resetTargetUser.id || resetTargetUser.user_id || "";
+        res = await UserController.resetUserPassword(targetId, resetNewPassword, currentSession?.token || undefined);
+      } else {
+        res = await UserController.resetAllUsersPassword(resetNewPassword, resetExcludeSelf, currentSession?.token || undefined);
+      }
+
+      if (res.success) {
+        setActionMessage(res.message);
+        setActionError(null);
+        setResetModalMode(null);
+        setTimeout(() => setActionMessage(null), 5000);
+      } else {
+        setResetModalError(res.message || "Failed to reset password.");
+      }
+    } catch (err: any) {
+      setResetModalError(err?.message || "Network error resetting password.");
+    } finally {
+      setResetSubmitting(false);
     }
   };
 
@@ -97,7 +194,7 @@ export const UserPanel: React.FC = () => {
       
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => loadData(searchQuery)}
             className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
@@ -105,6 +202,19 @@ export const UserPanel: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
+
+          {isSuperAdmin && (
+            <button
+              type="button"
+              onClick={openResetAllModal}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+              title="Superadmin: Reset passwords for all user accounts"
+            >
+              <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              Reset All Passwords
+            </button>
+          )}
+
           <button
             onClick={() => {
               setSelectedUser(null);
@@ -125,6 +235,18 @@ export const UserPanel: React.FC = () => {
             <span>{actionMessage}</span>
           </div>
           <button onClick={() => setActionMessage(null)} className="text-xs text-emerald-600 font-semibold hover:underline">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="p-3 text-sm bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 rounded-lg flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600" />
+            <span>{actionError}</span>
+          </div>
+          <button onClick={() => setActionError(null)} className="text-xs text-rose-600 font-semibold hover:underline">
             Dismiss
           </button>
         </div>
@@ -236,6 +358,16 @@ export const UserPanel: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => openSingleResetModal(user)}
+                              className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer"
+                              title={`Reset password for ${displayName} (Superadmin)`}
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={async () => {
                               const editData = await UserController.GetItemTemplate(user.user_id || user.id);
@@ -271,6 +403,145 @@ export const UserPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editUser={selectedUser}
       />
+
+      {/* Superadmin Reset Password Modal (Single User or All Users) */}
+      {resetModalMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                    {resetModalMode === "all"
+                      ? "Reset All User Passwords"
+                      : `Reset Password: ${resetTargetUser?.fullname || resetTargetUser?.username || "User"}`}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {resetModalMode === "all"
+                      ? `Superadmin bulk credential reset (${users.length} active users)`
+                      : resetTargetUser?.email || `ID: ${resetTargetUser?.id}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetModalMode(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
+              {resetModalMode === "all" && (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    This will overwrite the login password for all active users in <span className="font-mono font-semibold">tbl_user</span> and synchronize PostgreSQL &amp; Redis caches.
+                  </span>
+                </div>
+              )}
+
+              {resetModalError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+                  <span>{resetModalError}</span>
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    New Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defPwd = "Password123!";
+                      setResetNewPassword(defPwd);
+                      setResetConfirmPassword(defPwd);
+                      setShowResetPassword(true);
+                    }}
+                    className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                  >
+                    Use Default (Password123!)
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showResetPassword ? "text" : "password"}
+                    value={resetNewPassword}
+                    onChange={(e) => setResetNewPassword(e.target.value)}
+                    placeholder="Minimum 4 characters"
+                    className="w-full px-3 pr-10 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                  Confirm New Password *
+                </label>
+                <input
+                  type={showResetPassword ? "text" : "password"}
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  required
+                />
+              </div>
+
+              {resetModalMode === "all" && (
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 cursor-pointer text-xs text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={resetExcludeSelf}
+                    onChange={(e) => setResetExcludeSelf(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500/30"
+                  />
+                  <span>Keep my own Superadmin password unchanged (Exclude self)</span>
+                </label>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setResetModalMode(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetSubmitting}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>
+                    {resetSubmitting
+                      ? "Resetting..."
+                      : resetModalMode === "all"
+                        ? "Reset All Passwords"
+                        : "Reset User Password"}
+                  </span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { TableCacheDbSyncService } from "../../server/db/TableCacheDbSyncService.ts";
 import { UserModel, IUserRecord } from "./UserModel.ts";
+import { authDb } from "../../server/ApiServiceStruct/AuthSessionService.ts";
 
 export class UserRepo {
   private tableName = UserModel.tableName;
@@ -58,13 +59,54 @@ export class UserRepo {
   }
 
   async insert(record: Partial<IUserRecord>, userId: string = "1"): Promise<IUserRecord> {
+    const resolvedPassword = record.password || record.password_hash || "Password123!";
     const payload = {
       ...record,
+      password: resolvedPassword,
+      password_hash: resolvedPassword,
       username: record.username || (record.email ? record.email.split("@")[0] : `user_${Date.now()}`),
       fullname: record.fullname || record.full_name || record.username || "New User"
     };
     const created = await TableCacheDbSyncService.insertRecord(this.tableName as any, payload, userId);
-    return this.sanitizeRecord(created);
+    const sanitized = this.sanitizeRecord(created);
+    const createdId = Number(sanitized.id);
+    if (!isNaN(createdId)) {
+      const roleStr = String(sanitized.role || "operator").toLowerCase();
+      const mappedRoleId = roleStr.includes("superadmin") ? 1 : roleStr.includes("admin") ? 2 : roleStr.includes("operator") ? 3 : 4;
+      authDb.users.set(createdId, {
+        id: createdId,
+        fullname: sanitized.fullname || "New User",
+        photo_path: null,
+        email: sanitized.email || `${sanitized.username}@gtax.enterprise`,
+        password: resolvedPassword,
+        mobile: sanitized.mobile || "",
+        country_id: 1,
+        effective_from: new Date().toISOString().split("T")[0],
+        effective_to: null,
+        employee_id: sanitized.employee_id || `EMP-${createdId}`,
+        is_locked: false,
+        insert_by: userId,
+        insert_on: new Date().toISOString(),
+        update_by: userId,
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null,
+        is_active: true
+      });
+      authDb.userRoles.set(createdId, {
+        id: createdId,
+        user_id: createdId,
+        role_id: mappedRoleId,
+        insert_by: userId,
+        insert_on: new Date().toISOString(),
+        update_by: userId,
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null,
+        is_active: true
+      });
+    }
+    return sanitized;
   }
 
   async update(id: number | string, record: Partial<IUserRecord>, userId: string = "1"): Promise<IUserRecord | null> {
@@ -81,7 +123,31 @@ export class UserRepo {
     if (isNaN(targetNum)) {
       return null;
     }
-    const updated = await TableCacheDbSyncService.updateRecord(this.tableName as any, targetNum, record, userId);
+    const payload = { ...record };
+    if (record.password || record.password_hash) {
+      const resolvedPass = record.password || record.password_hash;
+      payload.password = resolvedPass;
+      payload.password_hash = resolvedPass;
+    }
+    const updated = await TableCacheDbSyncService.updateRecord(this.tableName as any, targetNum, payload, userId);
+    if (updated) {
+      const memUser = authDb.users.get(targetNum);
+      if (memUser) {
+        if (updated.fullname || updated.full_name) memUser.fullname = updated.fullname || updated.full_name;
+        if (updated.email) memUser.email = updated.email;
+        if (updated.mobile !== undefined) memUser.mobile = updated.mobile || "";
+        if (updated.employee_id !== undefined) memUser.employee_id = updated.employee_id || memUser.employee_id;
+        if (payload.password) memUser.password = payload.password;
+      }
+      if (updated.role) {
+        const roleStr = String(updated.role).toLowerCase();
+        const mappedRoleId = roleStr.includes("superadmin") ? 1 : roleStr.includes("admin") ? 2 : roleStr.includes("operator") ? 3 : 4;
+        const existingRole = authDb.userRoles.get(targetNum);
+        if (existingRole) {
+          existingRole.role_id = mappedRoleId;
+        }
+      }
+    }
     return updated ? this.sanitizeRecord(updated) : null;
   }
 

@@ -235,9 +235,13 @@ Option A (Direct Overwrite - Recommended):
   2. Extract all contents of this ZIP file directly into your IIS website root:
      Default path: C:\\inetpub\\wwwroot\\gtax
   3. Select 'Yes to All' when prompted to replace existing files.
-  4. Right-click 'update_iis.bat' and select 'Run as Administrator'.
+  4. Ensure backend Node.js server is started on port 3000:
+     Double-click 'start_server.bat' (keep this window running or run as Windows Service).
+  5. Right-click 'update_iis.bat' and select 'Run as Administrator'.
      This script will:
        - Ensure AppPool locks are released
+       - Verify ARR proxy is enabled
+       - Check that port 3000 backend is active
        - Synchronize files cleanly
        - Run any pending database migrations
        - Restart the IIS AppPool and Site
@@ -245,11 +249,13 @@ Option A (Direct Overwrite - Recommended):
 Option B (Automated Synchronizer):
   1. Extract this zip into any temporary folder (e.g., C:\\Deploy\\v${version}).
   2. Run 'update_iis.bat' and select option [2] or enter your IIS folder.
+  3. Run 'start_server.bat' to launch the backend on port 3000.
 
 CONFIGURATION FILES:
   - web.config: Pre-configured with SPA fallback & Reverse Proxy to port 3000.
-  - start_server.bat: Launches backend Node.js server.
+  - start_server.bat: Launches backend Node.js server on port 3000.
   - run_migrations.bat: Manages PostgreSQL schemas and seed data.
+  - update_iis.bat: In-place automated updater with ARR proxy auto-enable.
 =========================================================================`;
     fs.writeFileSync(path.join(winDir, 'README_IIS_UPDATE.txt'), readmeContent, 'utf-8');
 
