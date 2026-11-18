@@ -110,15 +110,30 @@ if exist "%TARGET_DIR%\run_migrations.bat" (
     )
 )
 
-:: Step 4: Restart IIS / Service
+:: Step 4: Restart IIS / Service & Ensure ARR Proxy
 echo.
 echo [STEP 4/4] Restarting IIS Application Pool & Web Site...
 if "%HAS_IIS%"=="1" (
+    echo [INFO] Ensuring IIS ARR Proxy feature is enabled for reverse proxying...
+    "%APPCMD%" set config -section:system.webServer/proxy /enabled:True /commit:apphost >nul 2>&1
     "%APPCMD%" start apppool /apppool.name:"%APP_POOL_NAME%" >nul 2>&1
     "%APPCMD%" start site /site.name:"%IIS_SITE_NAME%" >nul 2>&1
-    echo [SUCCESS] IIS AppPool '%APP_POOL_NAME%' restarted.
+    echo [SUCCESS] IIS AppPool '%APP_POOL_NAME%' restarted with ARR Proxy enabled.
 ) else (
     echo [INFO] IIS appcmd not detected on this host. If running standalone, launch start_server.bat.
+)
+
+:: Backend Server Check
+netstat -aon | findstr ":3000" | findstr "LISTENING" >nul 2>&1
+if !ERRORLEVEL! neq 0 (
+    echo.
+    echo -------------------------------------------------------------------------
+    echo [IMPORTANT] Node.js backend server is NOT running on port 3000!
+    echo IIS reverse proxy requires the backend process to handle /api requests.
+    echo Launch 'start_server.bat' in a separate terminal or as a Windows service.
+    echo -------------------------------------------------------------------------
+) else (
+    echo [SUCCESS] Node.js backend is active and listening on port 3000.
 )
 
 echo.

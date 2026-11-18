@@ -34,7 +34,27 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Normalize repeated slashes from reverse proxies (e.g. /api//v1/... -> /api/v1/...)
+app.use((req, res, next) => {
+  if (req.url && req.url.includes("//")) {
+    req.url = req.url.replace(/\/+/g, "/");
+  }
+  next();
+});
+
+// Permissive CORS & Preflight headers for IIS ARR reverse-proxy support
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma");
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  next();
+});
+
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Mount restructured serverside table entity router for /api/User/GetSearchTemplate, /api/User/:id/GetItemTemplate, /api/User/GetCombo
 app.use("/api", serversideRouter);
@@ -100,14 +120,42 @@ const getAuthHeader = (req: express.Request) => req.headers.authorization || "Be
 // ==========================================
 // Authentication & Session Lifecycle Endpoints
 // ==========================================
-app.post("/api/v1/auth/login", async (req, res) => {
-  const { identifier, password } = req.body;
-  const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
-  const userAgent = req.headers["user-agent"] || "gtax-client";
+const handleLoginRequest = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body || {};
+    const identifier = (body.identifier || body.username || body.email || "").toString().trim();
+    const password = (body.password || "").toString();
+    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+    const userAgent = (req.headers["user-agent"] as string) || "gtax-client";
 
-  const result = await AuthSessionService.login(identifier || "", password || "", clientIp, userAgent);
-  res.status(result.status).json(result);
-});
+    if (!identifier || !password) {
+      return res.status(400).json(
+        ApiResponse.buildFailure(
+          "Identifier (email or mobile) and password are required.",
+          ["Missing required credentials"],
+          {},
+          400
+        )
+      );
+    }
+
+    const result = await AuthSessionService.login(identifier, password, clientIp, userAgent);
+    return res.status(result.status || 200).json(result);
+  } catch (err: any) {
+    console.error("[Auth Login Error]", err);
+    return res.status(500).json(
+      ApiResponse.buildFailure(
+        err?.message || "Internal authentication processing failure",
+        [err?.message || "Server error"],
+        {},
+        500
+      )
+    );
+  }
+};
+
+app.post("/api/v1/auth/login", handleLoginRequest);
+app.post("/api/auth/login", handleLoginRequest);
 
 app.post("/api/v1/auth/logout", async (req, res) => {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -126,6 +174,75 @@ app.post("/api/v1/auth/forgot-password", async (req, res) => {
   const result = await AuthSessionService.forgotPassword(email_or_mobile || "");
   res.status(result.status).json(result);
 });
+
+const handleResetOwnPassword = async (req: express.Request, res: express.Response) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const { currentPassword, newPassword } = req.body || {};
+    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+    const userAgent = req.headers["user-agent"] || "gtax-client";
+
+    const result = await AuthSessionService.resetOwnPassword(
+      authHeader,
+      currentPassword || "",
+      newPassword || "",
+      clientIp,
+      userAgent
+    );
+    return res.status(result.status || 200).json(result);
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Failed to reset password", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+const handleAdminResetUserPassword = async (req: express.Request, res: express.Response) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const { targetUserId, newPassword } = req.body || {};
+    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+    const userAgent = req.headers["user-agent"] || "gtax-client";
+
+    const result = await AuthSessionService.adminResetUserPassword(
+      authHeader,
+      targetUserId,
+      newPassword || "",
+      clientIp,
+      userAgent
+    );
+    return res.status(result.status || 200).json(result);
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Failed to reset user password", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+const handleAdminResetAllPasswords = async (req: express.Request, res: express.Response) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const { newPassword, excludeSelf } = req.body || {};
+    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+    const userAgent = req.headers["user-agent"] || "gtax-client";
+
+    const result = await AuthSessionService.adminResetAllUsersPassword(
+      authHeader,
+      newPassword || "",
+      excludeSelf !== undefined ? Boolean(excludeSelf) : true,
+      clientIp,
+      userAgent
+    );
+    return res.status(result.status || 200).json(result);
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Failed to reset all passwords", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+app.post("/api/v1/auth/reset-own-password", handleResetOwnPassword);
+app.post("/api/auth/reset-own-password", handleResetOwnPassword);
+
+app.post("/api/v1/auth/admin/reset-password", handleAdminResetUserPassword);
+app.post("/api/auth/admin/reset-password", handleAdminResetUserPassword);
+
+app.post("/api/v1/auth/admin/reset-all-passwords", handleAdminResetAllPasswords);
+app.post("/api/auth/admin/reset-all-passwords", handleAdminResetAllPasswords);
 
 app.get("/api/v1/auth/session-config", (req, res) => {
   const timeoutMin = parseInt(process.env.VITE_IDLE_SESSION_TIMEOUT_MINUTES || process.env.IDLE_SESSION_TIMEOUT_MINUTES || "15", 10);
@@ -1015,6 +1132,21 @@ if (isProduction && fs.existsSync(distIndexPath)) {
     }
   });
 }
+
+// Global JSON error handler so Express body-parser or route errors never return raw HTML or empty bodies
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("[Express Global Error]", err);
+  if (res.headersSent) return next(err);
+  const status = typeof err?.status === "number" ? err.status : (typeof err?.statusCode === "number" ? err.statusCode : 500);
+  return res.status(status).json(
+    ApiResponse.buildFailure(
+      err?.message || "An unexpected server error occurred",
+      [err?.message || "Server error"],
+      {},
+      status
+    )
+  );
+});
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`[gtax] Full-stack engine running on http://localhost:${PORT} (and http://127.0.0.1:${PORT})`);

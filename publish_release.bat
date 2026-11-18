@@ -234,13 +234,19 @@ if exist "%ROOT_DIR%\src" (
     echo    directly into your IIS website root folder ^(e.g. C:\inetpub\wwwroot\gtax^\^).
     echo    When Windows prompts to replace existing files, choose 'Replace all files'.
     echo 3. Start your backend server using 'start_server.bat'.
+    echo    ^(The backend MUST be running on port 3000 to handle /api requests^).
     echo 4. Restart your IIS Application Pool in IIS Manager.
-    echo 5. Open your browser and press Ctrl+F5 ^(Hard Refresh^) to load the new build!
+    echo 5. Ensure IIS ARR Proxy is enabled:
+    echo    IIS Manager -^> Server -^> Application Request Routing Cache -^> Server Proxy Settings
+    echo    -^> Check 'Enable proxy' -^> Apply.
+    echo    ^(Or simply run 'update_iis.bat' which enables ARR proxy automatically^).
+    echo 6. Open your browser and press Ctrl+F5 ^(Hard Refresh^) to load the new build!
     echo.
     echo CONFIGURATION FILES:
     echo   - web.config: SPA routing fallback, API proxy ^& caching disabled for immediate updates.
-    echo   - start_server.bat: Launches production backend Node.js server.
+    echo   - start_server.bat: Launches production backend Node.js server on port 3000.
     echo   - run_migrations.bat: Manages PostgreSQL schemas and seed data.
+    echo   - update_iis.bat: In-place automated updater with ARR proxy auto-enable.
     echo =========================================================================
 ) > "%WIN_PKG_DIR%\README_IIS_UPDATE.txt"
 
