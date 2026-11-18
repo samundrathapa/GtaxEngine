@@ -544,6 +544,85 @@ export class ApiController {
     });
   }
 
+  // Roles & Menu / Action Permissions
+  static async getRoles() {
+    return this.request<{
+      roles: Array<{
+        id: number;
+        role_name: string;
+        description: string;
+        is_builtin?: boolean;
+        user_count?: number;
+        right_codes: string[];
+        matrix: Record<string, any>;
+      }>;
+      menus: any[];
+      rights: any[];
+    }>("/roles");
+  }
+
+  static async createRole(payload: {
+    role_name: string;
+    description?: string;
+    matrix?: Record<string, any>;
+    right_codes?: string[];
+  }) {
+    return this.request("/roles", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  static async updateRole(
+    roleId: number | string,
+    payload: {
+      role_name?: string;
+      description?: string;
+      matrix?: Record<string, any>;
+      right_codes?: string[];
+    }
+  ) {
+    return this.request(`/roles/${roleId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  static async deleteRole(roleId: number | string) {
+    return this.request(`/roles/${roleId}`, {
+      method: "DELETE"
+    });
+  }
+
+  static async getUserRights(userId: number | string) {
+    return this.request<{
+      user_id: number;
+      fullname: string;
+      email: string;
+      role: { id: number; role_name: string; description: string } | null;
+      role_right_codes: string[];
+      overrides: Record<string, boolean>;
+      effective_right_codes: string[];
+      effective_matrix: Record<string, any>;
+    }>(`/users/${userId}/rights`);
+  }
+
+  static async saveUserRights(
+    userId: number | string,
+    payload: {
+      role_id?: number;
+      role_name?: string;
+      matrix?: Record<string, any>;
+      right_codes?: string[];
+      reset_to_role?: boolean;
+    }
+  ) {
+    return this.request(`/users/${userId}/rights`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  }
+
   // Jurisdictions (Inherited BaseFrame CRUD)
   static async getJurisdictions() {
     return this.request<{ items: any[]; total: number }>("/jurisdictions");

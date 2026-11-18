@@ -2,6 +2,11 @@ import { AuditFields } from "../BaseFrame/repo/BaseRepo.ts";
 import { ApiResponse, IApiResponse } from "../BaseFrame/response/ApiResponse.ts";
 import { PostgresPoolManager } from "../db/postgresPool.ts";
 import { TableCacheDbSyncService } from "../db/TableCacheDbSyncService.ts";
+import {
+  CANONICAL_RIGHTS,
+  RightActionType,
+  getDefaultRightsForRoleName
+} from "../../shared/rbacConfig.ts";
 
 export interface TblUser extends AuditFields {
   id: number;
@@ -21,16 +26,16 @@ export interface TblUser extends AuditFields {
 
 export interface TblRole extends AuditFields {
   id: number;
-  role_name: "superadmin" | "admin" | "operator" | "user";
+  role_name: string;
   description: string;
 }
 
 export interface TblRight extends AuditFields {
   id: number;
-  right_code: string; // e.g. 'tbl_tax_menu', 'tbl_tax_new', 'tbl_user_edit', etc.
+  right_code: string; // e.g. 'taxpayer_menu', 'taxpayer_new', 'calculation_calculation', etc.
   right_name: string;
   module_name: string;
-  action_type: "menu" | "new" | "edit" | "delete" | "print";
+  action_type: RightActionType;
 }
 
 export interface TblRoleRight extends AuditFields {
@@ -119,49 +124,38 @@ class AuthDatabaseStore {
       });
     });
 
-    // 2. Rights: tablename_menu, tablename_new, tablename_edit, tablename_delete, tablename_print
-    const modules = [
-      { prefix: "tbl_tax", label: "Tax Calculation Engine" },
-      { prefix: "tbl_jurisdiction", label: "Jurisdictions Registry" },
-      { prefix: "tbl_sync", label: "Real-time CDC Sync" },
-      { prefix: "tbl_report", label: "Reports Generator" },
-      { prefix: "tbl_user", label: "User Management" },
-      { prefix: "tbl_security", label: "Audit & Session Logs" }
-    ];
+    // 2. Rights: canonical menu + new, edit, delete, calculation rights per module
+    const rightIdByCode = new Map<string, number>();
+    for (const cr of CANONICAL_RIGHTS) {
+      const rightRecord: TblRight = {
+        id: cr.id,
+        right_code: cr.right_code,
+        right_name: cr.right_name,
+        module_name: cr.module_name,
+        action_type: cr.action_type,
+        insert_by: systemId,
+        insert_on: now,
+        update_by: systemId,
+        update_on: now,
+        delete_by: null,
+        deleted_on: null,
+        is_active: true
+      };
+      this.rights.set(cr.id, rightRecord);
+      rightIdByCode.set(cr.right_code, cr.id);
+    }
 
-    let rightId = 1;
+    // 3. Assign role rights for Roles 1..4 from shared RBAC defaults
     let roleRightId = 1;
-    const actions: ("menu" | "new" | "edit" | "delete" | "print")[] = [
-      "menu",
-      "new",
-      "edit",
-      "delete",
-      "print"
-    ];
-
-    modules.forEach((mod) => {
-      actions.forEach((act) => {
-        const rCode = `${mod.prefix}_${act}`;
-        const rightRecord: TblRight = {
-          id: rightId,
-          right_code: rCode,
-          right_name: `${mod.label} - ${act.toUpperCase()}`,
-          module_name: mod.label,
-          action_type: act,
-          insert_by: systemId,
-          insert_on: now,
-          update_by: systemId,
-          update_on: now,
-          delete_by: null,
-          deleted_on: null,
-          is_active: true
-        };
-        this.rights.set(rightId, rightRecord);
-
-        // Assign to Superadmin (Role 1) - all rights
-        this.roleRights.set(roleRightId++, {
-          id: roleRightId,
-          role_id: 1,
+    for (const roleDef of seededRoles) {
+      const defaultCodes = getDefaultRightsForRoleName(roleDef.name);
+      for (const code of defaultCodes) {
+        const rightId = rightIdByCode.get(code);
+        if (!rightId) continue;
+        const nextId = roleRightId++;
+        this.roleRights.set(nextId, {
+          id: nextId,
+          role_id: roleDef.id,
           right_id: rightId,
           insert_by: systemId,
           insert_on: now,
@@ -171,58 +165,8 @@ class AuthDatabaseStore {
           deleted_on: null,
           is_active: true
         });
-
-        // Assign to Admin (Role 2) - all except user delete
-        if (rCode !== "tbl_user_delete") {
-          this.roleRights.set(roleRightId++, {
-            id: roleRightId,
-            role_id: 2,
-            right_id: rightId,
-            insert_by: systemId,
-            insert_on: now,
-            update_by: systemId,
-            update_on: now,
-            delete_by: null,
-            deleted_on: null,
-            is_active: true
-          });
-        }
-
-        // Assign to Operator (Role 3) - menu, new, edit, print (no delete)
-        if (act !== "delete") {
-          this.roleRights.set(roleRightId++, {
-            id: roleRightId,
-            role_id: 3,
-            right_id: rightId,
-            insert_by: systemId,
-            insert_on: now,
-            update_by: systemId,
-            update_on: now,
-            delete_by: null,
-            deleted_on: null,
-            is_active: true
-          });
-        }
-
-        // Assign to User (Role 4) - menu, print, new
-        if (act === "menu" || act === "print" || (act === "new" && mod.prefix === "tbl_tax")) {
-          this.roleRights.set(roleRightId++, {
-            id: roleRightId,
-            role_id: 4,
-            right_id: rightId,
-            insert_by: systemId,
-            insert_on: now,
-            update_by: systemId,
-            update_on: now,
-            delete_by: null,
-            deleted_on: null,
-            is_active: true
-          });
-        }
-
-        rightId++;
-      });
-    });
+      }
+    }
 
     // 3. Seeded Users
     const initialUsers = [
@@ -406,6 +350,22 @@ class AuthDatabaseStore {
     return clearedCount;
   }
 
+  public findRoleByNameOrId(roleNameOrId: string | number | undefined): TblRole | null {
+    if (roleNameOrId === undefined || roleNameOrId === null || roleNameOrId === "") return null;
+    const asNum = Number(roleNameOrId);
+    if (!isNaN(asNum) && this.roles.has(asNum)) {
+      const r = this.roles.get(asNum)!;
+      if (r.is_active) return r;
+    }
+    const clean = String(roleNameOrId).trim().toLowerCase();
+    for (const r of this.roles.values()) {
+      if (r.is_active && r.role_name.trim().toLowerCase() === clean) {
+        return r;
+      }
+    }
+    return null;
+  }
+
   public getUserRole(userId: number): TblRole | null {
     const map = this.userRoles.get(userId);
     if (!map) return null;
@@ -492,10 +452,29 @@ export class AuthSessionService {
             is_active: true
           };
           authDb.users.set(dbU.id, mappedUser);
+
+          // Ensure role from PostgreSQL exists in authDb.roles
+          const dbRoleId = Number(dbU.role_id || 4);
+          const dbRoleName = String(dbU.role_name || "user").trim().toLowerCase();
+          if (!authDb.roles.has(dbRoleId)) {
+            authDb.roles.set(dbRoleId, {
+              id: dbRoleId,
+              role_name: dbRoleName,
+              description: dbRoleName,
+              insert_by: "DB_SYNC",
+              insert_on: new Date().toISOString(),
+              update_by: "DB_SYNC",
+              update_on: new Date().toISOString(),
+              delete_by: null,
+              deleted_on: null,
+              is_active: true
+            });
+          }
+
           authDb.userRoles.set(dbU.id, {
             id: dbU.id,
             user_id: dbU.id,
-            role_id: dbU.role_id || 4,
+            role_id: dbRoleId,
             insert_by: "DB_SYNC",
             insert_on: new Date().toISOString(),
             update_by: "DB_SYNC",
@@ -504,6 +483,80 @@ export class AuthSessionService {
             deleted_on: null,
             is_active: true
           });
+
+          // Sync live role_right and user_right from PostgreSQL for this user
+          try {
+            const dbRoleRights = await PostgresPoolManager.query<any>(
+              `SELECT rr.id, rr.role_id, rr.right_id, r.right_code, r.right_name, r.module_name, r.action_type
+               FROM tbl_role_right rr
+               JOIN tbl_right r ON rr.right_id = r.id
+               WHERE rr.role_id = $1 AND rr.is_active = true AND COALESCE(rr.is_deleted, false) = false AND r.is_active = true;`,
+              [dbRoleId]
+            );
+            if (Array.isArray(dbRoleRights) && dbRoleRights.length > 0) {
+              for (const [k, existingRR] of authDb.roleRights.entries()) {
+                if (existingRR.role_id === dbRoleId) authDb.roleRights.delete(k);
+              }
+              for (const row of dbRoleRights) {
+                const rCode = String(row.right_code || "");
+                const matchedRight =
+                  Array.from(authDb.rights.values()).find((x) => x.right_code === rCode) ||
+                  authDb.rights.get(Number(row.right_id));
+                if (matchedRight) {
+                  const rrId = Number(row.id) || (Date.now() + Math.floor(Math.random() * 10000));
+                  authDb.roleRights.set(rrId, {
+                    id: rrId,
+                    role_id: dbRoleId,
+                    right_id: matchedRight.id,
+                    insert_by: "DB_SYNC",
+                    insert_on: new Date().toISOString(),
+                    update_by: "DB_SYNC",
+                    update_on: new Date().toISOString(),
+                    delete_by: null,
+                    deleted_on: null,
+                    is_active: true
+                  });
+                }
+              }
+            }
+
+            const dbUserRights = await PostgresPoolManager.query<any>(
+              `SELECT ur.id, ur.user_id, ur.right_id, ur.is_granted, r.right_code
+               FROM tbl_user_right ur
+               JOIN tbl_right r ON ur.right_id = r.id
+               WHERE ur.user_id = $1 AND ur.is_active = true AND COALESCE(ur.is_deleted, false) = false;`,
+              [dbU.id]
+            );
+            for (const [k, existingUR] of authDb.userRights.entries()) {
+              if (existingUR.user_id === dbU.id) authDb.userRights.delete(k);
+            }
+            if (Array.isArray(dbUserRights)) {
+              for (const row of dbUserRights) {
+                const rCode = String(row.right_code || "");
+                const matchedRight =
+                  Array.from(authDb.rights.values()).find((x) => x.right_code === rCode) ||
+                  authDb.rights.get(Number(row.right_id));
+                if (matchedRight) {
+                  const urId = Number(row.id) || (Date.now() + Math.floor(Math.random() * 10000));
+                  authDb.userRights.set(urId, {
+                    id: urId,
+                    user_id: dbU.id,
+                    right_id: matchedRight.id,
+                    is_granted: Boolean(row.is_granted),
+                    insert_by: "DB_SYNC",
+                    insert_on: new Date().toISOString(),
+                    update_by: "DB_SYNC",
+                    update_on: new Date().toISOString(),
+                    delete_by: null,
+                    deleted_on: null,
+                    is_active: true
+                  });
+                }
+              }
+            }
+          } catch {
+            // Non-fatal fallback to in-memory roleRights/userRights
+          }
         }
       } catch {
         // Fallback to in-memory store
@@ -551,8 +604,9 @@ export class AuthSessionService {
 
         if (foundCached) {
           const uId = Number(foundCached.id);
-          const roleName = String(foundCached.role || "operator").toLowerCase();
-          const mappedRoleId = roleName.includes("superadmin") ? 1 : roleName.includes("admin") ? 2 : roleName.includes("operator") ? 3 : 4;
+          const roleName = String(foundCached.role || "operator").trim().toLowerCase();
+          const matchedRole = authDb.findRoleByNameOrId(foundCached.role_id || roleName);
+          const mappedRoleId = matchedRole ? matchedRole.id : (roleName.includes("superadmin") ? 1 : roleName.includes("admin") ? 2 : roleName.includes("operator") ? 3 : 4);
           const syncedUser: TblUser = {
             id: uId,
             fullname: foundCached.fullname || foundCached.full_name || foundCached.username || "User",
@@ -675,7 +729,7 @@ export class AuthSessionService {
     country_id?: number;
     employee_id?: string;
     send_password_to_email?: boolean;
-    role_name?: "superadmin" | "admin" | "operator" | "user";
+    role_name?: string;
   }, actor = "SELF_REGISTRATION"): Promise<IApiResponse<any>> {
     const cleanEmail = data.email.trim().toLowerCase();
 
@@ -712,15 +766,10 @@ export class AuthSessionService {
       is_active: true
     };
 
-    // Map role (defaults to 'user' or specified)
-    const targetRoleName = data.role_name || "user";
-    let roleId = 4;
-    for (const r of authDb.roles.values()) {
-      if (r.role_name === targetRoleName) {
-        roleId = r.id;
-        break;
-      }
-    }
+    // Map role dynamically from authDb.roles (supports built-in + custom roles)
+    const targetRoleName = (data.role_name || "user").trim().toLowerCase();
+    const foundRole = authDb.findRoleByNameOrId(targetRoleName);
+    const roleId = foundRole ? foundRole.id : 4;
 
     // Persist to live PostgreSQL tbl_user if connected
     if (PostgresPoolManager.getStatus().connected) {

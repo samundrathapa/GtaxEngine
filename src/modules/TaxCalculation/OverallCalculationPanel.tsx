@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
 import { TaxLiabilityComparisonChart } from "../../components/TaxLiabilityComparisonChart.tsx";
 import { MultiYearTaxEngine } from "./MultiYearTaxEngine.tsx";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
 import {
   Calculator,
   Search,
@@ -32,13 +34,17 @@ export interface OverallCalculationPanelProps {
   initialTab?: "calculator" | "multi_year" | "history" | "comparison";
   onTabChange?: (tab: "calculator" | "multi_year" | "history" | "comparison") => void;
   selectedTaxpayerIdProp?: number;
+  currentSession?: AuthSessionState | null;
 }
 
 export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = ({
   initialTab = "calculator",
   onTabChange,
-  selectedTaxpayerIdProp
+  selectedTaxpayerIdProp,
+  currentSession
 }) => {
+  const canCalculate = !currentSession || hasActionRight(currentSession, "calculation", "calculation");
+  const canSaveCalc = !currentSession || hasActionRight(currentSession, "calculation", "new");
   const [activeTab, setActiveTab] = useState<"calculator" | "multi_year" | "history" | "comparison">(initialTab);
   const [loading, setLoading] = useState(false);
   const [taxpayers, setTaxpayers] = useState<any[]>([]);
@@ -838,14 +844,16 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                     <span>Print Slip</span>
                   </button>
 
-                  <button
-                    onClick={handleSaveCalculation}
-                    disabled={savingCalc}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{savingCalc ? "Saving..." : "Save Calculation to Database"}</span>
-                  </button>
+                  {(canSaveCalc && canCalculate) && (
+                    <button
+                      onClick={handleSaveCalculation}
+                      disabled={savingCalc}
+                      className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{savingCalc ? "Saving..." : "Save Calculation to Database"}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1075,14 +1083,16 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   </div>
                 </div>
 
-                <button
-                  onClick={handleSaveCalculation}
-                  disabled={savingCalc}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{savingCalc ? "Recording to DB..." : "Commit & Save Calculation to calc_master"}</span>
-                </button>
+                {(canSaveCalc && canCalculate) && (
+                  <button
+                    onClick={handleSaveCalculation}
+                    disabled={savingCalc}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{savingCalc ? "Recording to DB..." : "Commit & Save Calculation to calc_master"}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1092,7 +1102,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
       {/* VIEW 2: MULTI-YEAR LIABILITY ENGINE */}
       {activeTab === "multi_year" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-          <MultiYearTaxEngine currentLang="nep" initialTaxpayerId={selectedTaxpayerId} />
+          <MultiYearTaxEngine currentLang="nep" initialTaxpayerId={selectedTaxpayerId} currentSession={currentSession} />
         </div>
       )}
 

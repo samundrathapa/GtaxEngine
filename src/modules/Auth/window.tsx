@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RegisterFormData, initialRegisterForm } from "./model.ts";
 import { AuthController } from "./controller.ts";
+import { ApiController } from "../../api/controller.ts";
 import { X, Check, Mail, Lock, User, Phone, Briefcase, Globe, Send, ShieldCheck } from "lucide-react";
 
 interface RegisterWindowProps {
@@ -11,9 +12,26 @@ interface RegisterWindowProps {
 
 export const RegisterWindow: React.FC<RegisterWindowProps> = ({ isOpen, onClose, onSuccess }) => {
   const [form, setForm] = useState<RegisterFormData>(initialRegisterForm);
+  const [rolesList, setRolesList] = useState<Array<{ id: number; role_name: string; description?: string }>>([
+    { id: 4, role_name: "user", description: "Standard Analyst" },
+    { id: 3, role_name: "operator", description: "Tax Operations" },
+    { id: 2, role_name: "admin", description: "Manager" },
+    { id: 1, role_name: "superadmin", description: "Master" }
+  ]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successInfo, setSuccessInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    ApiController.getRoles()
+      .then((res) => {
+        if (res.success && Array.isArray(res.data?.roles) && res.data.roles.length > 0) {
+          setRolesList(res.data.roles);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -179,13 +197,14 @@ export const RegisterWindow: React.FC<RegisterWindowProps> = ({ isOpen, onClose,
                 </label>
                 <select
                   value={form.role_name}
-                  onChange={(e) => setForm({ ...form, role_name: e.target.value as any })}
+                  onChange={(e) => setForm({ ...form, role_name: e.target.value })}
                   className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
                 >
-                  <option value="user">User (Standard Analyst)</option>
-                  <option value="operator">Operator (Tax Operations)</option>
-                  <option value="admin">Admin (Manager)</option>
-                  <option value="superadmin">Superadmin (Master)</option>
+                  {rolesList.map((r) => (
+                    <option key={r.id} value={r.role_name.toLowerCase()}>
+                      {r.role_name.toUpperCase()} {r.description ? `(${r.description})` : ""}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

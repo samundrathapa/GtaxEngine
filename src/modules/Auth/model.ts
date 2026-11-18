@@ -22,7 +22,7 @@ export interface RegisterFormData {
   country_id: number;
   employee_id: string;
   send_password_to_email: boolean;
-  role_name: "superadmin" | "admin" | "operator" | "user";
+  role_name: string;
 }
 
 export interface ForgotPasswordFormData {

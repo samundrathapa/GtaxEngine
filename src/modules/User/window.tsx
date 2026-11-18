@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UserFormData, UserModel } from "./model.ts";
+import { ApiController } from "../../api/controller.ts";
 import { X, Shield, KeyRound, Mail, User, Phone, BadgeCheck } from "lucide-react";
 
 interface UserWindowProps {
@@ -26,8 +27,25 @@ export const UserWindow: React.FC<UserWindowProps> = ({
     org_id: "ORG_GLOBAL_CORP",
     company_id: 1
   });
+  const [rolesList, setRolesList] = useState<Array<{ id: number; role_name: string; description?: string }>>([
+    { id: 1, role_name: "superadmin", description: "Superadmin" },
+    { id: 2, role_name: "admin", description: "Admin" },
+    { id: 3, role_name: "operator", description: "Operator" },
+    { id: 4, role_name: "user", description: "User" }
+  ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    ApiController.getRoles()
+      .then((res) => {
+        if (res.success && Array.isArray(res.data?.roles) && res.data.roles.length > 0) {
+          setRolesList(res.data.roles);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   useEffect(() => {
     if (editUser) {
@@ -173,16 +191,15 @@ export const UserWindow: React.FC<UserWindowProps> = ({
                 <span>Security Role</span>
               </label>
               <select
-                value={formData.role}
+                value={String(formData.role || "operator").toLowerCase()}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
               >
-                <option value="superadmin">Superadmin (Full Oversight & Master Control)</option>
-                <option value="admin">Admin (Corporate & Tax Manager)</option>
-                <option value="operator">Operator (Tax Registration & Valuation Entry)</option>
-                <option value="user">User (Standard Tax Analyst)</option>
-                <option value="tax_analyst">Tax Analyst</option>
-                <option value="auditor">Auditor (Compliance & Reporting)</option>
+                {rolesList.map((r) => (
+                  <option key={r.id} value={r.role_name.toLowerCase()}>
+                    {r.role_name.toUpperCase()} {r.description ? `(${r.description})` : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

@@ -5,6 +5,7 @@ import { UserWindow } from "./UserWindow.tsx";
 import { IUserRecord } from "../../serverside/User/UserModel.ts";
 import { AuthSessionState } from "../../modules/Auth/model.ts";
 import { SupportedLang, translations, subscribeToTranslations } from "../../utils/i18n.ts";
+import { hasActionRight, hasMenuRight } from "../../utils/permissions.ts";
 import {
   Plus,
   Search,
@@ -27,9 +28,10 @@ import {
 interface UserPanelProps {
   currentSession?: AuthSessionState | null;
   currentLang?: SupportedLang;
+  onManageUserRights?: (userId: number) => void;
 }
 
-export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLang = "eng" }) => {
+export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLang = "eng", onManageUserRights }) => {
   const [storeState, setStoreState] = useState(userStoreInstance.getState());
   const [, setLangVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,6 +58,11 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   const isSuperAdmin =
     roleString === "superadmin" ||
     (currentSession?.user?.email || "").toLowerCase() === "superadmin@gtax.enterprise";
+
+  const canCreateUser = !currentSession || hasActionRight(currentSession, "user", "new");
+  const canEditUser = !currentSession || hasActionRight(currentSession, "user", "edit");
+  const canDeleteUser = !currentSession || hasActionRight(currentSession, "user", "delete");
+  const canManageRoles = Boolean(onManageUserRights) && (!currentSession || hasMenuRight(currentSession, "role"));
 
   const t = translations[currentLang];
 
@@ -228,16 +235,18 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
             </button>
           )}
 
-          <button
-            onClick={() => {
-              setSelectedUser(null);
-              setIsWindowOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t.addUser}
-          </button>
+          {canCreateUser && (
+            <button
+              onClick={() => {
+                setSelectedUser(null);
+                setIsWindowOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {t.addUser}
+            </button>
+          )}
         </div>
       </div>
 
@@ -371,6 +380,17 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {canManageRoles && user.id && (
+                            <button
+                              type="button"
+                              onClick={() => onManageUserRights && onManageUserRights(Number(user.id))}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800/60 rounded-md transition-colors cursor-pointer"
+                              title={`Configure menu rights for ${displayName}`}
+                            >
+                              <Shield className="w-3 h-3" />
+                              <span>Menu Rights</span>
+                            </button>
+                          )}
                           {isSuperAdmin && (
                             <button
                               type="button"
@@ -382,24 +402,28 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
                               <span>Reset Password</span>
                             </button>
                           )}
-                          <button
-                            onClick={async () => {
-                              const editData = await UserController.GetItemTemplate(user.user_id || user.id);
-                              setSelectedUser(editData || user);
-                              setIsWindowOpen(true);
-                            }}
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                            title="GetItemTemplate for editing"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user)}
-                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                            title="Delete user"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {canEditUser && (
+                            <button
+                              onClick={async () => {
+                                const editData = await UserController.GetItemTemplate(user.user_id || user.id);
+                                setSelectedUser(editData || user);
+                                setIsWindowOpen(true);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                              title="GetItemTemplate for editing"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {canDeleteUser && (
+                            <button
+                              onClick={() => handleDelete(user)}
+                              className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                              title="Delete user"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

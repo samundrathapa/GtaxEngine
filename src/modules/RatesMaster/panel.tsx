@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
 import { SupportedLang, translations } from "../../utils/i18n.ts";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
+import { MenuKey } from "../../shared/rbacConfig.ts";
 import {
   Calendar,
   Layers,
@@ -45,6 +48,7 @@ interface RatesMasterPanelProps {
   currentLang: SupportedLang;
   initialTab?: RateTab;
   filterGroup?: "rate" | "masters" | "rbac" | "all";
+  currentSession?: AuthSessionState | null;
 }
 
 interface ParentTreeModalProps {
@@ -195,7 +199,8 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
 export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   currentLang,
   initialTab = "land_rate",
-  filterGroup = "all"
+  filterGroup = "all",
+  currentSession
 }) => {
   const t = translations[currentLang];
   const [activeTab, setActiveTab] = useState<RateTab>(initialTab);
@@ -700,7 +705,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {["land_rate", "malpot_rate", "construction_rate", "depreciation", "fine_rebate", "property_range"].includes(activeTab) && (
+          {["land_rate", "malpot_rate", "construction_rate", "depreciation", "fine_rebate", "property_range"].includes(activeTab) &&
+            (!currentSession || hasActionRight(currentSession, (filterGroup === "rbac" || activeTab === "company" || activeTab === "application_setting") ? "company" : "master", "new")) && (
             <button
               onClick={() => {
                 const defFy = masters.applicationSettings[0]?.fiscal_year_id || 2;
@@ -723,13 +729,15 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{headerInfo.addLabel}</span>
-          </button>
+          {(!currentSession || hasActionRight(currentSession, (filterGroup === "rbac" || activeTab === "company" || activeTab === "application_setting") ? "company" : "master", "new")) && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{headerInfo.addLabel}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1155,21 +1163,25 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     {/* Actions: Edit & Delete */}
                     <td className="p-3.5 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
-                          title="Edit this rate record"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
-                          title="Delete rate"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {(!currentSession || hasActionRight(currentSession, (filterGroup === "rbac" || activeTab === "company" || activeTab === "application_setting") ? "company" : "master", "edit")) && (
+                          <button
+                            onClick={() => handleOpenEdit(item)}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+                            title="Edit this rate record"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        {(!currentSession || hasActionRight(currentSession, (filterGroup === "rbac" || activeTab === "company" || activeTab === "application_setting") ? "company" : "master", "delete")) && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                            title="Delete rate"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

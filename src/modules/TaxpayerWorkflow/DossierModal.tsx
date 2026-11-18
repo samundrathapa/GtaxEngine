@@ -26,6 +26,8 @@ import {
   getIPTAmount
 } from "../../utils/calculationEngine.ts";
 import { tCol, SupportedLang } from "../../utils/i18n.ts";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
 
 interface TaxpayerDossierModalProps {
   taxpayerId: number;
@@ -34,6 +36,7 @@ interface TaxpayerDossierModalProps {
   onRefresh: () => void;
   masters: any;
   currentLang?: SupportedLang;
+  currentSession?: AuthSessionState | null;
 }
 
 export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
@@ -42,8 +45,13 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   onClose,
   onRefresh,
   masters,
-  currentLang = "eng"
+  currentLang = "eng",
+  currentSession
 }) => {
+  const canNew = !currentSession || hasActionRight(currentSession, "taxpayer", "new");
+  const canEdit = !currentSession || hasActionRight(currentSession, "taxpayer", "edit");
+  const canDelete = !currentSession || hasActionRight(currentSession, "taxpayer", "delete");
+  const canCalc = !currentSession || hasActionRight(currentSession, "taxpayer", "calculation");
   const [activeTab, setActiveTab] = useState<"taxpayer" | "land" | "house" | "calculate">(initialTab);
   const [dossier, setDossier] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -767,11 +775,11 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
         {/* Tab Strip: taxpayer, land, house, calculate */}
         <div className="px-6 pt-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900 overflow-x-auto no-scrollbar">
           {[
-            { id: "taxpayer", label: "Taxpayer Detail", icon: User, count: null },
-            { id: "land", label: "Land Info (जग्गा)", icon: MapPin, count: dossier?.lands?.length || 0 },
-            { id: "house", label: "House Info (घर तथा तला)", icon: Home, count: dossier?.houses?.length || 0 },
-            { id: "calculate", label: "Calculate (कर गणना)", icon: Calculator, count: null }
-          ].map((tab) => {
+            { id: "taxpayer", label: "Taxpayer Detail", icon: User, count: null, visible: true },
+            { id: "land", label: "Land Info (जग्गा)", icon: MapPin, count: dossier?.lands?.length || 0, visible: true },
+            { id: "house", label: "House Info (घर तथा तला)", icon: Home, count: dossier?.houses?.length || 0, visible: true },
+            { id: "calculate", label: "Calculate (कर गणना)", icon: Calculator, count: null, visible: canCalc }
+          ].filter((tItem) => tItem.visible).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -933,15 +941,17 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>Save Taxpayer Details</span>
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                        <button
+                          type="submit"
+                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xs transition-colors"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>Save Taxpayer Details</span>
+                        </button>
+                      </div>
+                    )}
                   </form>
                 </div>
               )}
@@ -960,13 +970,15 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                    
                     </div>
 
-                    <button
-                      onClick={handleOpenAddLand}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Land Parcel</span>
-                    </button>
+                    {canNew && (
+                      <button
+                        onClick={handleOpenAddLand}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Land Parcel</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1032,20 +1044,24 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                   </td>
                                   <td className="p-3 text-right">
                                     <div className="flex items-center justify-end gap-1.5 font-sans">
-                                      <button
-                                        onClick={() => handleOpenEditLand(l)}
-                                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg"
-                                        title="Edit Land"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteLand(l.id)}
-                                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                        title="Delete Land"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canEdit && (
+                                        <button
+                                          onClick={() => handleOpenEditLand(l)}
+                                          className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg"
+                                          title="Edit Land"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      {canDelete && (
+                                        <button
+                                          onClick={() => handleDeleteLand(l.id)}
+                                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                          title="Delete Land"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -1077,13 +1093,15 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         </p> */}
                       </div>
 
-                      <button
-                        onClick={handleOpenAddHouse}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add House Structure</span>
-                      </button>
+                      {canNew && (
+                        <button
+                          onClick={handleOpenAddHouse}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add House Structure</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1144,25 +1162,31 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                   </td>
                                   <td className="p-3 text-right font-sans">
                                     <div className="flex items-center justify-end gap-1.5">
-                                      <button
-                                        onClick={() => handleOpenAddFloor(h.id)}
-                                        className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-lg text-[11px] font-semibold"
-                                        title="Add Floor to this House"
-                                      >
-                                        + Floor
-                                      </button>
-                                      <button
-                                        onClick={() => handleOpenEditHouse(h)}
-                                        className="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-lg"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteHouse(h.id)}
-                                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canNew && (
+                                        <button
+                                          onClick={() => handleOpenAddFloor(h.id)}
+                                          className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-lg text-[11px] font-semibold"
+                                          title="Add Floor to this House"
+                                        >
+                                          + Floor
+                                        </button>
+                                      )}
+                                      {canEdit && (
+                                        <button
+                                          onClick={() => handleOpenEditHouse(h)}
+                                          className="p-1.5 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-lg"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      {canDelete && (
+                                        <button
+                                          onClick={() => handleDeleteHouse(h.id)}
+                                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -1187,13 +1211,15 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         </p> */}
                       </div>
 
-                      <button
-                        onClick={() => handleOpenAddFloor()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Floor Unit</span>
-                      </button>
+                      {canNew && (
+                        <button
+                          onClick={() => handleOpenAddFloor()}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Floor Unit</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1246,18 +1272,22 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                   </td>
                                   <td className="p-3 text-right font-sans">
                                     <div className="flex items-center justify-end gap-1.5">
-                                      <button
-                                        onClick={() => handleOpenEditFloor(fl)}
-                                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteFloor(fl.id)}
-                                        className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
+                                      {canEdit && (
+                                        <button
+                                          onClick={() => handleOpenEditFloor(fl)}
+                                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      {canDelete && (
+                                        <button
+                                          onClick={() => handleDeleteFloor(fl.id)}
+                                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -1855,14 +1885,16 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                         </h4>
                       </div>
 
-                      <button
-                        onClick={handleSaveCalculation}
-                        disabled={isSavingCalc}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-black rounded-xl shadow-lg transition-colors text-xs"
-                      >
-                        <Save className="w-4 h-4" />
-                        <span>{isSavingCalc ? "Saving Calculation..." : "Save Calculation to DB"}</span>
-                      </button>
+                      {canCalc && (
+                        <button
+                          onClick={handleSaveCalculation}
+                          disabled={isSavingCalc}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-black rounded-xl shadow-lg transition-colors text-xs"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>{isSavingCalc ? "Saving Calculation..." : "Save Calculation to DB"}</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono text-xs">

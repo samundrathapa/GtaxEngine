@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
 import { SupportedLang, translations } from "../../utils/i18n.ts";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
 import {
   Calculator,
   Calendar,
@@ -36,12 +38,15 @@ import {
 interface MultiYearTaxEngineProps {
   currentLang?: SupportedLang;
   initialTaxpayerId?: number;
+  currentSession?: AuthSessionState | null;
 }
 
 export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
   currentLang = "nep",
-  initialTaxpayerId
+  initialTaxpayerId,
+  currentSession
 }) => {
+  const canCalculate = !currentSession || hasActionRight(currentSession, "calculation", "calculation");
   const t = translations[currentLang];
   const [loading, setLoading] = useState(false);
   const [computing, setComputing] = useState(false);
@@ -209,14 +214,16 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             </button>
           )}
 
-          <button
-            onClick={handleCalculate}
-            disabled={computing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${computing ? "animate-spin" : ""}`} />
-            <span>{computing ? "Computing..." : "Re-Calculate"}</span>
-          </button>
+          {canCalculate && (
+            <button
+              onClick={handleCalculate}
+              disabled={computing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${computing ? "animate-spin" : ""}`} />
+              <span>{computing ? "Computing..." : "Re-Calculate"}</span>
+            </button>
+          )}
         </div>
       </div>
 

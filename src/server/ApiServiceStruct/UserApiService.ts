@@ -351,13 +351,25 @@ export class UserRepo extends BaseRepo<UserRecord> {
     const password = data.password || "Password123!";
     const mobile = data.mobile || "+1 (555) 000-0000";
     const employeeId = data.employee_id || `EMP-${Math.floor(1000 + Math.random() * 9000)}`;
-    const roleName = (data.role || "user").toLowerCase();
+    const roleName = (data.role || "user").trim().toLowerCase();
     const actor = userId || "SUPERADMIN";
 
-    let roleId = 4;
-    if (roleName.includes("superadmin")) roleId = 1;
-    else if (roleName.includes("admin")) roleId = 2;
-    else if (roleName.includes("operator")) roleId = 3;
+    let roleId = authDb.findRoleByNameOrId(data.role_id || roleName)?.id || 0;
+    if (!roleId && PostgresPoolManager.getStatus().connected) {
+      try {
+        const roleRows = await PostgresPoolManager.query<any>(
+          `SELECT id FROM tbl_role WHERE LOWER(role_name) = LOWER($1) AND is_active = true LIMIT 1;`,
+          [roleName]
+        );
+        if (roleRows?.[0]?.id) roleId = Number(roleRows[0].id);
+      } catch {}
+    }
+    if (!roleId) {
+      if (roleName === "superadmin") roleId = 1;
+      else if (roleName === "admin") roleId = 2;
+      else if (roleName === "operator") roleId = 3;
+      else roleId = 4;
+    }
 
     let createdId: number = Date.now() % 100000;
 
@@ -446,17 +458,48 @@ export class UserRepo extends BaseRepo<UserRecord> {
           WHERE id = $6 AND is_active = true;
         `, [fullName, email, mobile, employeeId, actor, idNum]);
 
-        if (data.role) {
-          let roleId = 4;
-          const r = String(data.role).toLowerCase();
-          if (r.includes("superadmin")) roleId = 1;
-          else if (r.includes("admin")) roleId = 2;
-          else if (r.includes("operator")) roleId = 3;
+        if (data.role || data.role_id) {
+          const r = String(data.role || "").trim().toLowerCase();
+          let roleId = authDb.findRoleByNameOrId(data.role_id || r)?.id || 0;
+          if (!roleId) {
+            try {
+              const roleRows = await PostgresPoolManager.query<any>(
+                `SELECT id FROM tbl_role WHERE LOWER(role_name) = LOWER($1) AND is_active = true LIMIT 1;`,
+                [r]
+              );
+              if (roleRows?.[0]?.id) roleId = Number(roleRows[0].id);
+            } catch {}
+          }
+          if (!roleId) {
+            if (r === "superadmin") roleId = 1;
+            else if (r === "admin") roleId = 2;
+            else if (r === "operator") roleId = 3;
+            else roleId = 4;
+          }
 
-          await PostgresPoolManager.query(`
+          const updatedUr = await PostgresPoolManager.query<any>(`
             UPDATE tbl_user_role SET role_id = $1, update_by = $2, update_on = NOW()
-            WHERE user_id = $3 AND is_active = true;
+            WHERE user_id = $3 AND is_active = true
+            RETURNING id;
           `, [roleId, actor, idNum]);
+          if (!updatedUr || updatedUr.length === 0) {
+            await PostgresPoolManager.query(`
+              INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
+              VALUES ($1, $2, $3, NOW(), $3, NOW(), true);
+            `, [idNum, roleId, actor]);
+          }
+          authDb.userRoles.set(idNum, {
+            id: idNum,
+            user_id: idNum,
+            role_id: roleId,
+            insert_by: actor,
+            insert_on: new Date().toISOString(),
+            update_by: actor,
+            update_on: new Date().toISOString(),
+            delete_by: null,
+            deleted_on: null,
+            is_active: true
+          });
         }
       } catch (err) {
         console.warn("[UserRepo] Failed to update live tbl_user:", err);

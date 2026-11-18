@@ -41,6 +41,8 @@ import {
 } from "../../utils/calculationEngine.ts";
 import { TaxpayerDossierModal } from "./DossierModal.tsx";
 import { OneDoorRegistrationModal } from "./OneDoorRegistrationModal.tsx";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
 
 export type TaxpayerSubView = "overview" | "lands" | "houses" | "floors" | "assessment" | "multi_year_calc";
 
@@ -50,6 +52,7 @@ interface TaxpayerWorkflowPanelProps {
   onSubViewChange?: (view: TaxpayerSubView) => void;
   selectedTaxpayerIdProp?: number;
   openNewTaxpayerTrigger?: number;
+  currentSession?: AuthSessionState | null;
 }
 
 export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
@@ -57,8 +60,13 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   initialSubView = "overview",
   onSubViewChange,
   selectedTaxpayerIdProp,
-  openNewTaxpayerTrigger
+  openNewTaxpayerTrigger,
+  currentSession
 }) => {
+  const canNew = !currentSession || hasActionRight(currentSession, "taxpayer", "new");
+  const canEdit = !currentSession || hasActionRight(currentSession, "taxpayer", "edit");
+  const canDelete = !currentSession || hasActionRight(currentSession, "taxpayer", "delete");
+  const canCalc = !currentSession || hasActionRight(currentSession, "taxpayer", "calculation");
   const t = translations[currentLang];
   const [subView, setSubView] = useState<TaxpayerSubView>(initialSubView);
   const [loading, setLoading] = useState<boolean>(true);
@@ -892,14 +900,16 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
 
-          <button
-            onClick={handleOpenAddTaxpayer}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all"
-            title="Continuous Save and Continue Process (Taxpayer -> Lands -> Houses -> Floors -> Valuation)"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Taxpayer (One-Door Process)</span>
-          </button>
+          {canNew && (
+            <button
+              onClick={handleOpenAddTaxpayer}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all"
+              title="Continuous Save and Continue Process (Taxpayer -> Lands -> Houses -> Floors -> Valuation)"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Taxpayer (One-Door Process)</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1041,46 +1051,52 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                       <td className="p-3.5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           {/* 1. Calculate Action Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTaxpayerId(tp.id);
-                              setDossierTab("calculate");
-                              setDossierOpen(true);
-                            }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-xl border border-amber-200 dark:border-amber-800 transition-colors shadow-2xs"
-                            title="Calculate Property Tax for this Taxpayer"
-                          >
-                            <Calculator className="w-3.5 h-3.5" />
-                            <span>Calculate</span>
-                          </button>
+                          {canCalc && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTaxpayerId(tp.id);
+                                setDossierTab("calculate");
+                                setDossierOpen(true);
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-xl border border-amber-200 dark:border-amber-800 transition-colors shadow-2xs"
+                              title="Calculate Property Tax for this Taxpayer"
+                            >
+                              <Calculator className="w-3.5 h-3.5" />
+                              <span>Calculate</span>
+                            </button>
+                          )}
 
                           {/* 2. Edit Action Button (Opens dossier with tabs: taxpayer, land, house, calculate) */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTaxpayerId(tp.id);
-                              setDossierTab("taxpayer");
-                              setDossierOpen(true);
-                            }}
-                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
-                            title="Open Dossier (Taxpayer, Land, House, Calculate)"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTaxpayerId(tp.id);
+                                setDossierTab("taxpayer");
+                                setDossierOpen(true);
+                              }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
+                              title="Open Dossier (Taxpayer, Land, House, Calculate)"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                              <span>Edit</span>
+                            </button>
+                          )}
 
                           {/* 3. Delete Action Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTaxpayer(tp.id);
-                            }}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50 transition-colors"
-                            title="Delete Taxpayer Record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTaxpayer(tp.id);
+                              }}
+                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-transparent hover:border-rose-200 dark:hover:border-rose-900/50 transition-colors"
+                              title="Delete Taxpayer Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1167,6 +1183,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           initialTab={dossierTab}
           masters={masters}
           currentLang={currentLang}
+          currentSession={currentSession}
           onClose={() => setDossierOpen(false)}
           onRefresh={() => loadAllData()}
         />
@@ -1217,16 +1234,18 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => {
-                    setDossierTab("calculate");
-                    setDossierOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-xl border border-amber-200 dark:border-amber-800 transition-colors shadow-2xs"
-                >
-                  <Calculator className="w-3.5 h-3.5" />
-                  <span>Interactive Calc</span>
-                </button>
+                {canCalc && (
+                  <button
+                    onClick={() => {
+                      setDossierTab("calculate");
+                      setDossierOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-xl border border-amber-200 dark:border-amber-800 transition-colors shadow-2xs"
+                  >
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>Interactive Calc</span>
+                  </button>
+                )}
                 <button
                   onClick={() => window.print()}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded-xl border border-emerald-200 dark:border-emerald-800 transition-colors"
@@ -1234,13 +1253,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                   <Printer className="w-3.5 h-3.5" />
                   <span>{t.printBill || "Print Bill"}</span>
                 </button>
-                <button
-                  onClick={() => handleOpenEditTaxpayer(tpDisplay)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  <span>Edit Profile</span>
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={() => handleOpenEditTaxpayer(tpDisplay)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit Profile</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1466,13 +1487,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                       Parcels owned by {taxpayerDossier.taxpayer.fullanme} with assessed municipal valuations.
                     </p>
                   </div>
-                  <button
-                    onClick={handleOpenAddLand}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Land Parcel</span>
-                  </button>
+                  {canNew && (
+                    <button
+                      onClick={handleOpenAddLand}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Land Parcel</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
@@ -1512,20 +1535,24 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                             </td>
                             <td className="py-2.5 px-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => handleOpenEditLand(land)}
-                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg"
-                                  title="Edit Land"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteLand(land.id)}
-                                  className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
-                                  title="Delete Land"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {canEdit && (
+                                  <button
+                                    onClick={() => handleOpenEditLand(land)}
+                                    className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg"
+                                    title="Edit Land"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDeleteLand(land.id)}
+                                    className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                    title="Delete Land"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1551,14 +1578,16 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleOpenAddHouse}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add House Structure</span>
-                    </button>
-                    {taxpayerDossier.houses.length > 0 && (
+                    {canNew && (
+                      <button
+                        onClick={handleOpenAddHouse}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add House Structure</span>
+                      </button>
+                    )}
+                    {canNew && taxpayerDossier.houses.length > 0 && (
                       <button
                         onClick={() => handleOpenAddFloor()}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors"
@@ -1599,24 +1628,30 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                               <span className="font-bold font-mono text-purple-600 dark:text-purple-400 text-xs">
                                 Rs. {Number(house.assessed_valuation || 0).toLocaleString()}
                               </span>
-                              <button
-                                onClick={() => handleOpenAddFloor(house.id)}
-                                className="px-2 py-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-lg border border-indigo-200"
-                              >
-                                + Floor
-                              </button>
-                              <button
-                                onClick={() => handleOpenEditHouse(house)}
-                                className="p-1 text-slate-500 hover:text-indigo-600"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteHouse(house.id)}
-                                className="p-1 text-slate-500 hover:text-rose-600"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canNew && (
+                                <button
+                                  onClick={() => handleOpenAddFloor(house.id)}
+                                  className="px-2 py-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-lg border border-indigo-200"
+                                >
+                                  + Floor
+                                </button>
+                              )}
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleOpenEditHouse(house)}
+                                  className="p-1 text-slate-500 hover:text-indigo-600"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDeleteHouse(house.id)}
+                                  className="p-1 text-slate-500 hover:text-rose-600"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1641,12 +1676,14 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                                       <td className="py-1.5 px-3 font-mono text-amber-600">{floor.depreciation_percent}%</td>
                                       <td className="py-1.5 px-3 text-slate-500">{floor.remarks || "Residential Unit"}</td>
                                       <td className="py-1.5 px-3 text-right">
-                                        <button
-                                          onClick={() => handleDeleteFloor(floor.id)}
-                                          className="text-rose-500 hover:text-rose-700 p-0.5"
-                                        >
-                                          <Trash2 className="w-3 h-3 inline" />
-                                        </button>
+                                        {canDelete && (
+                                          <button
+                                            onClick={() => handleDeleteFloor(floor.id)}
+                                            className="text-rose-500 hover:text-rose-700 p-0.5"
+                                          >
+                                            <Trash2 className="w-3 h-3 inline" />
+                                          </button>
+                                        )}
                                       </td>
                                     </tr>
                                   ))}
@@ -1681,13 +1718,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 Each parcel can be edited with real-time recalculation based on area, measuring unit, zoning nature, and rate matrices.
               </p>
             </div>
-            <button
-              onClick={handleOpenAddLand}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Land Parcel</span>
-            </button>
+            {canNew && (
+              <button
+                onClick={handleOpenAddLand}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Land Parcel</span>
+              </button>
+            )}
           </div>
 
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1766,21 +1805,25 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                           </td>
                           <td className="p-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenEditLand(l)}
-                                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors"
-                                title="Edit this land parcel"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                <span>Edit Land</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLand(l.id)}
-                                className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
-                                title="Delete land"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleOpenEditLand(l)}
+                                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                  title="Edit this land parcel"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>Edit Land</span>
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDeleteLand(l.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                  title="Delete land"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1809,13 +1852,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 Manage building numbers, plinth areas, floor counts, construction dates, and types.
               </p>
             </div>
-            <button
-              onClick={handleOpenAddHouse}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add House Structure</span>
-            </button>
+            {canNew && (
+              <button
+                onClick={handleOpenAddHouse}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add House Structure</span>
+              </button>
+            )}
           </div>
 
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1871,29 +1916,35 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                           </td>
                           <td className="p-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenAddFloor(h.id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
-                                title="Add floor to this house"
-                              >
-                                <Plus className="w-3 h-3 text-indigo-500" />
-                                <span>+Floor</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenEditHouse(h)}
-                                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 rounded-lg border border-purple-200 dark:border-purple-800 transition-colors"
-                                title="Edit this house structure"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                <span>Edit House</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteHouse(h.id)}
-                                className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
-                                title="Delete house"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {canNew && (
+                                <button
+                                  onClick={() => handleOpenAddFloor(h.id)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
+                                  title="Add floor to this house"
+                                >
+                                  <Plus className="w-3 h-3 text-indigo-500" />
+                                  <span>+Floor</span>
+                                </button>
+                              )}
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleOpenEditHouse(h)}
+                                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 rounded-lg border border-purple-200 dark:border-purple-800 transition-colors"
+                                  title="Edit this house structure"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>Edit House</span>
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDeleteHouse(h.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                  title="Delete house"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1922,13 +1973,15 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                 Floor breakdown with individual construction rates, depreciation percentages, and net assessed values.
               </p>
             </div>
-            <button
-              onClick={() => handleOpenAddFloor()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Floor Slab</span>
-            </button>
+            {canNew && (
+              <button
+                onClick={() => handleOpenAddFloor()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Floor Slab</span>
+              </button>
+            )}
           </div>
 
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
@@ -1995,21 +2048,25 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                           </td>
                           <td className="p-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenEditFloor(fl)}
-                                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
-                                title="Edit this floor slab"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                <span>Edit Floor</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteFloor(fl.id)}
-                                className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
-                                title="Delete floor"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => handleOpenEditFloor(fl)}
+                                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors"
+                                  title="Edit this floor slab"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>Edit Floor</span>
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDeleteFloor(fl.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg border border-transparent hover:border-rose-200 transition-colors"
+                                  title="Delete floor"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -2125,6 +2182,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
         <MultiYearTaxEngine
           currentLang={currentLang}
           initialTaxpayerId={selectedTaxpayerId}
+          currentSession={currentSession}
         />
       )}
 

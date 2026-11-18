@@ -4,9 +4,16 @@ import { TaxCalculationController } from "./controller.ts";
 import { TaxDetailWindow } from "./window.tsx";
 import { TaxTransactionRecord } from "../../server/ApiServiceStruct/TaxCalcApiService.ts";
 import { TaxLiabilityComparisonChart } from "../../components/TaxLiabilityComparisonChart.tsx";
+import { AuthSessionState } from "../Auth/model.ts";
+import { hasActionRight } from "../../utils/permissions.ts";
 import { Calculator, ArrowRight, CheckCircle2, AlertTriangle, Layers, Eye, RefreshCw, Radio, TrendingUp } from "lucide-react";
 
-export const TaxCalculationPanel: React.FC = () => {
+interface TaxCalculationPanelProps {
+  currentSession?: AuthSessionState | null;
+}
+
+export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ currentSession }) => {
+  const canCalculate = !currentSession || hasActionRight(currentSession, "calculation", "calculation");
   const [activeSubTab, setActiveSubTab] = useState<"comparison_chart" | "transaction_engine">("comparison_chart");
   const [params, setParams] = useState<TaxCalculationParams>(defaultTaxCalcParams);
   const [computing, setComputing] = useState(false);
@@ -234,23 +241,29 @@ export const TaxCalculationPanel: React.FC = () => {
               </select>
             </div>
 
-            <button
-              type="submit"
-              disabled={computing}
-              className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2 mt-4"
-            >
-              {computing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Computing Multi-Tier Liabilities...</span>
-                </>
-              ) : (
-                <>
-                  <Calculator className="w-4 h-4" />
-                  <span>Calculate & Synchronize Liability</span>
-                </>
-              )}
-            </button>
+            {canCalculate ? (
+              <button
+                type="submit"
+                disabled={computing}
+                className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2 mt-4"
+              >
+                {computing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Computing Multi-Tier Liabilities...</span>
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-4 h-4" />
+                    <span>Calculate & Synchronize Liability</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium mt-4">
+                Read-only access: Calculation execution right is disabled for your role.
+              </div>
+            )}
           </form>
         </div>
 

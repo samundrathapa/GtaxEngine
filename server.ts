@@ -16,6 +16,7 @@ import { DbConnects } from "./src/server/BaseFrame/db/DbConnects.ts";
 import { RedisCacheManager } from "./src/server/BaseFrame/cache/RedisCacheManager.ts";
 
 import { AuthSessionService } from "./src/server/ApiServiceStruct/AuthSessionService.ts";
+import { RolePermissionService } from "./src/server/ApiServiceStruct/RolePermissionService.ts";
 import { GeminiFeaturesService } from "./src/server/StartDomain/GeminiFeaturesService.ts";
 import { propertyDb } from "./src/server/ApiServiceStruct/TaxpayerPropertyService.ts";
 import { aiRouter } from "./ai/index.ts";
@@ -113,6 +114,7 @@ await PostgresPoolManager.initialize();
 await MigrationRunner.runPendingMigrations();
 await TableCacheDbSyncService.initialize();
 await UserRepo.ensureSchema();
+await RolePermissionService.ensureRbacSeeded(true);
 
 // Standard authorization header extraction helper
 const getAuthHeader = (req: express.Request) => req.headers.authorization || "Bearer bearer_adm_token";
@@ -274,7 +276,10 @@ app.get("/api/v1/auth/session-config", (req, res) => {
   }, "Session configuration parameters"));
 });
 
-const handleGetSession = (req: express.Request, res: express.Response) => {
+const handleGetSession = async (req: express.Request, res: express.Response) => {
+  try {
+    await RolePermissionService.ensureRbacSeeded(false);
+  } catch {}
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const sessionData = AuthSessionService.validateToken(token);
   if (!sessionData) {
@@ -1208,6 +1213,37 @@ app.put("/api/v1/users/:id", async (req, res) => {
 
 app.delete("/api/v1/users/:id", async (req, res) => {
   const result = await userApiServiceInstance.handleDelete(req.params.id, getAuthHeader(req));
+  res.status(result.status).json(result);
+});
+
+// Role & Menu Permission Management APIs
+app.get("/api/v1/roles", async (req, res) => {
+  const result = await RolePermissionService.listRoles();
+  res.status(result.status).json(result);
+});
+
+app.post("/api/v1/roles", async (req, res) => {
+  const result = await RolePermissionService.createRole(getAuthHeader(req), req.body || {});
+  res.status(result.status).json(result);
+});
+
+app.put("/api/v1/roles/:id", async (req, res) => {
+  const result = await RolePermissionService.updateRole(getAuthHeader(req), req.params.id, req.body || {});
+  res.status(result.status).json(result);
+});
+
+app.delete("/api/v1/roles/:id", async (req, res) => {
+  const result = await RolePermissionService.deleteRole(getAuthHeader(req), req.params.id);
+  res.status(result.status).json(result);
+});
+
+app.get("/api/v1/users/:id/rights", async (req, res) => {
+  const result = await RolePermissionService.getUserPermissions(req.params.id);
+  res.status(result.status).json(result);
+});
+
+app.put("/api/v1/users/:id/rights", async (req, res) => {
+  const result = await RolePermissionService.saveUserPermissions(getAuthHeader(req), req.params.id, req.body || {});
   res.status(result.status).json(result);
 });
 

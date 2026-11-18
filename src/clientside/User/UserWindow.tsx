@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { IUserRecord } from "../../serverside/User/UserModel.ts";
+import { ApiController } from "../../api/controller.ts";
 import { X, Save } from "lucide-react";
 
 interface UserWindowProps {
@@ -19,13 +20,30 @@ export const UserWindow: React.FC<UserWindowProps> = ({
     username: "",
     fullname: "",
     email: "",
-    role: "OPERATOR",
+    role: "operator",
     mobile: "",
     employee_id: "",
     password_hash: "pass123",
     is_active: true
   });
+  const [rolesList, setRolesList] = useState<Array<{ id: number; role_name: string; description?: string }>>([
+    { id: 1, role_name: "superadmin", description: "Superadmin" },
+    { id: 2, role_name: "admin", description: "Admin" },
+    { id: 3, role_name: "operator", description: "Operator" },
+    { id: 4, role_name: "user", description: "User" }
+  ]);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    ApiController.getRoles()
+      .then((res) => {
+        if (res.success && Array.isArray(res.data?.roles) && res.data.roles.length > 0) {
+          setRolesList(res.data.roles);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   useEffect(() => {
     if (editUser) {
@@ -35,7 +53,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
         username: editUser.username || (editUser.email ? editUser.email.split("@")[0] : "") || editUser.user_id || "",
         fullname: editUser.fullname || editUser.full_name || "",
         email: editUser.email || "",
-        role: editUser.role || "OPERATOR",
+        role: (editUser.role || "operator").toLowerCase(),
         mobile: editUser.mobile || "",
         employee_id: editUser.employee_id || "",
         is_active: editUser.is_active !== undefined ? editUser.is_active : true
@@ -45,7 +63,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
         username: "",
         fullname: "",
         email: "",
-        role: "OPERATOR",
+        role: "operator",
         mobile: "",
         employee_id: "",
         password_hash: "pass123",
@@ -118,14 +136,15 @@ export const UserWindow: React.FC<UserWindowProps> = ({
                 Role *
               </label>
               <select
-                value={formData.role || "OPERATOR"}
+                value={(formData.role || "operator").toLowerCase()}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
               >
-                <option value="OPERATOR">OPERATOR</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SUPERADMIN">SUPERADMIN</option>
-                <option value="TAX_ASSESSOR">TAX ASSESSOR</option>
+                {rolesList.map((r) => (
+                  <option key={r.id} value={r.role_name.toLowerCase()}>
+                    {r.role_name.toUpperCase()}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

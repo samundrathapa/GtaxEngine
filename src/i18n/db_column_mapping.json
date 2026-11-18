@@ -608,6 +608,12 @@
       "nep": "प्रयोगकर्ता र भूमिका",
       "ind": "उपयोगकर्ता और भूमिकाएँ"
     },
+    "menu_roles": {
+      "scope": "sidebar_menu",
+      "eng": "Roles & Rights",
+      "nep": "भूमिका र अनुमतिहरू",
+      "ind": "भूमिकाएं और अधिकार"
+    },
     "menu_company_profile": {
       "scope": "sidebar_menu",
       "eng": "Company Profile",

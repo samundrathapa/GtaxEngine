@@ -1,6 +1,7 @@
 import { TableCacheDbSyncService } from "../../server/db/TableCacheDbSyncService.ts";
 import { UserModel, IUserRecord } from "./UserModel.ts";
 import { authDb } from "../../server/ApiServiceStruct/AuthSessionService.ts";
+import { PostgresPoolManager } from "../../server/db/postgresPool.ts";
 
 export class UserRepo {
   private tableName = UserModel.tableName;
@@ -71,8 +72,17 @@ export class UserRepo {
     const sanitized = this.sanitizeRecord(created);
     const createdId = Number(sanitized.id);
     if (!isNaN(createdId)) {
-      const roleStr = String(sanitized.role || "operator").toLowerCase();
-      const mappedRoleId = roleStr.includes("superadmin") ? 1 : roleStr.includes("admin") ? 2 : roleStr.includes("operator") ? 3 : 4;
+      const roleStr = String(sanitized.role || "operator").trim().toLowerCase();
+      const matchedRole = authDb.findRoleByNameOrId((record as any).role_id || roleStr);
+      const mappedRoleId = matchedRole
+        ? matchedRole.id
+        : roleStr === "superadmin"
+          ? 1
+          : roleStr === "admin"
+            ? 2
+            : roleStr === "operator"
+              ? 3
+              : 4;
       authDb.users.set(createdId, {
         id: createdId,
         fullname: sanitized.fullname || "New User",
@@ -105,6 +115,15 @@ export class UserRepo {
         deleted_on: null,
         is_active: true
       });
+      if (PostgresPoolManager.getStatus().connected) {
+        try {
+          await PostgresPoolManager.query(
+            `INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
+             VALUES ($1, $2, $3, NOW(), $3, NOW(), true) ON CONFLICT DO NOTHING;`,
+            [createdId, mappedRoleId, userId]
+          );
+        } catch {}
+      }
     }
     return sanitized;
   }
@@ -139,12 +158,45 @@ export class UserRepo {
         if (updated.employee_id !== undefined) memUser.employee_id = updated.employee_id || memUser.employee_id;
         if (payload.password) memUser.password = payload.password;
       }
-      if (updated.role) {
-        const roleStr = String(updated.role).toLowerCase();
-        const mappedRoleId = roleStr.includes("superadmin") ? 1 : roleStr.includes("admin") ? 2 : roleStr.includes("operator") ? 3 : 4;
-        const existingRole = authDb.userRoles.get(targetNum);
-        if (existingRole) {
-          existingRole.role_id = mappedRoleId;
+      if (updated.role || (record as any).role_id) {
+        const roleStr = String(updated.role || record.role || "").trim().toLowerCase();
+        const matchedRole = authDb.findRoleByNameOrId((record as any).role_id || roleStr);
+        const mappedRoleId = matchedRole
+          ? matchedRole.id
+          : roleStr === "superadmin"
+            ? 1
+            : roleStr === "admin"
+              ? 2
+              : roleStr === "operator"
+                ? 3
+                : 4;
+        authDb.userRoles.set(targetNum, {
+          id: targetNum,
+          user_id: targetNum,
+          role_id: mappedRoleId,
+          insert_by: userId,
+          insert_on: new Date().toISOString(),
+          update_by: userId,
+          update_on: new Date().toISOString(),
+          delete_by: null,
+          deleted_on: null,
+          is_active: true
+        });
+        if (PostgresPoolManager.getStatus().connected) {
+          try {
+            const updRows = await PostgresPoolManager.query<any>(
+              `UPDATE tbl_user_role SET role_id = $1, update_by = $2, update_on = NOW()
+               WHERE user_id = $3 AND is_active = true RETURNING id;`,
+              [mappedRoleId, userId, targetNum]
+            );
+            if (!updRows || updRows.length === 0) {
+              await PostgresPoolManager.query(
+                `INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
+                 VALUES ($1, $2, $3, NOW(), $3, NOW(), true);`,
+                [targetNum, mappedRoleId, userId]
+              );
+            }
+          } catch {}
         }
       }
     }
