@@ -52,10 +52,23 @@ interface ParentTreeModalProps {
   onClose: () => void;
   items: any[];
   currentParentId: number | null | undefined;
-  onSelectParent: (id: number | null) => void;
+  onSelectParent: (id: number | null, item?: any | null) => void;
   currentEditingId?: number;
   title: string;
 }
+
+const getRateDisplayText = (item: any): string => {
+  if (!item) return "";
+  return String(
+    item.name_np ||
+    item.fullanme ||
+    item.fullname ||
+    item.name ||
+    item.rate_name ||
+    item.code ||
+    ""
+  ).trim();
+};
 
 const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
   isOpen,
@@ -75,7 +88,7 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
     if (!filterText) return true;
     const q = filterText.toLowerCase();
     return (
-      String(item.id).includes(q) ||
+      (item.name_np && String(item.name_np).toLowerCase().includes(q)) ||
       (item.code && item.code.toLowerCase().includes(q)) ||
       (item.fullanme && item.fullanme.toLowerCase().includes(q)) ||
       (item.fullname && item.fullname.toLowerCase().includes(q))
@@ -104,7 +117,7 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
         <div className="p-6 space-y-4 flex-1 overflow-y-auto">
           <input
             type="text"
-            placeholder="Search parent records by code, ID or name..."
+            placeholder="Search parent records by code or name..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
@@ -113,7 +126,7 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
           <div className="space-y-1.5">
             <div
               onClick={() => {
-                onSelectParent(null);
+                onSelectParent(null, null);
                 onClose();
               }}
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition-colors ${
@@ -122,7 +135,7 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
                   : "bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
               }`}
             >
-              <span className="flex items-center gap-2">🌱 Root Level (No Parent - null)</span>
+              <span className="flex items-center gap-2">🌱 Root Level (No Parent)</span>
               {!currentParentId && <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded text-white">Current</span>}
             </div>
 
@@ -131,14 +144,14 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
             ) : (
               filteredItems.map((item) => {
                 const isSelected = currentParentId === item.id;
-                const label = `${item.code ? `[${item.code}] ` : ""}${item.fullanme || item.fullname || "Item #" + item.id}`;
-                const rateStr = item.rate_per_unit !== undefined ? ` • NPR ${item.rate_per_unit}` : "";
+                const displayText = getRateDisplayText(item);
+                const rateStr = item.rate_per_unit !== undefined ? ` • NPR ${item.rate_per_unit}` : item.percent !== undefined ? ` • ${item.percent}%` : "";
 
                 return (
                   <div
                     key={item.id}
                     onClick={() => {
-                      onSelectParent(item.id);
+                      onSelectParent(item.id, item);
                       onClose();
                     }}
                     className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm cursor-pointer transition-all border ${
@@ -148,10 +161,12 @@ const ParentTreeModal: React.FC<ParentTreeModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
-                      <span className={`font-mono text-xs px-1.5 py-0.5 rounded ${isSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-900 text-slate-500"}`}>
-                        #{item.id}
-                      </span>
-                      <span className="truncate">🌳 {label}{rateStr}</span>
+                      {item.code && (
+                        <span className={`font-mono text-xs px-1.5 py-0.5 rounded ${isSelected ? "bg-indigo-700 text-white" : "bg-slate-100 dark:bg-slate-900 text-slate-500"}`}>
+                          {item.code}
+                        </span>
+                      )}
+                      <span className="truncate">🌳 {displayText}{rateStr}</span>
                     </div>
                     <span className={`text-xs px-2.5 py-1 rounded-lg font-medium shrink-0 ${isSelected ? "bg-white text-indigo-600" : "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"}`}>
                       {isSelected ? "Selected" : "Select"}
@@ -325,6 +340,22 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     }
   };
 
+  const getParentListForTab = (tab: RateTab): any[] => {
+    switch (tab) {
+      case "land_rate": return masters.landRates;
+      case "malpot_rate": return masters.malpotRates;
+      case "construction_rate": return masters.constructionRates;
+      case "depreciation": return masters.depreciations;
+      default: return [];
+    }
+  };
+
+  const resolveParentDisplayName = (parentId: number | null | undefined, list: any[]): string => {
+    if (!parentId) return "";
+    const found = list.find((i: any) => Number(i.id) === Number(parentId));
+    return found ? getRateDisplayText(found) : "";
+  };
+
   const handleOpenAdd = () => {
     setEditingItem(null);
     // Setup sensible defaults per activeTab - rate tables default to null fiscal_year_id (Universal Default)
@@ -339,19 +370,19 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         setFormData({ code: "NEW_UNIT", fullanme: "New Unit", unit_value: 100, is_active: true });
         break;
       case "land_rate":
-        setFormData({ code: "LR-NEW", fullanme: "New Land Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 1000000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "LR-NEW", fullanme: "New Land Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 1000000, parent_id: null, orginal_id: null, parent_display_text: "", area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
         break;
       case "malpot_rate":
-        setFormData({ code: "MR-NEW", fullanme: "New Malpot Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 500000, parent_id: null, area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "MR-NEW", fullanme: "New Malpot Rate", fiscal_year_id: null, unit_id: 3, rate_per_unit: 500000, parent_id: null, orginal_id: null, parent_display_text: "", area_per_unit: 1, area_upto: 10000, ward_no_ids: "1,2,3" });
         break;
       case "construction_type":
         setFormData({ code: "NEW_CONST", fullanme: "Timber & Brick Composite" });
         break;
       case "construction_rate":
-        setFormData({ code: "CR-NEW", fullanme: "Standard Construction Rate", fiscal_year_id: null, const_type_id: 1, unit_id: 1, rate_per_unit: 2800, parent_id: null, area_per_unit: 1, area_upto: 5000, ward_no_ids: "1,2,3" });
+        setFormData({ code: "CR-NEW", fullanme: "Standard Construction Rate", fiscal_year_id: null, const_type_id: 1, unit_id: 1, rate_per_unit: 2800, parent_id: null, orginal_id: null, parent_display_text: "", area_per_unit: 1, area_upto: 5000, ward_no_ids: "1,2,3" });
         break;
       case "depreciation":
-        setFormData({ code: "DEP-NEW", fullanme: "Depreciation Slab 5-10 Yrs", fiscal_year_id: null, const_type_id: 1, construction_type_id: 1, sn: 2, year_from: 6, year_to: 10, percent: 10 });
+        setFormData({ code: "DEP-NEW", fullanme: "Depreciation Slab 5-10 Yrs", fiscal_year_id: null, const_type_id: 1, construction_type_id: 1, parent_id: null, orginal_id: null, parent_display_text: "", sn: 2, year_from: 6, year_to: 10, percent: 10 });
         break;
       case "fine_rebate":
         setFormData({ fiscal_year_id: null, tax_type_id: 1, ratesn: 1, years: 0, month: 3, calcpercent: 10, ratepercent: 10, flatrate: 0, isfine: false, days: 90 });
@@ -387,12 +418,18 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     setEditingItem(item);
     const resolvedCode = item.code || (activeTab === "application_setting" ? "APP-CONF-01" : "");
     const resolvedName = item.fullname || item.fullanme || item.municipality_name || (activeTab === "application_setting" ? "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)" : "");
+    const parentList = getParentListForTab(activeTab);
+    const numericParentId = item.parent_id ? Number(item.parent_id) : null;
+    const parentDisplay = resolveParentDisplayName(numericParentId, parentList);
     setFormData({
       ...item,
       code: resolvedCode,
       fullname: resolvedName,
       fullanme: resolvedName,
-      municipality_name: item.municipality_name || resolvedName
+      municipality_name: item.municipality_name || resolvedName,
+      parent_id: numericParentId,
+      orginal_id: numericParentId,
+      parent_display_text: parentDisplay
     });
     setIsModalOpen(true);
   };
@@ -421,7 +458,39 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         municipality_name: formData.municipality_name || formData.fullname || formData.fullanme || "Kathmandu Metropolitan City"
       });
     } else {
-      res = await ApiController.saveRateItem(activeTab, formData, editingItem?.id);
+      // Resolve numeric parent ID from hidden orginal_id (or matching parent display text) and save ID in parent_id
+      let resolvedParentId: number | null =
+        formData.orginal_id !== undefined && formData.orginal_id !== null && formData.orginal_id !== ""
+          ? Number(formData.orginal_id)
+          : formData.parent_id
+          ? Number(formData.parent_id)
+          : null;
+
+      if (!resolvedParentId && formData.parent_display_text && String(formData.parent_display_text).trim()) {
+        const candidates = getParentListForTab(activeTab);
+        const typed = String(formData.parent_display_text).trim().toLowerCase();
+        const match = candidates.find(
+          (c: any) =>
+            (!editingItem || Number(c.id) !== Number(editingItem.id)) &&
+            (getRateDisplayText(c).toLowerCase() === typed ||
+              (c.name_np && String(c.name_np).trim().toLowerCase() === typed) ||
+              (c.code && String(c.code).trim().toLowerCase() === typed))
+        );
+        if (match) {
+          resolvedParentId = Number(match.id);
+        }
+      }
+      if (formData.parent_display_text === "" && !formData.orginal_id) {
+        resolvedParentId = null;
+      }
+
+      const { orginal_id: _omitOrginalId, parent_display_text: _omitParentText, ...restPayload } = formData;
+      const savePayload = {
+        ...restPayload,
+        parent_id: resolvedParentId && !Number.isNaN(resolvedParentId) ? resolvedParentId : null
+      };
+
+      res = await ApiController.saveRateItem(activeTab, savePayload, editingItem?.id);
     }
 
     if (res.success) {
@@ -779,7 +848,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     <th className="p-3.5">Rate / Unit</th>
                     <th className="p-3.5">Area Per Unit</th>
                     <th className="p-3.5">Area Upto</th>
-                    <th className="p-3.5">Parent ID</th>
+                    <th className="p-3.5">Parent</th>
                     <th className="p-3.5">Applicable Wards</th>
                   </>
                 )}
@@ -791,7 +860,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     <th className="p-3.5">Area Per Unit</th>
                     <th className="p-3.5">Area Upto</th>
                     <th className="p-3.5">Structure Type</th>
-                    <th className="p-3.5">Parent ID</th>
+                    <th className="p-3.5">Parent</th>
                     <th className="p-3.5">Wards</th>
                   </>
                 )}
@@ -801,6 +870,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                     <th className="p-3.5">Structure Type</th>
                     <th className="p-3.5">Age Range (Yrs)</th>
                     <th className="p-3.5">Depreciation %</th>
+                    <th className="p-3.5">Parent</th>
                   </>
                 )}
                 {activeTab === "fine_rebate" && (
@@ -903,8 +973,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         <td className="p-3.5 font-mono">
                           {item.area_upto ?? 0}
                         </td>
-                        <td className="p-3.5 font-mono text-slate-500">
-                          {item.parent_id ? `#${item.parent_id}` : "-"}
+                        <td className="p-3.5 text-slate-600 dark:text-slate-300">
+                          {resolveParentDisplayName(item.parent_id, activeTab === "land_rate" ? masters.landRates : masters.malpotRates) || "-"}
                         </td>
                         <td className="p-3.5">
                           <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-mono">
@@ -943,8 +1013,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         <td className="p-3.5">
                           {masters.constructionTypes.find((c) => c.id === item.const_type_id)?.fullanme || `Type #${item.const_type_id}`}
                         </td>
-                        <td className="p-3.5 font-mono text-slate-500">
-                          {item.parent_id ? `#${item.parent_id}` : "-"}
+                        <td className="p-3.5 text-slate-600 dark:text-slate-300">
+                          {resolveParentDisplayName(item.parent_id, masters.constructionRates) || "-"}
                         </td>
                         <td className="p-3.5 font-mono text-slate-500">{item.ward_no_ids || "All"}</td>
                       </>
@@ -972,6 +1042,9 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         </td>
                         <td className="p-3.5 font-mono font-bold text-amber-600 dark:text-amber-400">
                           {item.percent}%
+                        </td>
+                        <td className="p-3.5 text-slate-600 dark:text-slate-300">
+                          {resolveParentDisplayName(item.parent_id, masters.depreciations) || "-"}
                         </td>
                       </>
                     )}
@@ -1116,7 +1189,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   {editingItem
-                    ? `Edit ${activeTab === "company" ? "Company Profile" : activeTab === "application_setting" ? "Settings" : "Record"}: ${editingItem.fullname || editingItem.fullanme || editingItem.code || editingItem.id}`
+                    ? `Edit ${activeTab === "company" ? "Company Profile" : activeTab === "application_setting" ? "Settings" : "Record"}: ${editingItem.name_np || editingItem.fullname || editingItem.fullanme || editingItem.code || "Record"}`
                     : `Add New ${activeTab === "company" ? "Company / Ward Profile" : activeTab.replace("_", " ")}`}
                 </h3>
                 <div className="text-[11px] text-slate-500 font-mono capitalize">
@@ -1232,16 +1305,48 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Parent Rate (parent_id)
+                        Parent Rate
                       </label>
                       <div className="flex items-center gap-2">
                         <input
-                          type="number"
-                          value={formData.parent_id ?? ""}
-                          onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="Parent ID (null if root)"
-                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-xs"
+                          type="hidden"
+                          name="orginal_id"
+                          value={formData.orginal_id ?? ""}
                         />
+                        <input
+                          type="text"
+                          name="parent_id"
+                          list="gtax-parent-rate-options"
+                          value={formData.parent_display_text ?? ""}
+                          onChange={(e) => {
+                            const textVal = e.target.value;
+                            const parentPool = activeTab === "land_rate" ? masters.landRates : masters.malpotRates;
+                            const trimmed = textVal.trim().toLowerCase();
+                            const matched = trimmed
+                              ? parentPool.find(
+                                  (i: any) =>
+                                    (!editingItem || Number(i.id) !== Number(editingItem.id)) &&
+                                    (getRateDisplayText(i).toLowerCase() === trimmed ||
+                                      (i.name_np && String(i.name_np).trim().toLowerCase() === trimmed))
+                                )
+                              : null;
+                            setFormData({
+                              ...formData,
+                              parent_display_text: textVal,
+                              orginal_id: matched ? Number(matched.id) : null,
+                              parent_id: matched ? Number(matched.id) : null
+                            });
+                          }}
+                          placeholder="Select or search parent name (blank if root)"
+                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                        />
+                        <datalist id="gtax-parent-rate-options">
+                          {(activeTab === "land_rate" ? masters.landRates : masters.malpotRates)
+                            .filter((i: any) => !editingItem || Number(i.id) !== Number(editingItem.id))
+                            .map((i: any) => (
+                              <option key={i.id} value={getRateDisplayText(i)} />
+                            ))}
+                        </datalist>
                         <button
                           type="button"
                           onClick={() => setIsParentTreeModalOpen(true)}
@@ -1252,17 +1357,15 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           <span>Tree View</span>
                         </button>
                       </div>
-                      {formData.parent_id && (
+                      {(formData.orginal_id || formData.parent_display_text) && (
                         <div className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
-                          <span>
-                            Selected: #{formData.parent_id} {
-                              (activeTab === "land_rate" ? masters.landRates : masters.malpotRates).find((i: any) => i.id === formData.parent_id)?.code || ""
-                            }
+                          <span className="truncate">
+                            Selected: {formData.parent_display_text || resolveParentDisplayName(formData.orginal_id ?? formData.parent_id, activeTab === "land_rate" ? masters.landRates : masters.malpotRates)}
                           </span>
                           <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, parent_id: null })}
-                            className="text-red-500 hover:underline font-bold"
+                            onClick={() => setFormData({ ...formData, parent_id: null, orginal_id: null, parent_display_text: "" })}
+                            className="text-red-500 hover:underline font-bold ml-2 shrink-0"
                           >
                             Clear
                           </button>
@@ -1447,16 +1550,47 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Parent Rate (parent_id)
+                        Parent Rate
                       </label>
                       <div className="flex items-center gap-2">
                         <input
-                          type="number"
-                          value={formData.parent_id ?? ""}
-                          onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
-                          placeholder="Parent ID (null if root)"
-                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-xs"
+                          type="hidden"
+                          name="orginal_id"
+                          value={formData.orginal_id ?? ""}
                         />
+                        <input
+                          type="text"
+                          name="parent_id"
+                          list="gtax-parent-const-options"
+                          value={formData.parent_display_text ?? ""}
+                          onChange={(e) => {
+                            const textVal = e.target.value;
+                            const trimmed = textVal.trim().toLowerCase();
+                            const matched = trimmed
+                              ? masters.constructionRates.find(
+                                  (i: any) =>
+                                    (!editingItem || Number(i.id) !== Number(editingItem.id)) &&
+                                    (getRateDisplayText(i).toLowerCase() === trimmed ||
+                                      (i.name_np && String(i.name_np).trim().toLowerCase() === trimmed))
+                                )
+                              : null;
+                            setFormData({
+                              ...formData,
+                              parent_display_text: textVal,
+                              orginal_id: matched ? Number(matched.id) : null,
+                              parent_id: matched ? Number(matched.id) : null
+                            });
+                          }}
+                          placeholder="Select or search parent name (blank if root)"
+                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                        />
+                        <datalist id="gtax-parent-const-options">
+                          {masters.constructionRates
+                            .filter((i: any) => !editingItem || Number(i.id) !== Number(editingItem.id))
+                            .map((i: any) => (
+                              <option key={i.id} value={getRateDisplayText(i)} />
+                            ))}
+                        </datalist>
                         <button
                           type="button"
                           onClick={() => setIsParentTreeModalOpen(true)}
@@ -1467,17 +1601,15 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           <span>Tree View</span>
                         </button>
                       </div>
-                      {formData.parent_id && (
+                      {(formData.orginal_id || formData.parent_display_text) && (
                         <div className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
-                          <span>
-                            Selected: #{formData.parent_id} {
-                              masters.constructionRates.find((i: any) => i.id === formData.parent_id)?.code || ""
-                            }
+                          <span className="truncate">
+                            Selected: {formData.parent_display_text || resolveParentDisplayName(formData.orginal_id ?? formData.parent_id, masters.constructionRates)}
                           </span>
                           <button
                             type="button"
-                            onClick={() => setFormData({ ...formData, parent_id: null })}
-                            className="text-red-500 hover:underline font-bold"
+                            onClick={() => setFormData({ ...formData, parent_id: null, orginal_id: null, parent_display_text: "" })}
+                            className="text-red-500 hover:underline font-bold ml-2 shrink-0"
                           >
                             Clear
                           </button>
@@ -1541,6 +1673,75 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                      Parent Depreciation Rate
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="hidden"
+                        name="orginal_id"
+                        value={formData.orginal_id ?? ""}
+                      />
+                      <input
+                        type="text"
+                        name="parent_id"
+                        list="gtax-parent-dep-options"
+                        value={formData.parent_display_text ?? ""}
+                        onChange={(e) => {
+                          const textVal = e.target.value;
+                          const trimmed = textVal.trim().toLowerCase();
+                          const matched = trimmed
+                            ? masters.depreciations.find(
+                                (i: any) =>
+                                  (!editingItem || Number(i.id) !== Number(editingItem.id)) &&
+                                  (getRateDisplayText(i).toLowerCase() === trimmed ||
+                                    (i.name_np && String(i.name_np).trim().toLowerCase() === trimmed))
+                              )
+                            : null;
+                          setFormData({
+                            ...formData,
+                            parent_display_text: textVal,
+                            orginal_id: matched ? Number(matched.id) : null,
+                            parent_id: matched ? Number(matched.id) : null
+                          });
+                        }}
+                        placeholder="Select or search parent name (blank if root)"
+                        className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                      />
+                      <datalist id="gtax-parent-dep-options">
+                        {masters.depreciations
+                          .filter((i: any) => !editingItem || Number(i.id) !== Number(editingItem.id))
+                          .map((i: any) => (
+                            <option key={i.id} value={getRateDisplayText(i)} />
+                          ))}
+                      </datalist>
+                      <button
+                        type="button"
+                        onClick={() => setIsParentTreeModalOpen(true)}
+                        className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 flex items-center gap-1.5 text-xs font-semibold shrink-0"
+                        title="Open Tree View window to select parent record"
+                      >
+                        <span>🌳</span>
+                        <span>Tree View</span>
+                      </button>
+                    </div>
+                    {(formData.orginal_id || formData.parent_display_text) && (
+                      <div className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                        <span className="truncate">
+                          Selected: {formData.parent_display_text || resolveParentDisplayName(formData.orginal_id ?? formData.parent_id, masters.depreciations)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, parent_id: null, orginal_id: null, parent_display_text: "" })}
+                          className="text-red-500 hover:underline font-bold ml-2 shrink-0"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -2226,11 +2427,26 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       <ParentTreeModal
         isOpen={isParentTreeModalOpen}
         onClose={() => setIsParentTreeModalOpen(false)}
-        items={activeTab === "construction_rate" ? masters.constructionRates : activeTab === "malpot_rate" ? masters.malpotRates : masters.landRates}
-        currentParentId={formData.parent_id}
-        onSelectParent={(id) => setFormData({ ...formData, parent_id: id })}
+        items={getParentListForTab(activeTab)}
+        currentParentId={formData.orginal_id ?? formData.parent_id}
+        onSelectParent={(id, selectedItem) =>
+          setFormData({
+            ...formData,
+            parent_id: id,
+            orginal_id: id,
+            parent_display_text: selectedItem ? getRateDisplayText(selectedItem) : ""
+          })
+        }
         currentEditingId={editingItem?.id}
-        title={activeTab === "construction_rate" ? "Select Parent Construction Rate from Tree" : activeTab === "malpot_rate" ? "Select Parent Malpot Rate from Tree" : "Select Parent Land Rate from Tree"}
+        title={
+          activeTab === "construction_rate"
+            ? "Select Parent Construction Rate from Tree"
+            : activeTab === "malpot_rate"
+            ? "Select Parent Malpot Rate from Tree"
+            : activeTab === "depreciation"
+            ? "Select Parent Depreciation Rate from Tree"
+            : "Select Parent Land Rate from Tree"
+        }
       />
     </div>
   );
