@@ -139,6 +139,8 @@ export class UserRepo extends BaseRepo<UserRecord> {
             effective_from DATE DEFAULT CURRENT_DATE NOT NULL,
             effective_to DATE DEFAULT NULL,
             employee_id VARCHAR(64) DEFAULT NULL,
+            preferred_lang VARCHAR(10) DEFAULT 'eng',
+            preferred_theme VARCHAR(20) DEFAULT 'slate',
             is_locked BOOLEAN DEFAULT FALSE NOT NULL,
             insert_by VARCHAR(64) NOT NULL DEFAULT 'SYSTEM_INIT',
             insert_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -148,6 +150,8 @@ export class UserRepo extends BaseRepo<UserRecord> {
             deleted_on TIMESTAMP WITH TIME ZONE DEFAULT NULL,
             is_active BOOLEAN DEFAULT TRUE NOT NULL
         );
+        ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS preferred_lang VARCHAR(10) DEFAULT 'eng';
+        ALTER TABLE tbl_user ADD COLUMN IF NOT EXISTS preferred_theme VARCHAR(20) DEFAULT 'slate';
       `);
 
       // 3. tbl_user_role

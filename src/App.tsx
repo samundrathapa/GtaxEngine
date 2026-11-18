@@ -13,7 +13,14 @@ import { RealtimeSyncPanel } from "./modules/RealtimeSync/panel.tsx";
 import { JurisdictionPanel } from "./modules/Jurisdiction/panel.tsx";
 import { UserPanel } from "./modules/User/panel.tsx";
 import { ReportsPanel } from "./modules/Reports/panel.tsx";
-import { translations, SupportedLang, SupportedTheme } from "./utils/i18n.ts";
+import {
+  translations,
+  SupportedLang,
+  SupportedTheme,
+  subscribeToTranslations,
+  getSavedLanguage,
+  persistLanguageLocally
+} from "./utils/i18n.ts";
 import { UserMenu } from "./components/UserMenu.tsx";
 import { GlobalTaxpayerSearch } from "./components/GlobalTaxpayerSearch.tsx";
 import { AiTaxChatbotModal } from "./components/AiTaxChatbotModal.tsx";
@@ -298,25 +305,67 @@ export default function App() {
     }
   }, [isDbStatusModalOpen]);
 
-  // Theme & Language (Controlled via User Menu)
+  // Theme & Language (Controlled via User Menu and persisted to user account + localStorage)
   const [currentLang, setCurrentLang] = useState<SupportedLang>(() => {
-    return (localStorage.getItem("gtax_active_lang") as SupportedLang) || "eng";
+    return getSavedLanguage();
   });
   const [currentTheme, setCurrentTheme] = useState<SupportedTheme>(() => {
     return (localStorage.getItem("gtax_active_theme") as SupportedTheme) || "slate";
   });
+  const [, setTranslationTick] = useState(0);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("gtax_active_lang", currentLang);
-    } catch (_) {}
-  }, [currentLang]);
+    return subscribeToTranslations(() => setTranslationTick((v) => v + 1));
+  }, []);
+
+  useEffect(() => {
+    persistLanguageLocally(currentLang, session?.user?.id);
+  }, [currentLang, session?.user?.id]);
 
   useEffect(() => {
     try {
       localStorage.setItem("gtax_active_theme", currentTheme);
     } catch (_) {}
   }, [currentTheme]);
+
+  const handleLanguageChange = useCallback(
+    async (lang: SupportedLang) => {
+      setCurrentLang(lang);
+      persistLanguageLocally(lang, session?.user?.id);
+      if (session?.isAuthenticated && session?.token) {
+        setSession((prev) =>
+          prev && prev.user
+            ? { ...prev, user: { ...prev.user, preferred_lang: lang } }
+            : prev
+        );
+        try {
+          await ApiController.updateUserPreferences({ preferred_lang: lang }, session.token);
+        } catch (err) {
+          console.warn("Failed to persist user language preference:", err);
+        }
+      }
+    },
+    [session?.isAuthenticated, session?.token, session?.user?.id]
+  );
+
+  const handleThemeChange = useCallback(
+    async (theme: SupportedTheme) => {
+      setCurrentTheme(theme);
+      if (session?.isAuthenticated && session?.token) {
+        setSession((prev) =>
+          prev && prev.user
+            ? { ...prev, user: { ...prev.user, preferred_theme: theme } }
+            : prev
+        );
+        try {
+          await ApiController.updateUserPreferences({ preferred_theme: theme }, session.token);
+        } catch (err) {
+          console.warn("Failed to persist user theme preference:", err);
+        }
+      }
+    },
+    [session?.isAuthenticated, session?.token]
+  );
 
   // Global Dynamic Active Fiscal Year State (Derived from application_settings & tbl_fiscal_year)
   const [activeFiscalYearCode, setActiveFiscalYearCode] = useState<string>(() => {
@@ -525,12 +574,31 @@ export default function App() {
     }
   };
 
-  // Check saved session on mount
+  // Check saved session on mount and restore user's saved language/theme preference
   useEffect(() => {
     const initSession = async () => {
       const active = await AuthController.checkActiveSession();
       if (active) {
         setSession(active);
+        const userId = active.user?.id;
+        const serverLang = active.user?.preferred_lang as SupportedLang | undefined;
+        const localUserLang = userId ? localStorage.getItem(`gtax_user_lang_${userId}`) : null;
+        if (serverLang && ["eng", "nep", "ind"].includes(serverLang)) {
+          // If server has an explicit non-default preference OR no local override, restore server preference
+          if (serverLang !== "eng" || !localUserLang) {
+            setCurrentLang(serverLang);
+            persistLanguageLocally(serverLang, userId);
+          } else if (localUserLang && ["eng", "nep", "ind"].includes(localUserLang)) {
+            setCurrentLang(localUserLang as SupportedLang);
+            if (active.token) {
+              ApiController.updateUserPreferences({ preferred_lang: localUserLang }, active.token).catch(() => {});
+            }
+          }
+        }
+        const serverTheme = active.user?.preferred_theme as SupportedTheme | undefined;
+        if (serverTheme && ["dark", "slate", "emerald", "light"].includes(serverTheme)) {
+          setCurrentTheme(serverTheme);
+        }
       }
       setCheckingSession(false);
     };
@@ -635,7 +703,25 @@ export default function App() {
   if (!session || !session.isAuthenticated) {
     return (
       <AuthPanel
-        onLoginSuccess={(newSession) => setSession(newSession)}
+        onLoginSuccess={(newSession) => {
+          setSession(newSession);
+          const uid = newSession.user?.id;
+          const userLang = newSession.user?.preferred_lang as SupportedLang | undefined;
+          const localUserLang = uid ? localStorage.getItem(`gtax_user_lang_${uid}`) : null;
+          if (userLang && ["eng", "nep", "ind"].includes(userLang) && (userLang !== "eng" || !localUserLang)) {
+            setCurrentLang(userLang);
+            persistLanguageLocally(userLang, uid);
+          } else if (localUserLang && ["eng", "nep", "ind"].includes(localUserLang)) {
+            setCurrentLang(localUserLang as SupportedLang);
+            if (newSession.token) {
+              ApiController.updateUserPreferences({ preferred_lang: localUserLang }, newSession.token).catch(() => {});
+            }
+          }
+          const userTheme = newSession.user?.preferred_theme as SupportedTheme | undefined;
+          if (userTheme && ["dark", "slate", "emerald", "light"].includes(userTheme)) {
+            setCurrentTheme(userTheme);
+          }
+        }}
         onOpenPrivacy={() => {
           setActiveTab("privacy");
           window.location.hash = "#/privacy";
@@ -710,7 +796,7 @@ export default function App() {
                 }`}
               >
                 <LayoutDashboard className="w-5 h-5 text-indigo-400 shrink-0" />
-                <span className="text-sm">Dashboard</span>
+                <span className="text-sm">{t.dashboard}</span>
               </button>
             </div>
 
@@ -729,7 +815,7 @@ export default function App() {
                 }`}
               >
                 <Users className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span className="text-sm">Taxpayer</span>
+                <span className="text-sm">{t.taxpayer}</span>
               </button>
             </div>
 
@@ -748,7 +834,7 @@ export default function App() {
               >
                 <div className="flex items-center gap-3">
                   <Calculator className="w-5 h-5 text-amber-400 shrink-0" />
-                  <span className="text-sm">Calculation</span>
+                  <span className="text-sm">{t.calculation}</span>
                 </div>
                 {calculationSubMenuOpen ? (
                   <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -772,7 +858,7 @@ export default function App() {
                     }`}
                   >
                     <Calculator className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Calculation Studio</span>
+                    <span>{t.calculationStudio}</span>
                   </button>
 
                   <button
@@ -788,7 +874,7 @@ export default function App() {
                     }`}
                   >
                     <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Multi-Year Engine</span>
+                    <span>{t.multiYearEngine}</span>
                   </button>
                 </div>
               )}
@@ -809,7 +895,7 @@ export default function App() {
               >
                 <div className="flex items-center gap-3">
                   <Sliders className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <span className="text-sm">Master</span>
+                  <span className="text-sm">{t.master}</span>
                 </div>
                 {mastersSubMenuOpen ? (
                   <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -833,7 +919,7 @@ export default function App() {
                     }`}
                   >
                     <DollarSign className="w-4 h-4 text-emerald-400" />
-                    <span>Rate Masters</span>
+                    <span>{t.rateMasters}</span>
                   </button>
 
                   <button
@@ -849,7 +935,7 @@ export default function App() {
                     }`}
                   >
                     <Calendar className="w-4 h-4 text-blue-400" />
-                    <span>Fiscal Year</span>
+                    <span>{t.fiscalYear}</span>
                   </button>
 
                   <button
@@ -865,7 +951,7 @@ export default function App() {
                     }`}
                   >
                     <Building className="w-4 h-4 text-purple-400" />
-                    <span>Construction Types</span>
+                    <span>{t.constructionTypes}</span>
                   </button>
 
                   <button
@@ -881,7 +967,7 @@ export default function App() {
                     }`}
                   >
                     <Sliders className="w-4 h-4 text-cyan-400" />
-                    <span>Measurement Unit</span>
+                    <span>{t.measurementUnit}</span>
                   </button>
                 </div>
               )}
@@ -902,7 +988,7 @@ export default function App() {
               >
                 <div className="flex items-center gap-3">
                   <Shield className="w-5 h-5 text-rose-400 shrink-0" />
-                  <span className="text-sm">User</span>
+                  <span className="text-sm">{t.user}</span>
                 </div>
                 {rbacSubMenuOpen ? (
                   <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -925,7 +1011,7 @@ export default function App() {
                     }`}
                   >
                     <Users className="w-4 h-4 text-indigo-400" />
-                    <span>Users & Roles</span>
+                    <span>{t.usersAndRoles}</span>
                   </button>
 
                   <button
@@ -941,7 +1027,7 @@ export default function App() {
                     }`}
                   >
                     <Landmark className="w-4 h-4 text-amber-400" />
-                    <span>Company Profile</span>
+                    <span>{t.companyProfile}</span>
                   </button>
 
                   <button
@@ -956,19 +1042,8 @@ export default function App() {
                     }`}
                   >
                     <Activity className="w-4 h-4 text-rose-400" />
-                    <span>Audit Logs</span>
+                    <span>{t.auditLogs}</span>
                   </button>
-
-                  {/* <button
-                    onClick={() => {
-                      setActiveTab("privacy");
-                      setSidebarOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
-                  >
-                    <Shield className="w-4 h-4 text-emerald-400" />
-                    <span>Privacy Policy</span>
-                  </button> */}
                 </div>
               )}
             </div>
@@ -986,7 +1061,7 @@ export default function App() {
               }}
               className="text-indigo-400 hover:text-white underline cursor-pointer"
             >
-              Privacy Policy
+              {t.privacyPolicy}
             </button>
           </div>
           <button
@@ -995,7 +1070,7 @@ export default function App() {
             className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>{loggingOut ? "Logging out..." : "Sign Out"}</span>
+            <span>{loggingOut ? "Logging out..." : t.signOut}</span>
           </button>
         </div>
       </aside>
@@ -1134,8 +1209,8 @@ export default function App() {
               session={session}
               currentLang={currentLang}
               currentTheme={currentTheme}
-              onLanguageChange={(lang) => setCurrentLang(lang)}
-              onThemeChange={(theme) => setCurrentTheme(theme)}
+              onLanguageChange={handleLanguageChange}
+              onThemeChange={handleThemeChange}
               onLogout={handleLogout}
               loggingOut={loggingOut}
               onOpenDbColumnModal={() => setIsDbColMapOpen(true)}
@@ -1205,7 +1280,7 @@ export default function App() {
           {activeTab === "ai_agent" && <AiAgentPanel />}
           {activeTab === "realtime_sync" && <RealtimeSyncPanel />}
           {activeTab === "jurisdictions" && <JurisdictionPanel />}
-          {activeTab === "users" && <UserPanel currentSession={session} />}
+          {activeTab === "users" && <UserPanel currentSession={session} currentLang={currentLang} />}
           {activeTab === "security_logs" && <SessionLogsPanel />}
           {activeTab === "rbac" && (
             <RatesMasterPanel
@@ -1271,7 +1346,7 @@ export default function App() {
         isOpen={isDbColMapOpen}
         onClose={() => setIsDbColMapOpen(false)}
         currentLang={currentLang}
-        onLanguageChange={(lang) => setCurrentLang(lang)}
+        onLanguageChange={handleLanguageChange}
       />
 
       {/* Flutter Mobile App (iOS & Android) Simulator & Deployment Modal */}

@@ -15,6 +15,8 @@ export interface IUserRecord {
   employee_id?: string;
   password?: string;
   password_hash?: string;
+  preferred_lang?: "eng" | "nep" | "ind";
+  preferred_theme?: string;
   is_active?: boolean;
   insert_by?: string;
   insert_on?: string;
@@ -37,6 +39,8 @@ export const UserModel: IEntityModel = {
     email: "VARCHAR(150)",
     password: "VARCHAR(255)",
     password_hash: "VARCHAR(255)",
+    preferred_lang: "VARCHAR(10)",
+    preferred_theme: "VARCHAR(20)",
     role: "VARCHAR(50)",
     mobile: "VARCHAR(32)",
     phone_number: "VARCHAR(32)",

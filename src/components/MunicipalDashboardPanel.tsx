@@ -19,11 +19,12 @@ import {
 } from "lucide-react";
 
 import { ApiController } from "../api/controller.ts";
+import { tText, subscribeToTranslations, SupportedLang } from "../utils/i18n.ts";
 
 interface MunicipalDashboardPanelProps {
   onNavigate: (tab: "taxpayer" | "calculation" | "masters" | "rate" | "users") => void;
   onOpenNewTaxpayer?: () => void;
-  currentLang?: "nep" | "ind" | "eng";
+  currentLang?: SupportedLang;
   activeFiscalYearCode?: string;
   activeFiscalYearId?: number;
 }
@@ -35,6 +36,11 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
   activeFiscalYearCode,
   activeFiscalYearId
 }) => {
+  const [, setLangVersion] = useState(0);
+  useEffect(() => {
+    return subscribeToTranslations(() => setLangVersion((v) => v + 1));
+  }, []);
+  const tr = (text: string) => tText(text, currentLang);
   const initialFy = activeFiscalYearCode
     ? (activeFiscalYearCode.endsWith("BS") ? activeFiscalYearCode : `${activeFiscalYearCode} BS`)
     : (localStorage.getItem("gtax_active_fy_code") ? `${localStorage.getItem("gtax_active_fy_code")} BS` : "Active FY");
@@ -176,7 +182,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Municipal Property Tax Administration
+              {tr("Municipal Property Tax Administration")}
             </h1>
            
           </div>
@@ -187,14 +193,14 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
               className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition"
             >
               <Users className="w-4 h-4" />
-              <span>Taxpayer Registry</span>
+              <span>{tr("Taxpayer Registry")}</span>
             </button>
             <button
               onClick={() => onNavigate("calculation")}
               className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-amber-600/30 flex items-center gap-2 transition"
             >
               <Calculator className="w-4 h-4" />
-              <span>Valuation Window</span>
+              <span>{tr("Valuation Window")}</span>
             </button>
           </div>
         </div>
@@ -209,7 +215,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Taxpayer Citizens
+              {tr("Taxpayer Citizens")}
             </span>
             <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
               <Users className="w-5 h-5" />
@@ -231,7 +237,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Assessed Valuation
+              {tr("assessedValuation")}
             </span>
             <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
               <Building className="w-5 h-5" />
@@ -241,7 +247,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
             {stats.totalValuation}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Across 342 land & house units
+            Across 342 land &amp; house units
           </div>
         </div>
 
@@ -252,7 +258,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Tax Revenue
+              {tr("Tax Revenue")}
             </span>
             <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
               <DollarSign className="w-5 h-5" />
@@ -277,7 +283,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Users className="w-5 h-5" />
           </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-white">Taxpayer</div>
+          <div className="font-bold text-sm text-slate-900 dark:text-white">{tr("taxpayer")}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Registry, Dossier, Land & House Assets</div>
         </button>
 
@@ -288,7 +294,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Calculator className="w-5 h-5" />
           </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-white">Calculation</div>
+          <div className="font-bold text-sm text-slate-900 dark:text-white">{tr("calculation")}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Frontend + Manual 5-Step Valuation</div>
         </button>
 
@@ -299,7 +305,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
           <div className="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Sliders className="w-5 h-5" />
           </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-white">Master</div>
+          <div className="font-bold text-sm text-slate-900 dark:text-white">{tr("master")}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Fiscal Year, Rates & System Tables</div>
         </button>
 
@@ -310,7 +316,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
           <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <ShieldCheck className="w-5 h-5" />
           </div>
-          <div className="font-bold text-sm text-slate-900 dark:text-white">User & RBAC</div>
+          <div className="font-bold text-sm text-slate-900 dark:text-white">{tr("usersAndRoles")}</div>
           <div className="text-[11px] text-slate-500 mt-0.5">Accounts, Roles, Permissions & Logs</div>
         </button>
       </div>
@@ -320,7 +326,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Recent Municipal Property Assessments
+              {tr("Recent Municipal Property Assessments")}
             </h3>
            
           </div>
@@ -328,7 +334,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
             onClick={() => onNavigate("taxpayer")}
             className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
           >
-            <span>View All in Taxpayer Hub</span>
+            <span>{tr("View All in Taxpayer Hub")}</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -337,13 +343,13 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="p-3.5 pl-5">Taxpayer Citizen</th>
-                <th className="p-3.5">Code</th>
-                <th className="p-3.5">Ward / Parcel</th>
-                <th className="p-3.5">Assessed Valuation</th>
-                <th className="p-3.5">Tax Payable</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 pr-5 text-right">Actions</th>
+                <th className="p-3.5 pl-5">{tr("Taxpayer Citizen")}</th>
+                <th className="p-3.5">{tr("code")}</th>
+                <th className="p-3.5">{tr("Ward / Parcel")}</th>
+                <th className="p-3.5">{tr("assessedValuation")}</th>
+                <th className="p-3.5">{tr("Tax Payable")}</th>
+                <th className="p-3.5">{tr("Status")}</th>
+                <th className="p-3.5 pr-5 text-right">{tr("actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">

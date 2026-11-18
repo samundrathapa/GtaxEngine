@@ -244,6 +244,29 @@ app.post("/api/auth/admin/reset-password", handleAdminResetUserPassword);
 app.post("/api/v1/auth/admin/reset-all-passwords", handleAdminResetAllPasswords);
 app.post("/api/auth/admin/reset-all-passwords", handleAdminResetAllPasswords);
 
+const handleUpdateUserPreferences = async (req: express.Request, res: express.Response) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const { preferred_lang, preferred_theme } = req.body || {};
+    const clientIp = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+    const userAgent = req.headers["user-agent"] || "gtax-client";
+    const result = await AuthSessionService.updateUserPreferences(
+      authHeader,
+      { preferred_lang, preferred_theme },
+      clientIp,
+      userAgent
+    );
+    return res.status(result.status || 200).json(result);
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Failed to save preferences", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+app.post("/api/v1/auth/preferences", handleUpdateUserPreferences);
+app.put("/api/v1/auth/preferences", handleUpdateUserPreferences);
+app.post("/api/auth/preferences", handleUpdateUserPreferences);
+app.put("/api/auth/preferences", handleUpdateUserPreferences);
+
 app.get("/api/v1/auth/session-config", (req, res) => {
   const timeoutMin = parseInt(process.env.VITE_IDLE_SESSION_TIMEOUT_MINUTES || process.env.IDLE_SESSION_TIMEOUT_MINUTES || "15", 10);
   res.json(ApiResponse.buildSuccess({
@@ -251,7 +274,7 @@ app.get("/api/v1/auth/session-config", (req, res) => {
   }, "Session configuration parameters"));
 });
 
-app.get("/api/v1/auth/session", (req, res) => {
+const handleGetSession = (req: express.Request, res: express.Response) => {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const sessionData = AuthSessionService.validateToken(token);
   if (!sessionData) {
@@ -265,7 +288,9 @@ app.get("/api/v1/auth/session", (req, res) => {
       email: sessionData.user.email,
       mobile: sessionData.user.mobile,
       country_id: sessionData.user.country_id,
-      employee_id: sessionData.user.employee_id
+      employee_id: sessionData.user.employee_id,
+      preferred_lang: sessionData.user.preferred_lang || "eng",
+      preferred_theme: sessionData.user.preferred_theme || undefined
     },
     role: sessionData.role,
     rights: sessionData.rights.map((r) => ({
@@ -275,7 +300,192 @@ app.get("/api/v1/auth/session", (req, res) => {
       action_type: r.action_type
     }))
   }, "Session active"));
-});
+};
+
+app.get("/api/v1/auth/session", handleGetSession);
+app.get("/api/auth/session", handleGetSession);
+
+// ==========================================
+// i18n Language JSON + Google Translate Fallback API
+// ==========================================
+const serverLocaleCache: Record<string, Record<string, string>> = {};
+const googleTranslateMemoryCache = new Map<string, string>();
+
+const loadServerLocaleDicts = () => {
+  if (Object.keys(serverLocaleCache).length > 0) return serverLocaleCache;
+  try {
+    const colPath = path.resolve(__dirname, "src", "i18n", "db_column_mapping.json");
+    if (fs.existsSync(colPath)) {
+      const parsed = JSON.parse(fs.readFileSync(colPath, "utf-8"));
+      const cols = parsed?.columns || {};
+      for (const lang of ["eng", "nep", "ind"]) {
+        serverLocaleCache[lang] = serverLocaleCache[lang] || {};
+        for (const [k, entry] of Object.entries<any>(cols)) {
+          if (entry && typeof entry[lang] === "string" && entry[lang].trim()) {
+            serverLocaleCache[lang][k] = entry[lang];
+          }
+        }
+      }
+    }
+    for (const lang of ["eng", "nep", "ind"]) {
+      const locPath = path.resolve(__dirname, "src", "i18n", "locales", `${lang}.json`);
+      if (fs.existsSync(locPath)) {
+        const parsedLoc = JSON.parse(fs.readFileSync(locPath, "utf-8"));
+        serverLocaleCache[lang] = { ...(serverLocaleCache[lang] || {}), ...parsedLoc };
+      }
+    }
+  } catch (err) {
+    console.warn("[i18n] Warning loading server locale JSONs:", err);
+  }
+  return serverLocaleCache;
+};
+
+const translateSingleTermWithJsonOrGoogle = async (
+  rawText: string,
+  targetLang: string,
+  key?: string
+): Promise<{ translatedText: string; source: "json" | "cache" | "google_translate" | "fallback"; originalText: string }> => {
+  const dicts = loadServerLocaleDicts();
+  const langKey = ["eng", "nep", "ind"].includes(targetLang) ? targetLang : "eng";
+  const lookupKey = (key || rawText || "").trim();
+
+  // 1. Check language JSON by key first
+  if (lookupKey && dicts[langKey]?.[lookupKey]) {
+    return {
+      translatedText: dicts[langKey][lookupKey],
+      source: "json",
+      originalText: rawText || lookupKey
+    };
+  }
+
+  // Also check if rawText matches any English JSON entry value -> return corresponding target lang JSON value
+  if (rawText && dicts.eng && dicts[langKey]) {
+    const lowerRaw = rawText.trim().toLowerCase();
+    for (const [k, engVal] of Object.entries(dicts.eng)) {
+      if (String(engVal).trim().toLowerCase() === lowerRaw && dicts[langKey][k]) {
+        return {
+          translatedText: dicts[langKey][k],
+          source: "json",
+          originalText: rawText
+        };
+      }
+    }
+  }
+
+  const textToTranslate = (rawText || (lookupKey ? lookupKey.replace(/_/g, " ") : "")).trim();
+  if (!textToTranslate || langKey === "eng") {
+    return {
+      translatedText: textToTranslate,
+      source: langKey === "eng" ? "json" : "fallback",
+      originalText: textToTranslate
+    };
+  }
+
+  // 2. Check server Google Translate memory cache
+  const cacheKey = `${langKey}:${textToTranslate}`;
+  if (googleTranslateMemoryCache.has(cacheKey)) {
+    return {
+      translatedText: googleTranslateMemoryCache.get(cacheKey)!,
+      source: "cache",
+      originalText: textToTranslate
+    };
+  }
+
+  // 3. Call Google Translate endpoints (nep -> ne, ind -> hi)
+  const tlCode = langKey === "nep" ? "ne" : langKey === "ind" ? "hi" : "en";
+  try {
+    // Primary: clients5.google.com dict-chrome-ex endpoint
+    const gtPrimaryUrl = `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=en&tl=${tlCode}&q=${encodeURIComponent(textToTranslate)}`;
+    const primaryRes = await fetch(gtPrimaryUrl, {
+      method: "GET",
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
+    if (primaryRes.ok) {
+      const gtData: any = await primaryRes.json();
+      let translated = "";
+      if (Array.isArray(gtData)) {
+        if (typeof gtData[0] === "string") {
+          translated = gtData.join(" ").trim();
+        } else if (Array.isArray(gtData[0])) {
+          translated = gtData.map((seg: any) => (Array.isArray(seg) ? seg[0] : "")).join("").trim();
+        }
+      }
+      if (translated) {
+        googleTranslateMemoryCache.set(cacheKey, translated);
+        return {
+          translatedText: translated,
+          source: "google_translate",
+          originalText: textToTranslate
+        };
+      }
+    }
+
+    // Secondary fallback: translate.googleapis.com gtx endpoint
+    const gtUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tlCode}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
+    const gtRes = await fetch(gtUrl, {
+      method: "GET",
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
+    if (gtRes.ok) {
+      const gtData: any = await gtRes.json();
+      if (Array.isArray(gtData) && Array.isArray(gtData[0])) {
+        const translated = gtData[0].map((seg: any) => (Array.isArray(seg) ? seg[0] : "")).join("").trim();
+        if (translated) {
+          googleTranslateMemoryCache.set(cacheKey, translated);
+          return {
+            translatedText: translated,
+            source: "google_translate",
+            originalText: textToTranslate
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(`[i18n] Google Translate request failed for '${textToTranslate}' (${tlCode}):`, err);
+  }
+
+  return {
+    translatedText: textToTranslate,
+    source: "fallback",
+    originalText: textToTranslate
+  };
+};
+
+const handleTranslateSingle = async (req: express.Request, res: express.Response) => {
+  try {
+    const { text, key, targetLang, lang } = req.body || {};
+    const resolvedLang = String(targetLang || lang || "eng").toLowerCase();
+    const result = await translateSingleTermWithJsonOrGoogle(String(text || ""), resolvedLang, key ? String(key) : undefined);
+    return res.json(ApiResponse.buildSuccess({ ...result, lang: resolvedLang }, "Translation resolved"));
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Translation failed", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+const handleTranslateBatch = async (req: express.Request, res: express.Response) => {
+  try {
+    const { items, targetLang, lang } = req.body || {};
+    const resolvedLang = String(targetLang || lang || "eng").toLowerCase();
+    const list: Array<{ key?: string; text: string }> = Array.isArray(items) ? items.slice(0, 60) : [];
+    const results = await Promise.all(
+      list.map(async (item) => {
+        const r = await translateSingleTermWithJsonOrGoogle(String(item.text || ""), resolvedLang, item.key);
+        return {
+          key: item.key || item.text,
+          ...r
+        };
+      })
+    );
+    return res.json(ApiResponse.buildSuccess({ lang: resolvedLang, translations: results }, "Batch translation resolved"));
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Batch translation failed", [err?.message || "Server error"], {}, 500));
+  }
+};
+
+app.post("/api/v1/i18n/translate", handleTranslateSingle);
+app.post("/api/i18n/translate", handleTranslateSingle);
+app.post("/api/v1/i18n/translate-batch", handleTranslateBatch);
+app.post("/api/i18n/translate-batch", handleTranslateBatch);
 
 app.get("/api/v1/auth/logs", (req, res) => {
   const logs = AuthSessionService.getSecurityLogs();
@@ -1092,15 +1302,16 @@ app.post("/api/v1/reports/export", async (req, res) => {
   }
 });
 
-// Mount Vite middleware in development or serve dist in production
+// Mount Vite middleware in development or serve dist strictly in NODE_ENV=production
 const distIndexPath = path.resolve(__dirname, "dist", "index.html");
-const isProduction = process.env.NODE_ENV === "production" || (process.env.NODE_ENV !== "development" && fs.existsSync(distIndexPath));
+const isProduction = process.env.NODE_ENV === "production";
 
 if (isProduction && fs.existsSync(distIndexPath)) {
   console.log(`[gtax] Serving production build from ${path.resolve(__dirname, "dist")}`);
   app.use(express.static(path.resolve(__dirname, "dist")));
   app.get("*", (req, res, next) => {
     if (req.originalUrl.startsWith("/api")) return next();
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.sendFile(distIndexPath);
   });
 } else {

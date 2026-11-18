@@ -459,6 +459,55 @@ export class ApiController {
     }>("/auth/session");
   }
 
+  static async updateUserPreferences(
+    prefs: { preferred_lang?: string; preferred_theme?: string },
+    token?: string
+  ) {
+    const authToken = token
+      ? token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`
+      : this.token;
+    return this.request<{
+      user_id: number;
+      preferred_lang: string;
+      preferred_theme: string | null;
+    }>("/auth/preferences", {
+      method: "POST",
+      headers: {
+        Authorization: authToken
+      },
+      body: JSON.stringify(prefs)
+    });
+  }
+
+  static async translateText(text: string, targetLang: string, key?: string) {
+    return this.request<{
+      translatedText: string;
+      source: "json" | "cache" | "google_translate" | "fallback";
+      originalText: string;
+      lang: string;
+    }>("/i18n/translate", {
+      method: "POST",
+      body: JSON.stringify({ text, targetLang, key })
+    });
+  }
+
+  static async translateBatch(items: Array<{ key?: string; text: string }>, targetLang: string) {
+    return this.request<{
+      lang: string;
+      translations: Array<{
+        key: string;
+        translatedText: string;
+        source: "json" | "cache" | "google_translate" | "fallback";
+        originalText: string;
+      }>;
+    }>("/i18n/translate-batch", {
+      method: "POST",
+      body: JSON.stringify({ items, targetLang })
+    });
+  }
+
   static async getSecurityLogs() {
     return this.request<{
       userLogs: any[];

@@ -4,6 +4,7 @@ import { UserController } from "./UserController.ts";
 import { UserWindow } from "./UserWindow.tsx";
 import { IUserRecord } from "../../serverside/User/UserModel.ts";
 import { AuthSessionState } from "../../modules/Auth/model.ts";
+import { SupportedLang, translations, subscribeToTranslations } from "../../utils/i18n.ts";
 import {
   Plus,
   Search,
@@ -25,10 +26,12 @@ import {
 
 interface UserPanelProps {
   currentSession?: AuthSessionState | null;
+  currentLang?: SupportedLang;
 }
 
-export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
+export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLang = "eng" }) => {
   const [storeState, setStoreState] = useState(userStoreInstance.getState());
+  const [, setLangVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUserRecord | null>(null);
@@ -45,13 +48,26 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
   const [resetModalError, setResetModalError] = useState<string | null>(null);
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
-  const isSuperAdmin = (currentSession?.role?.role_name || "").toLowerCase() === "superadmin";
+  const roleString = String(
+    currentSession?.role?.role_name || (currentSession?.user as any)?.role || ""
+  )
+    .trim()
+    .toLowerCase();
+  const isSuperAdmin =
+    roleString === "superadmin" ||
+    (currentSession?.user?.email || "").toLowerCase() === "superadmin@gtax.enterprise";
+
+  const t = translations[currentLang];
 
   useEffect(() => {
-    const unsubscribe = userStoreInstance.subscribe(() => {
+    const unsubStore = userStoreInstance.subscribe(() => {
       setStoreState(userStoreInstance.getState());
     });
-    return unsubscribe;
+    const unsubLang = subscribeToTranslations(() => setLangVersion((v) => v + 1));
+    return () => {
+      unsubStore();
+      unsubLang();
+    };
   }, []);
 
   const loadData = async (query: string = "") => {
@@ -186,10 +202,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <span>User Management</span>
-            {/* <span className="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-full font-mono">
-              clientside/User & serverside/User
-            </span> */}
+            <span>{t.userManagement}</span>
           </h2>
       
         </div>
@@ -211,7 +224,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
               title="Superadmin: Reset passwords for all user accounts"
             >
               <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              Reset All Passwords
+              {t.resetAllPasswords}
             </button>
           )}
 
@@ -223,7 +236,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add User
+            {t.addUser}
           </button>
         </div>
       </div>
@@ -362,10 +375,11 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession }) => {
                             <button
                               type="button"
                               onClick={() => openSingleResetModal(user)}
-                              className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-md transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800/60 rounded-md transition-colors cursor-pointer"
                               title={`Reset password for ${displayName} (Superadmin)`}
                             >
-                              <KeyRound className="w-3.5 h-3.5" />
+                              <KeyRound className="w-3 h-3" />
+                              <span>Reset Password</span>
                             </button>
                           )}
                           <button

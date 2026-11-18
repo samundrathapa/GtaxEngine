@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AuthSessionState } from "../modules/Auth/model.ts";
-import { SupportedLang, SupportedTheme, translations } from "../utils/i18n.ts";
+import { SupportedLang, SupportedTheme, translations, subscribeToTranslations } from "../utils/i18n.ts";
 import { ApiController } from "../api/controller.ts";
 import {
   User,
@@ -62,7 +63,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [, setLangVersion] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return subscribeToTranslations(() => setLangVersion((v) => v + 1));
+  }, []);
+
   const t = translations[currentLang];
 
   const handleOpenResetPassword = () => {
@@ -419,9 +426,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         </div>
       )}
 
-      {/* Self Reset Password Modal */}
-      {isResetPwdOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      {/* Self Reset Password Modal (rendered in document.body portal so sticky backdrop-blur header never clips it) */}
+      {isResetPwdOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
               <div className="flex items-center gap-3">
@@ -545,12 +552,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Redis Cache Flush & Live DB Sync Report Modal */}
-      {syncSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      {syncSuccessModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -631,7 +639,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               Continue Working (Redis Cache Ready)
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

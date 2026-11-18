@@ -14,6 +14,8 @@ export interface TblUser extends AuditFields {
   effective_from: string;
   effective_to: string | null;
   employee_id: string;
+  preferred_lang?: "eng" | "nep" | "ind";
+  preferred_theme?: string;
   is_locked: boolean;
 }
 
@@ -279,6 +281,8 @@ class AuthDatabaseStore {
         effective_from: "2026-01-01",
         effective_to: null,
         employee_id: u.employee_id,
+        preferred_lang: "eng",
+        preferred_theme: "slate",
         is_locked: false,
         insert_by: systemId,
         insert_on: now,
@@ -476,6 +480,8 @@ export class AuthSessionService {
             effective_from: dbU.effective_from,
             effective_to: dbU.effective_to,
             employee_id: dbU.employee_id || `EMP-${dbU.id}`,
+            preferred_lang: (["eng", "nep", "ind"].includes(dbU.preferred_lang) ? dbU.preferred_lang : "eng") as "eng" | "nep" | "ind",
+            preferred_theme: dbU.preferred_theme || undefined,
             is_locked: Boolean(dbU.is_locked),
             insert_by: dbU.insert_by,
             insert_on: dbU.insert_on,
@@ -558,6 +564,8 @@ export class AuthSessionService {
             effective_from: foundCached.effective_from || "2026-01-01",
             effective_to: foundCached.effective_to || null,
             employee_id: foundCached.employee_id || `EMP-${uId}`,
+            preferred_lang: (["eng", "nep", "ind"].includes(foundCached.preferred_lang) ? foundCached.preferred_lang : "eng") as "eng" | "nep" | "ind",
+            preferred_theme: foundCached.preferred_theme || undefined,
             is_locked: Boolean(foundCached.is_locked),
             insert_by: foundCached.insert_by || "SYSTEM",
             insert_on: foundCached.insert_on || new Date().toISOString(),
@@ -630,6 +638,8 @@ export class AuthSessionService {
         employee_id: matchedUser.employee_id,
         effective_from: matchedUser.effective_from,
         effective_to: matchedUser.effective_to,
+        preferred_lang: matchedUser.preferred_lang || "eng",
+        preferred_theme: matchedUser.preferred_theme || undefined,
         is_locked: matchedUser.is_locked
       },
       role: role ? { id: role.id, role_name: role.role_name, description: role.description } : null,
@@ -1143,6 +1153,86 @@ export class AuthSessionService {
         reset_by: actorSession.user.email
       },
       `Successfully reset password for ${updatedUsers.length} user account(s).`
+    );
+  }
+
+  /**
+   * Persist user UI preferences (preferred_lang, preferred_theme) to authDb, cache, and PostgreSQL tbl_user
+   */
+  static async updateUserPreferences(
+    tokenOrHeader: string,
+    prefs: { preferred_lang?: string; preferred_theme?: string },
+    ip = "127.0.0.1",
+    agent = "browser"
+  ): Promise<IApiResponse<any>> {
+    const sessionData = this.validateBearerToken(tokenOrHeader);
+    if (!sessionData || !sessionData.user) {
+      return ApiResponse.buildFailure("Authentication required.", ["Unauthorized"], {}, 401);
+    }
+
+    const user = sessionData.user;
+    const validLangs = ["eng", "nep", "ind"];
+    const validThemes = ["dark", "slate", "emerald", "light"];
+    const nextLang = prefs.preferred_lang && validLangs.includes(prefs.preferred_lang)
+      ? (prefs.preferred_lang as "eng" | "nep" | "ind")
+      : undefined;
+    const nextTheme = prefs.preferred_theme && validThemes.includes(prefs.preferred_theme)
+      ? prefs.preferred_theme
+      : undefined;
+
+    if (!nextLang && !nextTheme) {
+      return ApiResponse.buildFailure("No valid preference provided.", ["Invalid preferences"], {}, 400);
+    }
+
+    const now = new Date().toISOString();
+    if (nextLang) user.preferred_lang = nextLang;
+    if (nextTheme) user.preferred_theme = nextTheme;
+    user.update_by = user.email;
+    user.update_on = now;
+
+    // Update cache record in TableCacheDbSyncService
+    try {
+      const updatePatch: Record<string, any> = {};
+      if (nextLang) updatePatch.preferred_lang = nextLang;
+      if (nextTheme) updatePatch.preferred_theme = nextTheme;
+      await TableCacheDbSyncService.updateRecord("tbl_user", user.id, updatePatch, user.email);
+    } catch {
+      // Non-fatal if cache record isn't initialized yet
+    }
+
+    // Persist to PostgreSQL tbl_user if connected
+    if (PostgresPoolManager.getStatus().connected) {
+      try {
+        await PostgresPoolManager.query(
+          `UPDATE tbl_user
+           SET preferred_lang = COALESCE($1, preferred_lang),
+               preferred_theme = COALESCE($2, preferred_theme),
+               update_by = $3,
+               update_on = CURRENT_TIMESTAMP
+           WHERE id = $4;`,
+          [nextLang || null, nextTheme || null, user.email, user.id]
+        );
+      } catch (pgErr) {
+        console.warn(`[AuthSessionService] PostgreSQL preference update warning for user ${user.id}:`, pgErr);
+      }
+    }
+
+    authDb.logUserAction(
+      user.id,
+      user.email,
+      "USER_PREFERENCES_UPDATED",
+      ip,
+      agent,
+      `Updated preferences: lang=${user.preferred_lang || "eng"}, theme=${user.preferred_theme || "slate"}`
+    );
+
+    return ApiResponse.buildSuccess(
+      {
+        user_id: user.id,
+        preferred_lang: user.preferred_lang || "eng",
+        preferred_theme: user.preferred_theme || null
+      },
+      "User preferences saved successfully."
     );
   }
 }
