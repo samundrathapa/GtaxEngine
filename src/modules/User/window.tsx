@@ -55,7 +55,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
         username: "",
         email: "",
         full_name: "",
-        password: "Password123!",
+        password: "",
         mobile: "",
         employee_id: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
         role: "operator",
