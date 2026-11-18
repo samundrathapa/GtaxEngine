@@ -14,10 +14,21 @@ export interface ColumnTranslation {
   [key: string]: string | undefined;
 }
 
+export interface GeneralMappingEntry {
+  scope?: string;
+  eng: string;
+  nep: string;
+  ind: string;
+  [key: string]: string | undefined;
+}
+
+export type MappingCategory = "columns" | "general";
 export type DbColumnMappingDictionary = Record<string, ColumnTranslation>;
+export type GeneralMappingDictionary = Record<string, GeneralMappingEntry>;
 
 // LocalStorage keys for persisting dynamic JSON updates, active language, and Google Translate cache
 const STORAGE_KEY_DB_COLUMNS = "gtax_db_column_mapping_override";
+const STORAGE_KEY_GENERAL_MAPPING = "gtax_general_mapping_override";
 const STORAGE_KEY_GOOGLE_CACHE = "gtax_google_translate_cache_v1";
 const STORAGE_KEY_CURRENT_LANG = "gtax_active_lang";
 
@@ -26,6 +37,9 @@ const localeDictionaries: Record<SupportedLang, Record<string, string>> = {
   nep: nepLocaleJson as Record<string, string>,
   ind: indLocaleJson as Record<string, string>
 };
+
+const defaultGeneralFromFile: GeneralMappingDictionary =
+  ((rawColumnMapping as any)?.general as GeneralMappingDictionary) || {};
 
 // In-memory active column mapping initialized from JSON file or localStorage override
 let activeColumnMapping: DbColumnMappingDictionary = (() => {
@@ -43,6 +57,24 @@ let activeColumnMapping: DbColumnMappingDictionary = (() => {
     console.warn("Failed to load custom DB column mapping from storage, using json defaults", e);
   }
   return { ...rawColumnMapping.columns };
+})();
+
+// In-memory active general UI/menu/panel/window mapping initialized from JSON file or localStorage override
+let activeGeneralMapping: GeneralMappingDictionary = (() => {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const saved = window.localStorage.getItem(STORAGE_KEY_GENERAL_MAPPING);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          return { ...defaultGeneralFromFile, ...parsed };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load custom general language mapping from storage, using json defaults", e);
+  }
+  return { ...defaultGeneralFromFile };
 })();
 
 // Persistent client cache for Google Translate fallback results: { nep: { "Reset Password": "..." }, ind: { ... } }
@@ -79,8 +111,22 @@ function saveGoogleTranslateCache() {
   }
 }
 
+export function getCachedGoogleTranslation(text: string, lang: SupportedLang): string | null {
+  if (!text || lang === "eng") return null;
+  const trimmed = text.trim();
+  return googleTranslateCache[lang]?.[text] || googleTranslateCache[lang]?.[trimmed] || null;
+}
+
+export function cacheGoogleTranslation(text: string, lang: SupportedLang, translated: string, key?: string): void {
+  if (!text || !translated || lang === "eng") return;
+  googleTranslateCache[lang][text] = translated;
+  googleTranslateCache[lang][text.trim()] = translated;
+  if (key) googleTranslateCache[lang][key] = translated;
+  saveGoogleTranslateCache();
+}
+
 // Listeners for live auto-reflection across all components
-type MappingChangeListener = (mapping: DbColumnMappingDictionary) => void;
+type MappingChangeListener = (mapping: DbColumnMappingDictionary, general: GeneralMappingDictionary) => void;
 type TranslationUpdateListener = () => void;
 
 const mappingListeners: Set<MappingChangeListener> = new Set();
@@ -90,6 +136,16 @@ function notifyTranslationListeners() {
   translationListeners.forEach((fn) => {
     try {
       fn();
+    } catch (err) {
+      console.error(err);
+    }
+  });
+}
+
+function notifyMappingListeners() {
+  mappingListeners.forEach((fn) => {
+    try {
+      fn(activeColumnMapping, activeGeneralMapping);
     } catch (err) {
       console.error(err);
     }
@@ -201,32 +257,122 @@ function scheduleGoogleTranslate(key: string, englishText: string, lang: Support
 }
 
 /**
- * Synchronously lookup a key or English text inside loaded language JSON dictionaries.
+ * Batch translate arbitrary English UI texts via server Google Translate endpoint (chunked up to 45 items per request).
+ * Returns map of original English string -> localized string.
+ */
+export async function translateBatchWithGoogle(
+  texts: string[],
+  targetLang: SupportedLang
+): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+  if (targetLang === "eng" || texts.length === 0) return result;
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of texts) {
+    const trimmed = raw.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    const fromJson = lookupJsonTranslation(trimmed, targetLang);
+    if (fromJson) {
+      result[trimmed] = fromJson;
+      continue;
+    }
+    const cached = getCachedGoogleTranslation(trimmed, targetLang);
+    if (cached) {
+      result[trimmed] = cached;
+      continue;
+    }
+    unique.push(trimmed);
+  }
+
+  const chunkSize = 45;
+  let cacheChanged = false;
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize);
+    try {
+      const res = await fetch(`${resolveApiBaseUrl()}/i18n/translate-batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetLang,
+          items: chunk.map((text) => ({ text }))
+        })
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const list = json?.data?.translations;
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          const orig = (item.originalText || item.key || "").trim();
+          const trans = (item.translatedText || "").trim();
+          if (orig && trans) {
+            result[orig] = trans;
+            if (trans !== orig) {
+              googleTranslateCache[targetLang][orig] = trans;
+              cacheChanged = true;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore transient network errors per chunk
+    }
+  }
+
+  if (cacheChanged) {
+    saveGoogleTranslateCache();
+  }
+  return result;
+}
+
+/**
+ * Synchronously lookup a key or English text inside loaded language JSON dictionaries
+ * (General mappings -> DB column mappings -> locales/*.json -> baseUiTranslations).
  * Returns null if not defined for the target language.
  */
 export function lookupJsonTranslation(keyOrText: string, lang: SupportedLang): string | null {
   if (!keyOrText) return null;
+  const trimmedKey = keyOrText.trim();
 
-  // 1. Dynamic overrides & db_column_mapping.json by exact key
-  const colEntry = activeColumnMapping[keyOrText];
+  // 1. Dynamic overrides & db_column_mapping.json -> general section by exact key
+  const genEntry = activeGeneralMapping[keyOrText] || activeGeneralMapping[trimmedKey];
+  if (genEntry && typeof genEntry[lang] === "string" && genEntry[lang]!.trim() !== "") {
+    return genEntry[lang] as string;
+  }
+
+  // 2. Dynamic overrides & db_column_mapping.json -> columns section by exact key
+  const colEntry = activeColumnMapping[keyOrText] || activeColumnMapping[trimmedKey];
   if (colEntry && typeof colEntry[lang] === "string" && colEntry[lang]!.trim() !== "") {
     return colEntry[lang] as string;
   }
 
-  // 2. Locale JSON file (src/i18n/locales/{lang}.json) by exact key
+  // 3. Locale JSON file (src/i18n/locales/{lang}.json) by exact key
   const localeDict = localeDictionaries[lang];
-  if (localeDict && typeof localeDict[keyOrText] === "string" && localeDict[keyOrText].trim() !== "") {
-    return localeDict[keyOrText];
+  if (localeDict && typeof localeDict[trimmedKey] === "string" && localeDict[trimmedKey].trim() !== "") {
+    return localeDict[trimmedKey];
   }
 
-  // 3. Base UI translations JSON dictionary
+  // 4. Base UI translations JSON dictionary
   const baseDict = baseUiTranslations[lang] as Record<string, string> | undefined;
-  if (baseDict && typeof baseDict[keyOrText] === "string" && baseDict[keyOrText].trim() !== "") {
-    return baseDict[keyOrText];
+  if (baseDict && typeof baseDict[trimmedKey] === "string" && baseDict[trimmedKey].trim() !== "") {
+    return baseDict[trimmedKey];
   }
 
-  // 4. Case-insensitive English value match across baseUiTranslations, locales/eng.json, and activeColumnMapping
-  const lower = keyOrText.trim().toLowerCase();
+  // 5. Case-insensitive English value match across general, columns, baseUiTranslations, locales/eng.json
+  const lower = trimmedKey.toLowerCase();
+  for (const entry of Object.values(activeGeneralMapping)) {
+    if (entry?.eng && entry.eng.trim().toLowerCase() === lower) {
+      const targetVal = entry[lang];
+      if (targetVal && targetVal.trim() !== "") return targetVal;
+    }
+  }
+  for (const entry of Object.values(activeColumnMapping)) {
+    if (entry?.eng && entry.eng.trim().toLowerCase() === lower) {
+      const targetVal = entry[lang];
+      if (targetVal && targetVal.trim() !== "") return targetVal;
+    }
+  }
   const baseEng = baseUiTranslations.eng as Record<string, string>;
   for (const [k, engVal] of Object.entries(baseEng)) {
     if (engVal.trim().toLowerCase() === lower) {
@@ -237,12 +383,6 @@ export function lookupJsonTranslation(keyOrText: string, lang: SupportedLang): s
   for (const [k, engVal] of Object.entries(localeDictionaries.eng)) {
     if (String(engVal).trim().toLowerCase() === lower) {
       const targetVal = localeDictionaries[lang]?.[k];
-      if (targetVal && targetVal.trim() !== "") return targetVal;
-    }
-  }
-  for (const entry of Object.values(activeColumnMapping)) {
-    if (entry?.eng && entry.eng.trim().toLowerCase() === lower) {
-      const targetVal = entry[lang];
       if (targetVal && targetVal.trim() !== "") return targetVal;
     }
   }
@@ -258,8 +398,10 @@ export function getTranslationSource(keyOrText: string, lang: SupportedLang = "e
     return "json";
   }
   if (lang !== "eng") {
+    const genEntry = activeGeneralMapping[keyOrText];
     const colEntry = activeColumnMapping[keyOrText];
     const sourceEng =
+      genEntry?.eng ||
       colEntry?.eng ||
       localeDictionaries.eng[keyOrText] ||
       (baseUiTranslations.eng as Record<string, string>)[keyOrText] ||
@@ -272,9 +414,9 @@ export function getTranslationSource(keyOrText: string, lang: SupportedLang = "e
 }
 
 /**
- * Get display label for any database column name based on active language.
+ * Get display label for any database column name or general key based on active language.
  * Rule:
- *   1. If language JSON contains value -> return it directly from JSON.
+ *   1. If language JSON (general or columns or locales) contains value -> return it directly from JSON.
  *   2. Else (for non-eng) -> use cached Google Translate result or trigger Google Translate fallback & auto-refresh.
  *   3. While fetching or in eng -> clean English label.
  */
@@ -286,8 +428,10 @@ export function getDbColumnLabel(columnName: string, lang: SupportedLang = "eng"
     return fromJson;
   }
 
+  const genEntry = activeGeneralMapping[columnName];
   const colEntry = activeColumnMapping[columnName];
   const sourceEnglish =
+    (genEntry && genEntry.eng) ||
     (colEntry && colEntry.eng) ||
     localeDictionaries.eng[columnName] ||
     (baseUiTranslations.eng as Record<string, string>)[columnName] ||
@@ -315,7 +459,7 @@ export const tCol = getDbColumnLabel;
 
 /**
  * Translate ANY UI key or English phrase:
- *   - Checks language JSON first (db_column_mapping, locales/*.json, baseUiTranslations).
+ *   - Checks language JSON first (general, db_column_mapping, locales/*.json, baseUiTranslations).
  *   - Falls back to Google Translate if missing from JSON (and caches + re-renders automatically).
  */
 export function translateUiText(keyOrEnglishText: string, lang: SupportedLang = "eng"): string {
@@ -421,10 +565,33 @@ export function getActiveDbColumnMapping(): DbColumnMappingDictionary {
 }
 
 /**
- * Update mapping dynamically (auto-reflects in UI without reload)
+ * Get current active general UI/menu/panel/window mappings
+ */
+export function getActiveGeneralMapping(): GeneralMappingDictionary {
+  return { ...activeGeneralMapping };
+}
+
+/**
+ * Sync mapping changes to server memory/JSON so /api/v1/i18n/translate respects new entries
+ */
+async function syncMappingsToServer(columns: DbColumnMappingDictionary, general: GeneralMappingDictionary) {
+  if (typeof window === "undefined") return;
+  try {
+    await fetch(`${resolveApiBaseUrl()}/i18n/mapping`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ columns, general })
+    });
+  } catch {
+    // Non-fatal if offline; localStorage already persisted
+  }
+}
+
+/**
+ * Update DB column mapping dynamically (auto-reflects in UI without reload)
  */
 export function updateDbColumnMapping(updated: DbColumnMappingDictionary): void {
-  activeColumnMapping = { ...activeColumnMapping, ...updated };
+  activeColumnMapping = { ...updated };
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       window.localStorage.setItem(STORAGE_KEY_DB_COLUMNS, JSON.stringify(activeColumnMapping));
@@ -432,14 +599,84 @@ export function updateDbColumnMapping(updated: DbColumnMappingDictionary): void 
   } catch (e) {
     console.error("Failed to save mapping to localStorage", e);
   }
-  mappingListeners.forEach((fn) => {
-    try {
-      fn(activeColumnMapping);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+  syncMappingsToServer(activeColumnMapping, activeGeneralMapping);
+  notifyMappingListeners();
   notifyTranslationListeners();
+}
+
+/**
+ * Update General Name mapping dynamically (auto-reflects in UI without reload)
+ */
+export function updateGeneralMapping(updated: GeneralMappingDictionary): void {
+  activeGeneralMapping = { ...updated };
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY_GENERAL_MAPPING, JSON.stringify(activeGeneralMapping));
+    }
+  } catch (e) {
+    console.error("Failed to save general mapping to localStorage", e);
+  }
+  syncMappingsToServer(activeColumnMapping, activeGeneralMapping);
+  notifyMappingListeners();
+  notifyTranslationListeners();
+}
+
+/**
+ * Update both DB columns and General mappings atomically
+ */
+export function updateLanguageMappings(
+  columns: DbColumnMappingDictionary,
+  general: GeneralMappingDictionary
+): void {
+  activeColumnMapping = { ...columns };
+  activeGeneralMapping = { ...general };
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(STORAGE_KEY_DB_COLUMNS, JSON.stringify(activeColumnMapping));
+      window.localStorage.setItem(STORAGE_KEY_GENERAL_MAPPING, JSON.stringify(activeGeneralMapping));
+    }
+  } catch (e) {
+    console.error("Failed to save language mappings to localStorage", e);
+  }
+  syncMappingsToServer(activeColumnMapping, activeGeneralMapping);
+  notifyMappingListeners();
+  notifyTranslationListeners();
+}
+
+/**
+ * Add or update a single mapping entry in either 'general' or 'columns'
+ */
+export function upsertLanguageMappingEntry(
+  category: MappingCategory,
+  key: string,
+  entry: ColumnTranslation | GeneralMappingEntry
+): void {
+  if (category === "general") {
+    updateGeneralMapping({
+      ...activeGeneralMapping,
+      [key]: entry as GeneralMappingEntry
+    });
+  } else {
+    updateDbColumnMapping({
+      ...activeColumnMapping,
+      [key]: entry as ColumnTranslation
+    });
+  }
+}
+
+/**
+ * Delete a mapping entry from either 'general' or 'columns'
+ */
+export function deleteLanguageMappingEntry(category: MappingCategory, key: string): void {
+  if (category === "general") {
+    const next = { ...activeGeneralMapping };
+    delete next[key];
+    updateGeneralMapping(next);
+  } else {
+    const next = { ...activeColumnMapping };
+    delete next[key];
+    updateDbColumnMapping(next);
+  }
 }
 
 /**
@@ -447,25 +684,22 @@ export function updateDbColumnMapping(updated: DbColumnMappingDictionary): void 
  */
 export function resetDbColumnMappingToDefault(): void {
   activeColumnMapping = { ...rawColumnMapping.columns };
+  activeGeneralMapping = { ...defaultGeneralFromFile };
   try {
     if (typeof window !== "undefined" && window.localStorage) {
       window.localStorage.removeItem(STORAGE_KEY_DB_COLUMNS);
+      window.localStorage.removeItem(STORAGE_KEY_GENERAL_MAPPING);
     }
   } catch (e) {
     console.error("Failed to reset mapping", e);
   }
-  mappingListeners.forEach((fn) => {
-    try {
-      fn(activeColumnMapping);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+  syncMappingsToServer(activeColumnMapping, activeGeneralMapping);
+  notifyMappingListeners();
   notifyTranslationListeners();
 }
 
 /**
- * Export current mapping as formatted JSON string
+ * Export current mapping (both columns & general) as formatted JSON string
  */
 export function exportDbColumnMappingJson(): string {
   return JSON.stringify(
@@ -474,7 +708,8 @@ export function exportDbColumnMappingJson(): string {
         ...rawColumnMapping._metadata,
         exported_at: new Date().toISOString()
       },
-      columns: activeColumnMapping
+      columns: activeColumnMapping,
+      general: activeGeneralMapping
     },
     null,
     2
@@ -482,7 +717,7 @@ export function exportDbColumnMappingJson(): string {
 }
 
 /**
- * Subscribe to column mapping changes
+ * Subscribe to column & general mapping changes
  */
 export function subscribeToColumnMapping(callback: MappingChangeListener): () => void {
   mappingListeners.add(callback);

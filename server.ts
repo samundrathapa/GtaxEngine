@@ -310,19 +310,30 @@ app.get("/api/auth/session", handleGetSession);
 // ==========================================
 const serverLocaleCache: Record<string, Record<string, string>> = {};
 const googleTranslateMemoryCache = new Map<string, string>();
+let customRuntimeMappings: { columns?: Record<string, any>; general?: Record<string, any> } | null = null;
 
-const loadServerLocaleDicts = () => {
-  if (Object.keys(serverLocaleCache).length > 0) return serverLocaleCache;
+const loadServerLocaleDicts = (forceReload = false) => {
+  if (!forceReload && Object.keys(serverLocaleCache).length > 0) return serverLocaleCache;
+  for (const k of Object.keys(serverLocaleCache)) {
+    delete serverLocaleCache[k];
+  }
   try {
     const colPath = path.resolve(__dirname, "src", "i18n", "db_column_mapping.json");
     if (fs.existsSync(colPath)) {
       const parsed = JSON.parse(fs.readFileSync(colPath, "utf-8"));
-      const cols = parsed?.columns || {};
+      const sections = [
+        parsed?.columns || {},
+        parsed?.general || {},
+        customRuntimeMappings?.columns || {},
+        customRuntimeMappings?.general || {}
+      ];
       for (const lang of ["eng", "nep", "ind"]) {
         serverLocaleCache[lang] = serverLocaleCache[lang] || {};
-        for (const [k, entry] of Object.entries<any>(cols)) {
-          if (entry && typeof entry[lang] === "string" && entry[lang].trim()) {
-            serverLocaleCache[lang][k] = entry[lang];
+        for (const section of sections) {
+          for (const [k, entry] of Object.entries<any>(section)) {
+            if (entry && typeof entry[lang] === "string" && entry[lang].trim()) {
+              serverLocaleCache[lang][k] = entry[lang];
+            }
           }
         }
       }
@@ -349,7 +360,7 @@ const translateSingleTermWithJsonOrGoogle = async (
   const langKey = ["eng", "nep", "ind"].includes(targetLang) ? targetLang : "eng";
   const lookupKey = (key || rawText || "").trim();
 
-  // 1. Check language JSON by key first
+  // 1. Check language JSON by key first (includes general + columns + locales)
   if (lookupKey && dicts[langKey]?.[lookupKey]) {
     return {
       translatedText: dicts[langKey][lookupKey],
@@ -482,10 +493,45 @@ const handleTranslateBatch = async (req: express.Request, res: express.Response)
   }
 };
 
+const handleSyncLanguageMapping = async (req: express.Request, res: express.Response) => {
+  try {
+    const { columns, general } = req.body || {};
+    customRuntimeMappings = {
+      columns: columns && typeof columns === "object" ? columns : undefined,
+      general: general && typeof general === "object" ? general : undefined
+    };
+
+    const colPath = path.resolve(__dirname, "src", "i18n", "db_column_mapping.json");
+    if (fs.existsSync(colPath)) {
+      try {
+        const current = JSON.parse(fs.readFileSync(colPath, "utf-8"));
+        const nextPayload = {
+          _metadata: {
+            ...(current._metadata || {}),
+            updated_at: new Date().toISOString()
+          },
+          columns: columns && typeof columns === "object" ? columns : (current.columns || {}),
+          general: general && typeof general === "object" ? general : (current.general || {})
+        };
+        fs.writeFileSync(colPath, JSON.stringify(nextPayload, null, 2), "utf-8");
+      } catch (writeErr) {
+        console.warn("[i18n] Could not persist mapping to disk (using runtime cache):", writeErr);
+      }
+    }
+
+    loadServerLocaleDicts(true);
+    return res.json(ApiResponse.buildSuccess({ synced: true }, "Language mappings (general + columns) synchronized"));
+  } catch (err: any) {
+    return res.status(500).json(ApiResponse.buildFailure(err?.message || "Failed to sync mappings", [err?.message || "Server error"], {}, 500));
+  }
+};
+
 app.post("/api/v1/i18n/translate", handleTranslateSingle);
 app.post("/api/i18n/translate", handleTranslateSingle);
 app.post("/api/v1/i18n/translate-batch", handleTranslateBatch);
 app.post("/api/i18n/translate-batch", handleTranslateBatch);
+app.post("/api/v1/i18n/mapping", handleSyncLanguageMapping);
+app.post("/api/i18n/mapping", handleSyncLanguageMapping);
 
 app.get("/api/v1/auth/logs", (req, res) => {
   const logs = AuthSessionService.getSecurityLogs();

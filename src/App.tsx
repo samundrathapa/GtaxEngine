@@ -21,6 +21,7 @@ import {
   getSavedLanguage,
   persistLanguageLocally
 } from "./utils/i18n.ts";
+import { useAutoDomTranslation } from "./utils/domTranslator.ts";
 import { UserMenu } from "./components/UserMenu.tsx";
 import { GlobalTaxpayerSearch } from "./components/GlobalTaxpayerSearch.tsx";
 import { AiTaxChatbotModal } from "./components/AiTaxChatbotModal.tsx";
@@ -317,6 +318,21 @@ export default function App() {
   useEffect(() => {
     return subscribeToTranslations(() => setTranslationTick((v) => v + 1));
   }, []);
+
+  // Universal JSON-first + Google Translate DOM localizer covering every menu, panel, window, and modal
+  useAutoDomTranslation(currentLang, [
+    activeTab,
+    taxpayerSubView,
+    calculationTab,
+    rateSubTab,
+    mastersSubTab,
+    rbacSubTab,
+    isAiChatbotOpen,
+    isDbColMapOpen,
+    isDbStatusModalOpen,
+    isFlutterMobileOpen,
+    Boolean(session?.isAuthenticated)
+  ]);
 
   useEffect(() => {
     persistLanguageLocally(currentLang, session?.user?.id);
@@ -1160,10 +1176,10 @@ export default function App() {
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${dbStatus?.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
               <Database className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors shrink-0" />
-              <span className="hidden xl:inline font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+              <span data-no-translate="true" className="hidden xl:inline font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 {dbStatus ? `${dbStatus.user}@${dbStatus.host}:${dbStatus.port}/${dbStatus.database}` : "DB Connecting..."}
               </span>
-              <span className="xl:hidden font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+              <span data-no-translate="true" className="xl:hidden font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300">
                 {dbStatus?.database || "DB"}
               </span>
             </button> }

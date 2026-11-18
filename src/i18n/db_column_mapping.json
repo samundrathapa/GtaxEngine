@@ -534,5 +534,235 @@
       "nep": "अन्तिम सम्पादन समय",
       "ind": "अंतिम अद्यतन समय"
     }
+  },
+  "general": {
+    "menu_dashboard": {
+      "scope": "sidebar_menu",
+      "eng": "Dashboard",
+      "nep": "ड्यासबोर्ड",
+      "ind": "डैशबोर्ड"
+    },
+    "menu_taxpayer": {
+      "scope": "sidebar_menu",
+      "eng": "Taxpayer",
+      "nep": "करदाता",
+      "ind": "करदाता"
+    },
+    "menu_calculation": {
+      "scope": "sidebar_menu",
+      "eng": "Calculation",
+      "nep": "कर गणना",
+      "ind": "कर गणना"
+    },
+    "menu_calculation_studio": {
+      "scope": "sidebar_menu",
+      "eng": "Calculation Studio",
+      "nep": "गणना स्टुडियो",
+      "ind": "गणना स्टूडियो"
+    },
+    "menu_multi_year_engine": {
+      "scope": "sidebar_menu",
+      "eng": "Multi-Year Engine",
+      "nep": "बहु-वर्षीय कर इन्जिन",
+      "ind": "बहु-वर्षीय इंजन"
+    },
+    "menu_master": {
+      "scope": "sidebar_menu",
+      "eng": "Master",
+      "nep": "मास्टर सेटअप",
+      "ind": "मास्टर सेटअप"
+    },
+    "menu_rate_masters": {
+      "scope": "sidebar_menu",
+      "eng": "Rate Masters",
+      "nep": "दररेट मास्टर",
+      "ind": "दर मास्टर"
+    },
+    "menu_fiscal_year": {
+      "scope": "sidebar_menu",
+      "eng": "Fiscal Year",
+      "nep": "आर्थिक वर्ष",
+      "ind": "वित्तीय वर्ष"
+    },
+    "menu_construction_types": {
+      "scope": "sidebar_menu",
+      "eng": "Construction Types",
+      "nep": "संरचना निर्माण प्रकार",
+      "ind": "निर्माण प्रकार"
+    },
+    "menu_measurement_unit": {
+      "scope": "sidebar_menu",
+      "eng": "Measurement Unit",
+      "nep": "मापन एकाई",
+      "ind": "मापन इकाई"
+    },
+    "menu_user": {
+      "scope": "sidebar_menu",
+      "eng": "User",
+      "nep": "प्रयोगकर्ता",
+      "ind": "उपयोगकर्ता"
+    },
+    "menu_users_and_roles": {
+      "scope": "sidebar_menu",
+      "eng": "Users & Roles",
+      "nep": "प्रयोगकर्ता र भूमिका",
+      "ind": "उपयोगकर्ता और भूमिकाएँ"
+    },
+    "menu_company_profile": {
+      "scope": "sidebar_menu",
+      "eng": "Company Profile",
+      "nep": "संस्था विवरण",
+      "ind": "संस्था प्रोफ़ाइल"
+    },
+    "menu_audit_logs": {
+      "scope": "sidebar_menu",
+      "eng": "Audit Logs",
+      "nep": "अडिट लगहरू",
+      "ind": "ऑडिट लॉग"
+    },
+    "menu_privacy_policy": {
+      "scope": "sidebar_menu",
+      "eng": "Privacy Policy",
+      "nep": "गोपनीयता नीति",
+      "ind": "गोपनीयता नीति"
+    },
+    "menu_sign_out": {
+      "scope": "sidebar_menu",
+      "eng": "Sign Out",
+      "nep": "बाहिर निस्कनुहोस्",
+      "ind": "साइन आउट"
+    },
+    "title_user_management": {
+      "scope": "user_management",
+      "eng": "User Management",
+      "nep": "प्रयोगकर्ता व्यवस्थापन",
+      "ind": "उपयोगकर्ता प्रबंधन"
+    },
+    "btn_add_user": {
+      "scope": "user_management",
+      "eng": "Add User",
+      "nep": "नयाँ प्रयोगकर्ता",
+      "ind": "नया उपयोगकर्ता जोड़ें"
+    },
+    "btn_reset_password": {
+      "scope": "user_management",
+      "eng": "Reset Password",
+      "nep": "पासवर्ड रिसेट",
+      "ind": "पासवर्ड रीसेट"
+    },
+    "btn_reset_all_passwords": {
+      "scope": "user_management",
+      "eng": "Reset All Passwords",
+      "nep": "सबै पासवर्ड रिसेट गर्नुहोस्",
+      "ind": "सभी पासवर्ड रीसेट करें"
+    },
+    "title_register_user": {
+      "scope": "window_modal",
+      "eng": "Register User",
+      "nep": "प्रयोगकर्ता दर्ता",
+      "ind": "उपयोगकर्ता पंजीकरण"
+    },
+    "title_edit_user": {
+      "scope": "window_modal",
+      "eng": "Edit User Record",
+      "nep": "प्रयोगकर्ता विवरण सम्पादन",
+      "ind": "उपयोगकर्ता रिकॉर्ड संपादित करें"
+    },
+    "label_security_role": {
+      "scope": "user_management",
+      "eng": "Security Role",
+      "nep": "सुरक्षा भूमिका",
+      "ind": "सुरक्षा भूमिका"
+    },
+    "label_employee_id": {
+      "scope": "user_management",
+      "eng": "Employee ID",
+      "nep": "कर्मचारी संकेत नं.",
+      "ind": "कर्मचारी आईडी"
+    },
+    "title_municipal_admin": {
+      "scope": "dashboard",
+      "eng": "Municipal Property Tax Administration",
+      "nep": "नगरपालिका सम्पत्ति कर प्रशासन",
+      "ind": "नगरपालिका संपत्ति कर प्रशासन"
+    },
+    "btn_taxpayer_registry": {
+      "scope": "dashboard",
+      "eng": "Taxpayer Registry",
+      "nep": "करदाता दर्ता किताब",
+      "ind": "करदाता रजिस्ट्री"
+    },
+    "btn_valuation_window": {
+      "scope": "dashboard",
+      "eng": "Valuation Window",
+      "nep": "मूल्यांकन विन्डो",
+      "ind": "मूल्यांकन विंडो"
+    },
+    "tab_land_rates": {
+      "scope": "rates_master",
+      "eng": "Land Valuation Rates",
+      "nep": "जग्गाको मूल्यांकन दर",
+      "ind": "भूमि मूल्यांकन दरें"
+    },
+    "tab_malpot_rates": {
+      "scope": "rates_master",
+      "eng": "Malpot (Govt) Rates",
+      "nep": "मालपोत (सरकारी) दर",
+      "ind": "मालपोत (सरकारी) दरें"
+    },
+    "tab_construction_rates": {
+      "scope": "rates_master",
+      "eng": "Construction Rates",
+      "nep": "भवन निर्माण दररेट",
+      "ind": "भवन निर्माण दरें"
+    },
+    "tab_depreciation": {
+      "scope": "rates_master",
+      "eng": "Depreciation Slabs",
+      "nep": "ह्रासकट्टी दर",
+      "ind": "मूल्यह्रास स्लैब"
+    },
+    "tab_fine_rebate": {
+      "scope": "rates_master",
+      "eng": "Fine & Rebates",
+      "nep": "जरिवाना तथा छुट",
+      "ind": "जुर्माना एवं छूट"
+    },
+    "tab_land_nature": {
+      "scope": "rates_master",
+      "eng": "Land Nature / Zoning",
+      "nep": "जग्गाको प्रकृति",
+      "ind": "भूमि की प्रकृति"
+    },
+    "tab_application_settings": {
+      "scope": "rates_master",
+      "eng": "Application Settings",
+      "nep": "प्रणाली सेटिङहरू",
+      "ind": "एप्लिकेशन सेटिंग्स"
+    },
+    "title_audit_ledger": {
+      "scope": "audit_logs",
+      "eng": "Active Sessions & User Security Audit Ledger",
+      "nep": "सक्रिय सत्र तथा प्रयोगकर्ता सुरक्षा अडिट लग",
+      "ind": "सक्रिय सत्र एवं उपयोगकर्ता सुरक्षा ऑडिट खाता"
+    },
+    "btn_cancel": {
+      "scope": "common",
+      "eng": "Cancel",
+      "nep": "रद्द गर्नुहोस्",
+      "ind": "रद्द करें"
+    },
+    "btn_save": {
+      "scope": "common",
+      "eng": "Save Record",
+      "nep": "सुरक्षित गर्नुहोस्",
+      "ind": "रिकॉर्ड सहेजें"
+    },
+    "col_actions": {
+      "scope": "common",
+      "eng": "Actions",
+      "nep": "कार्यहरू",
+      "ind": "कार्रवाई"
+    }
   }
 }

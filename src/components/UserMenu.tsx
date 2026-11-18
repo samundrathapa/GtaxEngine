@@ -275,7 +275,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5" data-no-translate="true">
                 {languages.map((l) => {
                   const isSelected = currentLang === l.code;
                   return (
@@ -310,11 +310,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
                   <div className="flex items-center gap-2">
                     <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
                     <div className="text-left">
-                      <div className="leading-tight">Language JSON (DB Column Mapping)</div>
+                      <div className="leading-tight">Language JSON (General &amp; DB Mapping)</div>
                     
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 shrink-0">
+                  <span data-no-translate="true" className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 shrink-0">
                     JSON
                   </span>
                 </button>
