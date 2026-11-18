@@ -4,6 +4,7 @@ import { SupportedLang, translations } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { MenuKey } from "../../shared/rbacConfig.ts";
+import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
 import {
   Calendar,
   Layers,
@@ -209,6 +210,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterFiscalYear, setFilterFiscalYear] = useState<string>("all");
   const [isSearching, setIsSearching] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     if (searchTerm) {
@@ -219,6 +222,10 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       setIsSearching(false);
     }
   }, [searchTerm, filterFiscalYear]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm, filterFiscalYear]);
 
   useEffect(() => {
     if (initialTab && initialTab !== activeTab) {
@@ -585,6 +592,11 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     );
   });
 
+  const {
+    startIndex: rateStartIndex,
+    paginatedItems: paginatedList
+  } = getPaginationSlice(currentList, currentPage, itemsPerPage);
+
   const getHeaderInfo = () => {
     switch (activeTab) {
       case "company":
@@ -824,7 +836,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
         <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 self-start sm:self-center">
           <span className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-            Showing {currentList.length} records
+            Showing {paginatedList.length} of {currentList.length} records
           </span>
         </div>
       </div>
@@ -918,7 +930,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {currentList.length === 0 ? (
+              {paginatedList.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="p-8 text-center text-slate-400">
                     {activeTab === "company"
@@ -929,10 +941,10 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                   </td>
                 </tr>
               ) : (
-                currentList.map((item: any, idx: number) => (
+                paginatedList.map((item: any, idx: number) => (
                   <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="p-3.5 text-center font-mono font-bold text-slate-500 dark:text-slate-400">
-                      {idx + 1}
+                      {rateStartIndex + idx + 1}
                     </td>
                     <td className="p-3.5 font-medium text-slate-900 dark:text-white">
                       <div>{item.fullanme || item.fullname || (item.isfine ? "Fine Rule" : "Rebate Policy")}</div>
@@ -1190,6 +1202,14 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          totalItems={currentList.length}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          itemLabel="records"
+        />
       </div>
 
       {/* Modal for Add / Edit Rate Record */}

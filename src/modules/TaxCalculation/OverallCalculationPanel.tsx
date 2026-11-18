@@ -4,6 +4,7 @@ import { TaxLiabilityComparisonChart } from "../../components/TaxLiabilityCompar
 import { MultiYearTaxEngine } from "./MultiYearTaxEngine.tsx";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
+import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
 import {
   Calculator,
   Search,
@@ -117,6 +118,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any | null>(null);
 
+  // Pagination states
+  const [tpPickerPage, setTpPickerPage] = useState<number>(1);
+  const [landsPage, setLandsPage] = useState<number>(1);
+  const [floorsPage, setFloorsPage] = useState<number>(1);
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const pickerItemsPerPage = 10;
+  const tableItemsPerPage = 20;
+
   // Load masters & taxpayers
   const loadInitialData = async () => {
     setLoading(true);
@@ -184,6 +193,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
       );
     }
     setFilteredTaxpayers(list);
+    setTpPickerPage(1);
   }, [searchQuery, selectedWard, taxpayers]);
 
   // Load Dossier when selected taxpayer changes
@@ -201,6 +211,8 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
   useEffect(() => {
     if (selectedTaxpayerId) {
       loadDossier(selectedTaxpayerId);
+      setLandsPage(1);
+      setFloorsPage(1);
     }
   }, [selectedTaxpayerId]);
 
@@ -473,6 +485,27 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
   const currentTaxpayer = taxpayers.find((tp) => tp.id === selectedTaxpayerId);
 
+  const { paginatedItems: paginatedFilterTaxpayers } = getPaginationSlice(
+    filteredTaxpayers,
+    tpPickerPage,
+    pickerItemsPerPage
+  );
+  const { paginatedItems: paginatedCalcLands } = getPaginationSlice(
+    calcLands,
+    landsPage,
+    tableItemsPerPage
+  );
+  const { paginatedItems: paginatedCalcFloors } = getPaginationSlice(
+    calcFloors,
+    floorsPage,
+    tableItemsPerPage
+  );
+  const { paginatedItems: paginatedHistoryList } = getPaginationSlice(
+    historyList,
+    historyPage,
+    tableItemsPerPage
+  );
+
   return (
     <div className="space-y-6">
       {/* Elevated Top Header & Context Banner */}
@@ -646,14 +679,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                 </div>
               </div>
 
-              {/* Taxpayers Scrollable List */}
-              <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1 no-scrollbar pt-1">
-                {filteredTaxpayers.length === 0 ? (
+              {/* Taxpayers Paginated List */}
+              <div className="space-y-1.5 pt-1">
+                {paginatedFilterTaxpayers.length === 0 ? (
                   <div className="p-4 text-center text-xs text-slate-400">
                     No taxpayers matching your criteria.
                   </div>
                 ) : (
-                  filteredTaxpayers.map((tp) => {
+                  paginatedFilterTaxpayers.map((tp) => {
                     const isSelected = tp.id === selectedTaxpayerId;
                     return (
                       <div
@@ -682,6 +715,16 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   })
                 )}
               </div>
+
+              <PaginationControls
+                totalItems={filteredTaxpayers.length}
+                currentPage={tpPickerPage}
+                itemsPerPage={pickerItemsPerPage}
+                onPageChange={setTpPickerPage}
+                itemLabel="taxpayers"
+                compact
+                className="rounded-xl border border-slate-200"
+              />
             </div>
 
             {/* Formula Controls Panel (Frontend Calculation Customization) */}
@@ -886,14 +929,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {calcLands.length === 0 ? (
+                    {paginatedCalcLands.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-6 text-center text-slate-400">
                           No land parcels found for this taxpayer.
                         </td>
                       </tr>
                     ) : (
-                      calcLands.map((l: any) => (
+                      paginatedCalcLands.map((l: any) => (
                         <tr key={l.land_id} className="hover:bg-slate-50/60">
                           <td className="p-3 font-mono font-bold text-slate-900">
                             {l.kitta_number}
@@ -926,6 +969,13 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                totalItems={calcLands.length}
+                currentPage={landsPage}
+                itemsPerPage={tableItemsPerPage}
+                onPageChange={setLandsPage}
+                itemLabel="land parcels"
+              />
             </div>
 
             {/* 2. calc_house & calc_floor Breakdown Table */}
@@ -956,14 +1006,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {calcFloors.length === 0 ? (
+                    {paginatedCalcFloors.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-6 text-center text-slate-400">
                           No building structures or floor units found.
                         </td>
                       </tr>
                     ) : (
-                      calcFloors.map((fl: any) => (
+                      paginatedCalcFloors.map((fl: any) => (
                         <tr key={fl.floor_id} className="hover:bg-slate-50/60">
                           <td className="p-3 font-bold text-slate-900">
                             Floor Slab #{fl.floor_no}
@@ -990,6 +1040,13 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                totalItems={calcFloors.length}
+                currentPage={floorsPage}
+                itemsPerPage={tableItemsPerPage}
+                onPageChange={setFloorsPage}
+                itemLabel="floor units"
+              />
             </div>
 
             {/* 3. calc_additional Fees Table */}
@@ -1143,14 +1200,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {historyList.length === 0 ? (
+                {paginatedHistoryList.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-400">
                       No saved calculations found in registry. Perform a calculation and click "Save Calculation".
                     </td>
                   </tr>
                 ) : (
-                  historyList.map((rec) => (
+                  paginatedHistoryList.map((rec) => (
                     <tr key={rec.id} className="hover:bg-slate-50/70">
                       <td className="p-3 font-mono font-bold text-indigo-600">
                         CALC-{rec.id.toString().padStart(4, "0")}
@@ -1187,6 +1244,14 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
               </tbody>
             </table>
           </div>
+
+          <PaginationControls
+            totalItems={historyList.length}
+            currentPage={historyPage}
+            itemsPerPage={tableItemsPerPage}
+            onPageChange={setHistoryPage}
+            itemLabel="saved records"
+          />
         </div>
       )}
 

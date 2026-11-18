@@ -53,7 +53,7 @@ export const UserWindow: React.FC<UserWindowProps> = ({
         username: editUser.username || (editUser.email ? editUser.email.split("@")[0] : "") || editUser.user_id || "",
         fullname: editUser.fullname || editUser.full_name || "",
         email: editUser.email || "",
-        role: (editUser.role || "operator").toLowerCase(),
+        role: String(editUser.role || "user").trim().toLowerCase(),
         mobile: editUser.mobile || "",
         employee_id: editUser.employee_id || "",
         is_active: editUser.is_active !== undefined ? editUser.is_active : true
@@ -78,7 +78,10 @@ export const UserWindow: React.FC<UserWindowProps> = ({
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit(formData);
+      await onSubmit({
+        ...formData,
+        role: String(formData.role || "operator").trim().toLowerCase()
+      });
       onClose();
     } catch (err) {
       console.error("[UserWindow] Submit error:", err);

@@ -3,6 +3,7 @@ import { ApiController } from "../../api/controller.ts";
 import { SupportedLang, translations } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
+import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
 import {
   Calculator,
   Calendar,
@@ -64,6 +65,8 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
   // Result state
   const [result, setResult] = useState<any | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 20;
 
   // Load masters and taxpayers
   const loadInitialData = async () => {
@@ -170,6 +173,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
 
   // Run calculation initially when data is ready
   useEffect(() => {
+    setCurrentPage(1);
     if (selectedTaxpayerId && fromFiscalYearId && toFiscalYearId) {
       handleCalculate();
     }
@@ -182,6 +186,12 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
   const selectedTaxpayer = taxpayers.find((t) => t.id === selectedTaxpayerId);
   const availableLands = taxpayerDossier?.lands || [];
   const availableHouses = taxpayerDossier?.houses || [];
+  const yearlyBreakdowns = result?.yearlyBreakdowns || [];
+  const { paginatedItems: paginatedYearlyBreakdowns } = getPaginationSlice(
+    yearlyBreakdowns,
+    currentPage,
+    itemsPerPage
+  );
 
   return (
     <div className="space-y-6">
@@ -524,7 +534,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {result.yearlyBreakdowns?.map((item: any) => (
+                  {paginatedYearlyBreakdowns.map((item: any) => (
                     <tr
                       key={item.fiscalYearId}
                       className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
@@ -600,6 +610,14 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
                 </tbody>
               </table>
             </div>
+
+            <PaginationControls
+              totalItems={yearlyBreakdowns.length}
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              itemLabel="fiscal years"
+            />
           </div>
         </div>
       )}

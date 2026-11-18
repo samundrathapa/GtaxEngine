@@ -1014,11 +1014,11 @@ export class DatabaseSchemaBootstrap {
 
       // 3. Users
       await PostgresPoolManager.query(`
-        INSERT INTO tbl_user (id, fullname, email, password, mobile, employee_id, insert_by, insert_on, update_by, update_on, is_active) VALUES
-        (1, 'Eleanor Vance (Chief Tax Officer)', 'superadmin@gtax.enterprise', 'Password123!', '+1 (555) 019-2831', 'EMP-SA-001', '1', NOW(), '1', NOW(), true),
-        (2, 'Marcus Thorne (Senior Tax Strategist)', 'admin@gtax.enterprise', 'Password123!', '+1 (555) 024-8192', 'EMP-ADM-002', '1', NOW(), '1', NOW(), true),
-        (3, 'Sarah Chen (Global Compliance Director)', 'operator@gtax.enterprise', 'Password123!', '+1 (555) 038-7241', 'EMP-OP-003', '1', NOW(), '1', NOW(), true),
-        (4, 'Julian Keller (Tax Analyst)', 'user@gtax.enterprise', 'Password123!', '+1 (555) 042-9918', 'EMP-USR-004', '1', NOW(), '1', NOW(), true)
+        INSERT INTO tbl_user (id, fullname, email, password, mobile, employee_id, role, insert_by, insert_on, update_by, update_on, is_active) VALUES
+        (1, 'Eleanor Vance (Chief Tax Officer)', 'superadmin@gtax.enterprise', 'Password123!', '+1 (555) 019-2831', 'EMP-SA-001', 'superadmin', '1', NOW(), '1', NOW(), true),
+        (2, 'Marcus Thorne (Senior Tax Strategist)', 'admin@gtax.enterprise', 'Password123!', '+1 (555) 024-8192', 'EMP-ADM-002', 'admin', '1', NOW(), '1', NOW(), true),
+        (3, 'Sarah Chen (Global Compliance Director)', 'operator@gtax.enterprise', 'Password123!', '+1 (555) 038-7241', 'EMP-OP-003', 'operator', '1', NOW(), '1', NOW(), true),
+        (4, 'Julian Keller (Tax Analyst)', 'user@gtax.enterprise', 'Password123!', '+1 (555) 042-9918', 'EMP-USR-004', 'user', '1', NOW(), '1', NOW(), true)
         ON CONFLICT (email) DO NOTHING;
       `);
 
@@ -1030,6 +1030,18 @@ export class DatabaseSchemaBootstrap {
         (3, 3, '1', '1'),
         (4, 4, '1', '1')
         ON CONFLICT DO NOTHING;
+
+        -- Sync tbl_user.role from tbl_user_role + tbl_role where tbl_user.role was defaulted or missing
+        UPDATE tbl_user u
+        SET role = LOWER(r.role_name)
+        FROM tbl_user_role ur
+        JOIN tbl_role r ON ur.role_id = r.id
+        WHERE u.id = ur.user_id
+          AND ur.is_active = true
+          AND COALESCE(ur.is_deleted, false) = false
+          AND r.is_active = true
+          AND (u.role IS NULL OR TRIM(u.role) = '' OR UPPER(TRIM(u.role)) = 'OPERATOR')
+          AND LOWER(r.role_name) <> 'operator';
       `);
 
       // 5. Rights

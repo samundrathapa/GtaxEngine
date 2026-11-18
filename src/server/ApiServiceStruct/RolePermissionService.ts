@@ -724,25 +724,20 @@ export class RolePermissionService {
       });
 
       if (PostgresPoolManager.getStatus().connected) {
-        const upd = await PostgresPoolManager.query<any>(
-          `UPDATE tbl_user_role SET role_id = $1, update_by = $2, update_on = NOW()
-           WHERE user_id = $3 AND is_active = true RETURNING id;`,
-          [targetRole.id, authCheck.actorEmail, userId]
+        await PostgresPoolManager.query(`DELETE FROM tbl_user_role WHERE user_id = $1;`, [userId]);
+        await PostgresPoolManager.query(
+          `INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active, is_deleted)
+           VALUES ($1, $2, $3, NOW(), $3, NOW(), true, false)
+           ON CONFLICT (user_id, role_id) DO UPDATE SET is_active = true, is_deleted = false, update_by = EXCLUDED.update_by, update_on = NOW();`,
+          [userId, targetRole.id, authCheck.actorEmail]
         );
-        if (!upd || upd.length === 0) {
-          await PostgresPoolManager.query(
-            `INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
-             VALUES ($1, $2, $3, NOW(), $3, NOW(), true);`,
-            [userId, targetRole.id, authCheck.actorEmail]
-          );
-        }
       }
 
       try {
         await TableCacheDbSyncService.updateRecord(
           "tbl_user",
           userId,
-          { role: targetRole.role_name, role_id: targetRole.id },
+          { role: targetRole.role_name },
           authCheck.actorEmail
         );
       } catch {}

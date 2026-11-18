@@ -154,16 +154,31 @@ export class TableCacheDbSyncService {
 
     if (PostgresPoolManager.getStatus().connected) {
       try {
-        // Query database table; filter out soft-deleted records if is_deleted column exists
-        const queryWithFilter = `SELECT * FROM ${table} WHERE is_deleted IS NOT TRUE ORDER BY 1 ASC;`;
-        rows = await PostgresPoolManager.query<T>(queryWithFilter);
-        if (!rows || rows.length === 0) {
-          // If no filter matched or is_deleted column not in table, fallback to standard select
-          rows = await PostgresPoolManager.query<T>(`SELECT * FROM ${table} ORDER BY 1 ASC;`);
+        if (table.toLowerCase() === "tbl_user") {
+          const joinedSql = `
+            SELECT DISTINCT ON (u.id)
+              u.*,
+              COALESCE(r.role_name, NULLIF(LOWER(TRIM(u.role)), ''), 'user') AS joined_role,
+              r.id AS joined_role_id
+            FROM tbl_user u
+            LEFT JOIN tbl_user_role ur ON u.id = ur.user_id AND ur.is_active = true AND COALESCE(ur.is_deleted, false) = false
+            LEFT JOIN tbl_role r ON ur.role_id = r.id AND r.is_active = true AND COALESCE(r.is_deleted, false) = false
+            WHERE COALESCE(u.is_deleted, false) = false
+            ORDER BY u.id ASC, ur.id DESC;
+          `;
+          rows = await PostgresPoolManager.query<T>(joinedSql);
+        } else {
+          // Query database table; filter out soft-deleted records if is_deleted column exists
+          const queryWithFilter = `SELECT * FROM ${table} WHERE is_deleted IS NOT TRUE ORDER BY 1 ASC;`;
+          rows = await PostgresPoolManager.query<T>(queryWithFilter);
+          if (!rows || rows.length === 0) {
+            // If no filter matched or is_deleted column not in table, fallback to standard select
+            rows = await PostgresPoolManager.query<T>(`SELECT * FROM ${table} ORDER BY 1 ASC;`);
+          }
         }
       } catch {
         try {
-          rows = await PostgresPoolManager.query<T>(`SELECT * FROM ${table};`);
+          rows = await PostgresPoolManager.query<T>(`SELECT * FROM ${table} ORDER BY 1 ASC;`);
         } catch (dbErr) {
           console.warn(`[gtax:CacheSync] Direct query on table ${table} failed, falling back:`, dbErr);
         }
@@ -225,7 +240,8 @@ export class TableCacheDbSyncService {
         const uname = r.username || (r.email ? String(r.email).split("@")[0] : "") || `USR_${r.id}`;
         const uid = r.user_id ? String(r.user_id) : `USR_${r.id}`;
         const phone = r.mobile || r.phone || "";
-        const role = r.role || "OPERATOR";
+        const role = String(r.joined_role || r.role || "user").trim().toLowerCase();
+        const roleId = r.joined_role_id !== undefined && r.joined_role_id !== null ? Number(r.joined_role_id) : r.role_id;
         return {
           ...r,
           id: Number(r.id),
@@ -237,6 +253,7 @@ export class TableCacheDbSyncService {
           mobile: phone,
           phone,
           role,
+          ...(roleId !== undefined ? { role_id: roleId } : {}),
           password_hash: r.password_hash || r.password || ""
         };
       }) as any;
@@ -432,7 +449,8 @@ export class TableCacheDbSyncService {
   public static sanitizePayloadForDb(
     table: string,
     rawPayload: Record<string, any>,
-    existingCols?: Set<string>
+    existingCols?: Set<string>,
+    isUpdate: boolean = false
   ): Record<string, any> {
     const payload = { ...rawPayload };
 
@@ -508,26 +526,63 @@ export class TableCacheDbSyncService {
     }
 
     if (tblLower === "tbl_user") {
-      const name = payload.fullname || payload.full_name || payload.name || payload.username || "User";
-      const username = payload.username || (payload.email ? String(payload.email).split("@")[0] : `user_${Date.now()}`);
-      const pwd = payload.password || payload.password_hash || "Password123!";
-      const phone = payload.mobile || payload.phone || "";
-      const role = payload.role || "OPERATOR";
-
       const clean: Record<string, any> = {};
 
-      assignCol(clean, "fullname", name);
-      assignCol(clean, "full_name", name);
-      assignCol(clean, "username", username);
-      if (payload.user_id || payload.id) {
-        assignCol(clean, "user_id", payload.user_id || `USR_${payload.id}`);
+      if (isUpdate) {
+        // On UPDATE: only write fields actually provided in payload so partial updates never wipe existing values
+        const hasName = payload.fullname !== undefined || payload.full_name !== undefined || payload.name !== undefined;
+        if (hasName) {
+          const name = payload.fullname ?? payload.full_name ?? payload.name;
+          if (name !== undefined && name !== null && String(name).trim() !== "") {
+            assignCol(clean, "fullname", String(name));
+            assignCol(clean, "full_name", String(name));
+          }
+        }
+        if (payload.username !== undefined && String(payload.username).trim() !== "") {
+          assignCol(clean, "username", String(payload.username));
+        }
+        if (payload.user_id !== undefined && String(payload.user_id).trim() !== "") {
+          assignCol(clean, "user_id", String(payload.user_id));
+        }
+        if (payload.email !== undefined) assignCol(clean, "email", payload.email);
+        const rawPwd = payload.password ?? payload.password_hash;
+        if (rawPwd !== undefined && rawPwd !== null && String(rawPwd).trim() !== "") {
+          assignCol(clean, "password", String(rawPwd));
+          assignCol(clean, "password_hash", String(rawPwd));
+        }
+        if (payload.role !== undefined && String(payload.role).trim() !== "") {
+          assignCol(clean, "role", String(payload.role).trim().toLowerCase());
+        }
+        if (payload.mobile !== undefined || payload.phone !== undefined) {
+          const phone = payload.mobile ?? payload.phone ?? "";
+          assignCol(clean, "mobile", phone);
+          assignCol(clean, "phone", phone);
+        }
+        if (payload.preferred_lang !== undefined) assignCol(clean, "preferred_lang", payload.preferred_lang);
+        if (payload.preferred_theme !== undefined) assignCol(clean, "preferred_theme", payload.preferred_theme);
+      } else {
+        const name = payload.fullname || payload.full_name || payload.name || payload.username || "User";
+        const username = payload.username || (payload.email ? String(payload.email).split("@")[0] : `user_${Date.now()}`);
+        const pwd = payload.password || payload.password_hash || "Password123!";
+        const phone = payload.mobile || payload.phone || "";
+        const role = String(payload.role || "operator").trim().toLowerCase();
+
+        assignCol(clean, "fullname", name);
+        assignCol(clean, "full_name", name);
+        assignCol(clean, "username", username);
+        if (payload.user_id || payload.id) {
+          assignCol(clean, "user_id", payload.user_id || `USR_${payload.id}`);
+        }
+        if (payload.email !== undefined) assignCol(clean, "email", payload.email);
+        assignCol(clean, "password", pwd);
+        assignCol(clean, "password_hash", pwd);
+        assignCol(clean, "role", role);
+        assignCol(clean, "mobile", phone);
+        assignCol(clean, "phone", phone);
+        if (payload.preferred_lang !== undefined) assignCol(clean, "preferred_lang", payload.preferred_lang);
+        if (payload.preferred_theme !== undefined) assignCol(clean, "preferred_theme", payload.preferred_theme);
       }
-      if (payload.email !== undefined) assignCol(clean, "email", payload.email);
-      assignCol(clean, "password", pwd);
-      assignCol(clean, "password_hash", pwd);
-      assignCol(clean, "role", role);
-      assignCol(clean, "mobile", phone);
-      assignCol(clean, "phone", phone);
+
       if (payload.employee_id !== undefined) assignCol(clean, "employee_id", payload.employee_id);
       if (payload.country_id !== undefined) assignCol(clean, "country_id", safeInt(payload.country_id, 1));
       if (payload.photo_path !== undefined) assignCol(clean, "photo_path", payload.photo_path);
@@ -1139,17 +1194,19 @@ export class TableCacheDbSyncService {
     if (PostgresPoolManager.getStatus().connected) {
       try {
         const existingCols = await this.getTableColumns(table);
-        const dbPayload = this.sanitizePayloadForDb(table, payload, existingCols);
+        const dbPayload = this.sanitizePayloadForDb(table, payload, existingCols, true);
         const idCol = typeof targetId === "number" || (!isNaN(Number(targetId)) && !String(targetId).includes("_")) ? "id" : (table.startsWith("tax_") ? `${table.slice(0, -1)}_id` : "id");
         const keys = Object.keys(dbPayload).filter((k) => k !== "id" && k !== idCol);
-        const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(", ");
-        const values = keys.map((k) => dbPayload[k]);
-        values.push(targetId);
+        if (keys.length > 0) {
+          const setClauses = keys.map((k, i) => `"${k}" = $${i + 1}`).join(", ");
+          const values = keys.map((k) => dbPayload[k]);
+          values.push(targetId);
 
-        const sql = `UPDATE ${table} SET ${setClauses} WHERE "${idCol}" = $${values.length} RETURNING *;`;
-        const res = await PostgresPoolManager.query<T>(sql, values);
-        if (res && res.length > 0) {
-          updatedRecord = res[0];
+          const sql = `UPDATE ${table} SET ${setClauses} WHERE "${idCol}" = $${values.length} RETURNING *;`;
+          const res = await PostgresPoolManager.query<T>(sql, values);
+          if (res && res.length > 0) {
+            updatedRecord = res[0];
+          }
         }
       } catch (err) {
         console.error(`[gtax:CacheSync] Live update to ${table} failed:`, err);
@@ -1158,9 +1215,14 @@ export class TableCacheDbSyncService {
 
     if (!updatedRecord) {
       const store = this.inMemoryStores.get(table) || [];
-      const idx = store.findIndex((item: any) => String(item.id) === String(id));
+      const sanitizedMemoryPatch = table.toLowerCase() === "tbl_user"
+        ? this.sanitizePayloadForDb(table, payload, undefined, true)
+        : payload;
+      const idx = store.findIndex(
+        (item: any) => String(item.id) === String(targetId) || String(item.id) === String(id)
+      );
       if (idx !== -1) {
-        store[idx] = { ...store[idx], ...payload };
+        store[idx] = { ...store[idx], ...sanitizedMemoryPatch };
         updatedRecord = store[idx];
         this.inMemoryStores.set(table, store);
         this.saveStoresToDisk();
@@ -1169,7 +1231,9 @@ export class TableCacheDbSyncService {
 
     // Auto-sync Redis Cache from Database
     const freshRows = await this.refreshTableCacheFromDb(table);
-    const found = freshRows.find((r: any) => String(r.id) === String(id));
+    const found = freshRows.find(
+      (r: any) => String(r.id) === String(targetId) || String(r.id) === String(id)
+    );
     if (found) {
       updatedRecord = found as T;
     }

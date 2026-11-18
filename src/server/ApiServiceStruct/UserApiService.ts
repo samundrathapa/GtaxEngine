@@ -2,6 +2,7 @@ import { BaseRepo } from "../BaseFrame/repo/BaseRepo.ts";
 import { BaseService } from "../BaseFrame/services/BaseService.ts";
 import { BaseCrudController } from "../BaseFrame/controller/BaseCrudController.ts";
 import { PostgresPoolManager } from "../db/postgresPool.ts";
+import { TableCacheDbSyncService } from "../db/TableCacheDbSyncService.ts";
 import { RedisCacheManager } from "../BaseFrame/cache/RedisCacheManager.ts";
 import { authDb, TblUser } from "./AuthSessionService.ts";
 
@@ -439,6 +440,28 @@ export class UserRepo extends BaseRepo<UserRecord> {
     await UserRepo.ensureSchema();
     const idNum = parseInt(String(recordId).replace(/\D/g, ""), 10);
     const actor = userId || "SUPERADMIN";
+    const normalizedRole = data.role ? String(data.role).trim().toLowerCase() : undefined;
+
+    let resolvedRoleId = 0;
+    if (normalizedRole || data.role_id) {
+      const r = normalizedRole || "";
+      resolvedRoleId = authDb.findRoleByNameOrId(data.role_id || r)?.id || 0;
+      if (!resolvedRoleId && PostgresPoolManager.getStatus().connected) {
+        try {
+          const roleRows = await PostgresPoolManager.query<any>(
+            `SELECT id FROM tbl_role WHERE LOWER(role_name) = LOWER($1) AND is_active = true LIMIT 1;`,
+            [r]
+          );
+          if (roleRows?.[0]?.id) resolvedRoleId = Number(roleRows[0].id);
+        } catch {}
+      }
+      if (!resolvedRoleId) {
+        if (r === "superadmin") resolvedRoleId = 1;
+        else if (r === "admin") resolvedRoleId = 2;
+        else if (r === "operator") resolvedRoleId = 3;
+        else resolvedRoleId = 4;
+      }
+    }
 
     if (PostgresPoolManager.getStatus().connected && !isNaN(idNum)) {
       try {
@@ -458,63 +481,65 @@ export class UserRepo extends BaseRepo<UserRecord> {
           WHERE id = $6 AND is_active = true;
         `, [fullName, email, mobile, employeeId, actor, idNum]);
 
-        if (data.role || data.role_id) {
-          const r = String(data.role || "").trim().toLowerCase();
-          let roleId = authDb.findRoleByNameOrId(data.role_id || r)?.id || 0;
-          if (!roleId) {
-            try {
-              const roleRows = await PostgresPoolManager.query<any>(
-                `SELECT id FROM tbl_role WHERE LOWER(role_name) = LOWER($1) AND is_active = true LIMIT 1;`,
-                [r]
-              );
-              if (roleRows?.[0]?.id) roleId = Number(roleRows[0].id);
-            } catch {}
-          }
-          if (!roleId) {
-            if (r === "superadmin") roleId = 1;
-            else if (r === "admin") roleId = 2;
-            else if (r === "operator") roleId = 3;
-            else roleId = 4;
-          }
+        if (normalizedRole) {
+          await PostgresPoolManager.query(
+            `UPDATE tbl_user SET role = $1 WHERE id = $2;`,
+            [normalizedRole, idNum]
+          ).catch(() => {});
+        }
 
-          const updatedUr = await PostgresPoolManager.query<any>(`
-            UPDATE tbl_user_role SET role_id = $1, update_by = $2, update_on = NOW()
-            WHERE user_id = $3 AND is_active = true
-            RETURNING id;
-          `, [roleId, actor, idNum]);
-          if (!updatedUr || updatedUr.length === 0) {
-            await PostgresPoolManager.query(`
-              INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active)
-              VALUES ($1, $2, $3, NOW(), $3, NOW(), true);
-            `, [idNum, roleId, actor]);
-          }
-          authDb.userRoles.set(idNum, {
-            id: idNum,
-            user_id: idNum,
-            role_id: roleId,
-            insert_by: actor,
-            insert_on: new Date().toISOString(),
-            update_by: actor,
-            update_on: new Date().toISOString(),
-            delete_by: null,
-            deleted_on: null,
-            is_active: true
-          });
+        if ((normalizedRole || data.role_id) && resolvedRoleId > 0) {
+          await PostgresPoolManager.query(`DELETE FROM tbl_user_role WHERE user_id = $1;`, [idNum]);
+          await PostgresPoolManager.query(`
+            INSERT INTO tbl_user_role (user_id, role_id, insert_by, insert_on, update_by, update_on, is_active, is_deleted)
+            VALUES ($1, $2, $3, NOW(), $3, NOW(), true, false)
+            ON CONFLICT (user_id, role_id) DO UPDATE SET is_active = true, is_deleted = false, update_by = EXCLUDED.update_by, update_on = NOW();
+          `, [idNum, resolvedRoleId, actor]);
         }
       } catch (err) {
         console.warn("[UserRepo] Failed to update live tbl_user:", err);
       }
     }
 
+    if (!isNaN(idNum) && (normalizedRole || data.role_id) && resolvedRoleId > 0) {
+      authDb.userRoles.set(idNum, {
+        id: idNum,
+        user_id: idNum,
+        role_id: resolvedRoleId,
+        insert_by: actor,
+        insert_on: new Date().toISOString(),
+        update_by: actor,
+        update_on: new Date().toISOString(),
+        delete_by: null,
+        deleted_on: null,
+        is_active: true
+      });
+    }
+
+    const patchPayload: any = { ...data };
+    delete patchPayload.id;
+    if (normalizedRole) {
+      patchPayload.role = normalizedRole;
+    } else if (resolvedRoleId > 0) {
+      const roleRec = authDb.roles.get(resolvedRoleId);
+      if (roleRec) patchPayload.role = roleRec.role_name;
+    }
+
+    if (!isNaN(idNum)) {
+      await TableCacheDbSyncService.updateRecord("tbl_user", idNum, patchPayload, actor).catch(() => {});
+    }
+
     const existing = await this.getById(recordId);
+    let resultRecord = existing;
     if (existing) {
-      const updated = { ...existing, ...data, update_by: actor, update_on: new Date().toISOString() };
+      const updated = { ...existing, ...patchPayload, update_by: actor, update_on: new Date().toISOString() };
       this.localStore.set(String(existing.id), updated);
       this.localStore.set(String(existing.user_id), updated);
+      resultRecord = updated;
     }
 
     await RedisCacheManager.delete("gtax:cache:table:tbl_user");
-    return existing;
+    return resultRecord;
   }
 
   override async softDelete(recordId: string, userId: string): Promise<boolean> {

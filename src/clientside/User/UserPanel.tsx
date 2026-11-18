@@ -6,6 +6,7 @@ import { IUserRecord } from "../../serverside/User/UserModel.ts";
 import { AuthSessionState } from "../../modules/Auth/model.ts";
 import { SupportedLang, translations, subscribeToTranslations } from "../../utils/i18n.ts";
 import { hasActionRight, hasMenuRight } from "../../utils/permissions.ts";
+import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
 import {
   Plus,
   Search,
@@ -39,6 +40,8 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   const [selectedUser, setSelectedUser] = useState<IUserRecord | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 20;
 
   // Superadmin Reset Password modal state (mode: "single" or "all")
   const [resetModalMode, setResetModalMode] = useState<"single" | "all" | null>(null);
@@ -82,23 +85,29 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   };
 
   useEffect(() => {
+    setCurrentPage(1);
     loadData(searchQuery);
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<IUserRecord>) => {
     let res;
     if (selectedUser) {
-      const targetId = selectedUser.user_id || selectedUser.id;
+      const targetId = selectedUser.id ?? selectedUser.user_id;
       res = await UserController.updateUser(targetId, formData);
     } else {
       res = await UserController.createUser(formData);
     }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    if (res.success) {
+      setActionMessage(res.message);
+      setActionError(null);
+      setTimeout(() => setActionMessage(null), 4000);
+    } else {
+      setActionError(res.message);
+    }
   };
 
   const handleDelete = async (user: IUserRecord) => {
-    const targetId = user.user_id || user.id;
+    const targetId = user.id ?? user.user_id;
     if (confirm(`Are you sure you want to delete user ${user.fullname || user.username || targetId}?`)) {
       const res = await UserController.deleteUser(targetId);
       if (res.success) {
@@ -202,6 +211,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   };
 
   const { users, loading } = storeState;
+  const { paginatedItems: paginatedUsers } = getPaginationSlice(users, currentPage, itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -290,7 +300,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
           )}
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400">
-          Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{users.length}</span> active operators in <span className="font-mono text-indigo-500">tbl_user</span>
+          Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{paginatedUsers.length}</span> of <span className="font-semibold text-slate-700 dark:text-slate-200">{users.length}</span> active operators in <span className="font-mono text-indigo-500">tbl_user</span>
         </div>
       </div>
 
@@ -308,7 +318,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {users.length === 0 ? (
+              {paginatedUsers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
                     <Shield className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -325,7 +335,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
                   </td>
                 </tr>
               ) : (
-                users.map((user) => {
+                paginatedUsers.map((user) => {
                   const displayName = user.fullname || user.full_name || user.username || "User";
                   return (
                     <tr key={user.user_id || String(user.id)} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
@@ -405,7 +415,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
                           {canEditUser && (
                             <button
                               onClick={async () => {
-                                const editData = await UserController.GetItemTemplate(user.user_id || user.id);
+                                const editData = await UserController.GetItemTemplate(user.id ?? user.user_id);
                                 setSelectedUser(editData || user);
                                 setIsWindowOpen(true);
                               }}
@@ -433,11 +443,22 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
             </tbody>
           </table>
         </div>
+
+        <PaginationControls
+          totalItems={users.length}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          itemLabel="users"
+        />
       </div>
 
       <UserWindow
         isOpen={isWindowOpen}
-        onClose={() => setIsWindowOpen(false)}
+        onClose={() => {
+          setIsWindowOpen(false);
+          setSelectedUser(null);
+        }}
         onSubmit={handleCreateOrUpdate}
         editUser={selectedUser}
       />

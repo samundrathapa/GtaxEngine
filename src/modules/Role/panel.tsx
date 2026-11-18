@@ -12,6 +12,7 @@ import {
   rightsToMatrix
 } from "../../shared/rbacConfig.ts";
 import { hasActionRight, isSuperAdminSession } from "../../utils/permissions.ts";
+import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
 import {
   Shield,
   Plus,
@@ -113,6 +114,9 @@ export const RolePanel: React.FC<RolePanelProps> = ({
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [rolesPage, setRolesPage] = useState<number>(1);
+  const [usersPage, setUsersPage] = useState<number>(1);
+  const listItemsPerPage = 10;
 
   const isSuper = isSuperAdminSession(currentSession);
   const canCreateRole = isSuper || hasActionRight(currentSession, "role", "new");
@@ -415,6 +419,17 @@ export const RolePanel: React.FC<RolePanelProps> = ({
     );
   });
 
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearch]);
+
+  const { paginatedItems: paginatedRoles } = getPaginationSlice(roles, rolesPage, listItemsPerPage);
+  const { paginatedItems: paginatedFilteredUsers } = getPaginationSlice(
+    filteredUsers,
+    usersPage,
+    listItemsPerPage
+  );
+
   const selectedUserObj = usersList.find((u) => Number(u.id) === Number(selectedUserId));
   const isSelectedUserSuperadmin =
     String(selectedUserRoleName || "").toLowerCase() === "superadmin" ||
@@ -525,8 +540,8 @@ export const RolePanel: React.FC<RolePanelProps> = ({
               )}
             </div>
 
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[600px] overflow-y-auto">
-              {roles.map((role) => {
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 flex-1">
+              {paginatedRoles.map((role) => {
                 const isSelected = selectedRoleId === role.id;
                 const enabledMenusCount = MENU_DEFINITIONS.filter(
                   (m) => role.matrix?.[m.key]?.menu
@@ -586,6 +601,15 @@ export const RolePanel: React.FC<RolePanelProps> = ({
                 );
               })}
             </div>
+
+            <PaginationControls
+              totalItems={roles.length}
+              currentPage={rolesPage}
+              itemsPerPage={listItemsPerPage}
+              onPageChange={setRolesPage}
+              itemLabel="roles"
+              compact
+            />
           </div>
 
           {/* Right: Role Editor & Menu/Action Permission Matrix */}
@@ -785,8 +809,8 @@ export const RolePanel: React.FC<RolePanelProps> = ({
               </div>
             </div>
 
-            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[560px] overflow-y-auto">
-              {filteredUsers.map((u) => {
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 flex-1">
+              {paginatedFilteredUsers.map((u) => {
                 const uid = Number(u.id);
                 const active = uid === Number(selectedUserId);
                 return (
@@ -815,6 +839,15 @@ export const RolePanel: React.FC<RolePanelProps> = ({
                 );
               })}
             </div>
+
+            <PaginationControls
+              totalItems={filteredUsers.length}
+              currentPage={usersPage}
+              itemsPerPage={listItemsPerPage}
+              onPageChange={setUsersPage}
+              itemLabel="users"
+              compact
+            />
           </div>
 
           {/* Right: User Role & Individual Menu Overrides */}
