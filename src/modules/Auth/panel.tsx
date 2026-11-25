@@ -1,20 +1,17 @@
 import React, { useState } from "react";
 import { LoginFormData, initialLoginForm, AuthSessionState } from "./model.ts";
 import { AuthController } from "./controller.ts";
-import { RegisterWindow, ForgotPasswordWindow } from "./window.tsx";
+import { ForgotPasswordWindow } from "./window.tsx";
 import {
   Lock,
   Mail,
   ArrowRight,
   Eye,
   EyeOff,
-  UserPlus,
-  KeyRound,
-  CheckCircle2,
-  Building2,
   Landmark,
-  Shield,
-  Clock
+  ShieldCheck,
+  Zap,
+  CheckCircle2
 } from "lucide-react";
 
 interface AuthPanelProps {
@@ -39,20 +36,17 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
     const reason = localStorage.getItem("gtax_logout_reason");
     if (reason === "idle_timeout") {
       localStorage.removeItem("gtax_logout_reason");
-      return "Your session timed out due to inactivity. For municipal financial data security, you have been automatically logged out. Please sign in again.";
+      return "Your session timed out due to inactivity. Please sign in again.";
     }
     return null;
   });
 
-  // Modals
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
-  const [registeredNotice, setRegisteredNotice] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.identifier || !form.password) {
-      setErrorMessage("Please enter both identifier (email or mobile) and password.");
+      setErrorMessage("Please enter both email or mobile and password.");
       return;
     }
 
@@ -80,149 +74,100 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Background Decorative Mesh & Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-indigo-600 selection:text-white relative overflow-hidden">
+      {/* Dribbble POSLINE Style Ambient Floating Glows */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-indigo-300/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-300/30 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 z-10">
-        {/* Left Side: Clean Brand & Mission Overview */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-950 p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
-          <div>
-            {/* Brand Logo */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-indigo-600/40">
+      {/* Main Dribbble Card Container */}
+      <div className="relative w-full max-w-5xl bg-white rounded-[2.5rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden grid grid-cols-1 lg:grid-cols-12 z-10">
+        
+        {/* Left Side: Brand Visual Panel (POSLINE Dribbble Aesthetic) */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 p-8 sm:p-12 flex flex-col justify-between text-white relative">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.25),transparent_50%)] pointer-events-none" />
+          
+          <div className="relative z-10">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-600/40">
                 G
               </div>
               <div>
-                <span className="text-2xl font-black tracking-tight text-white">Gtax</span>
-                <p className="text-xs text-indigo-300">
-                  Municipal Revenue & Tax Management
-                </p>
+                <span className="text-xl font-black tracking-tight">Gtax Municipal</span>
+                <p className="text-[11px] text-indigo-300 font-medium">Revenue &amp; Tax Suite</p>
               </div>
             </div>
 
-            {/* Mission & Key Platform Capabilities */}
             <div className="space-y-4 my-8">
-              <div className="flex items-start gap-3">
-                <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mt-0.5">
-                  <Landmark className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Integrated Property Tax Engine</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Automated assessment of land parcels, building plinth areas, and floor depreciation.
-                  </p>
-                </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-emerald-300 text-xs font-semibold backdrop-blur-md border border-white/10">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Secure Municipal Gateway</span>
               </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mt-0.5">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">1-Door Taxpayer Registration</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Continuous sequential registration of citizen portfolios, multi-kitta parcels, and house structures.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 mt-0.5">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Multi-Jurisdiction Standards</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Compliant with municipal revenue guidelines, prompt payment rebates, and progressive slabs.
-                  </p>
-                </div>
-              </div>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
+                Streamlining Property Tax &amp; Valuation.
+              </h2>
+              <p className="text-xs text-indigo-200/80 leading-relaxed">
+                Log in to manage taxpayer dossiers, multi-year arrears, rate masters, and certified assessments.
+              </p>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-500 font-mono flex items-center justify-between">
-            <span>Official Municipal Revenue Portal</span>
+          <div className="relative z-10 pt-6 border-t border-white/10 text-[11px] text-indigo-300 flex items-center justify-between font-mono">
+            <span>v2.5 Enterprise</span>
             {onOpenPrivacy && (
               <button
                 type="button"
                 onClick={onOpenPrivacy}
-                className="text-indigo-400 hover:text-indigo-300 underline font-sans text-xs transition-colors"
+                className="text-white hover:text-indigo-200 underline font-sans text-xs transition-colors cursor-pointer"
               >
-                Privacy & Terms
+                Privacy Policy
               </button>
             )}
           </div>
         </div>
 
-        {/* Right Side: Clean Login Form */}
-        <div className="lg:col-span-7 p-8 sm:p-10 bg-slate-900 flex flex-col justify-between">
+        {/* Right Side: Clean Dribbble POSLINE Login Form */}
+        <div className="lg:col-span-7 p-8 sm:p-12 lg:p-16 bg-white flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Sign In
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Enter your email address or registered mobile number to continue.
-                </p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400">
-                <KeyRound className="w-5 h-5" />
-              </div>
+            <div className="mb-8">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                Welcome back 👋
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 font-medium">
+                Please enter your details to sign in.
+              </p>
             </div>
 
             {sessionTimeoutAlert && (
-              <div className="mb-4 p-3.5 text-xs bg-amber-950/60 border border-amber-600/60 text-amber-200 rounded-2xl flex items-start justify-between gap-3 shadow-lg">
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-amber-300">Session Timed Out (सत्र समाप्त)</div>
-                    <div className="text-[11px] text-amber-200/90 mt-0.5">{sessionTimeoutAlert}</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSessionTimeoutAlert(null)}
-                  className="font-bold text-amber-400 hover:text-white underline text-[11px] shrink-0"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {registeredNotice && (
-              <div className="mb-4 p-3 text-xs bg-emerald-950/70 border border-emerald-800 text-emerald-300 rounded-xl flex items-center justify-between">
-                <span>{registeredNotice}</span>
-                <button onClick={() => setRegisteredNotice(null)} className="font-bold underline ml-2">
+              <div className="mb-5 p-3.5 text-xs bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex items-center justify-between gap-2">
+                <span>{sessionTimeoutAlert}</span>
+                <button onClick={() => setSessionTimeoutAlert(null)} className="font-bold underline text-amber-700">
                   Dismiss
                 </button>
               </div>
             )}
 
             {errorMessage && (
-              <div className="mb-4 p-3 text-xs bg-rose-950/70 border border-rose-800 text-rose-300 rounded-xl">
-                {errorMessage}
+              <div className="mb-5 p-3.5 text-xs bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                <span>{errorMessage}</span>
               </div>
             )}
 
-            {/* Login Form */}
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Email Address or Mobile Number
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Email Address or Mobile
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={form.identifier}
                     onChange={(e) => setForm({ ...form, identifier: e.target.value })}
-                    placeholder="name@gtax.enterprise or 98XXXXXXXX"
-                    className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+                    placeholder="name@gtax.enterprise"
+                    className="w-full pl-11 pr-4 py-3.5 text-sm bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-all placeholder:text-slate-400 font-medium shadow-2xs"
                     required
                   />
                 </div>
@@ -230,91 +175,63 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
                     Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsForgotOpen(true)}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer"
                   >
                     Forgot password?
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    placeholder="Enter your password..."
-                    className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-950 border border-slate-800 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+                    placeholder="••••••••"
+                    className="w-full pl-11 pr-11 py-3.5 text-sm bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-all placeholder:text-slate-400 font-medium shadow-2xs"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-400">
-                  <input
-                    type="checkbox"
-                    checked={form.rememberMe}
-                    onChange={(e) => setForm({ ...form, rememberMe: e.target.checked })}
-                    className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500/30"
-                  />
-                  <span>Remember session on this device</span>
-                </label>
-              </div>
-
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group mt-3"
+                className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl shadow-lg shadow-indigo-600/25 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group cursor-pointer mt-3"
               >
-                <span>{submitting ? "Signing In..." : "Sign In"}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>{submitting ? "Signing In..." : "Sign In to Account"}</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             </form>
           </div>
 
-          {/* Bottom Bar: Privacy & Security Policy */}
-          <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
-            <span>Enterprise Security Enabled</span>
+          {/* Footer */}
+          <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+            <span>© Gtax Enterprise</span>
             {onOpenPrivacy && (
               <button
                 type="button"
                 onClick={onOpenPrivacy}
-                className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1.5 transition-colors font-medium"
+                className="text-indigo-600 hover:underline font-semibold cursor-pointer"
               >
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Privacy Policy (गोपनीयता नीति)</span>
+                Privacy Policy
               </button>
             )}
           </div>
         </div>
       </div>
-
-      {/* Registration Modal Dialog */}
-      <RegisterWindow
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onSuccess={(email, pass) => {
-          setIsRegisterOpen(false);
-          setRegisteredNotice(`User ${email} created successfully. You can now log in.`);
-          setForm({
-            ...form,
-            identifier: email,
-            password: pass || form.password
-          });
-        }}
-      />
 
       {/* Forgot Password Modal Dialog */}
       <ForgotPasswordWindow
