@@ -810,13 +810,13 @@ export class TableCacheDbSyncService {
       assignCol(clean, "nature_id", natureId);
       assignCol(clean, "land_rate_id", landRateId);
       assignCol(clean, "malpot_rate_id", malpotRateId);
-      let assessedVal = safeNum(payload.assessed_valuation, 0);
-      if (assessedVal <= 0) {
-        const baseSqFt = unitId === 1 ? 342.25 : unitId === 2 ? 3645 : unitId === 4 ? 10.7639 : 1;
-        const cachedRates = this.inMemoryStores.get("tbl_land_rate") || [];
-        const foundRate = cachedRates.find((r: any) => Number(r.id) === landRateId);
-        const ratePerUnit = foundRate ? Number(foundRate.rate_per_unit || 800000) : 800000;
-        assessedVal = Math.round((area / baseSqFt) * ratePerUnit);
+      const baseSqFt = unitId === 1 ? 342.25 : unitId === 2 ? 3645 : unitId === 4 ? 10.7639 : 1;
+      const cachedRates = this.inMemoryStores.get("tbl_land_rate") || [];
+      const foundRate = cachedRates.find((r: any) => Number(r.id) === landRateId);
+      const ratePerUnit = foundRate ? Number(foundRate.rate_per_unit || 800000) : 800000;
+      let assessedVal = Math.round((area / baseSqFt) * ratePerUnit);
+      if (payload.assessed_valuation !== undefined && Number(payload.assessed_valuation) > 0 && Math.abs(Number(payload.assessed_valuation) - assessedVal) > 5000000) {
+        assessedVal = Number(payload.assessed_valuation);
       }
       assignCol(clean, "include_in_evaluation", payload.include_in_evaluation !== undefined ? Boolean(payload.include_in_evaluation) : true);
       assignCol(clean, "assessed_valuation", assessedVal);

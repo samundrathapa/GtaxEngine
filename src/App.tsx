@@ -3,6 +3,7 @@ import { AuthPanel } from "./modules/Auth/panel.tsx";
 import { AuthSessionState } from "./modules/Auth/model.ts";
 import { AuthController } from "./modules/Auth/controller.ts";
 import { SessionLogsPanel } from "./modules/Auth/sessionLogsPanel.tsx";
+import { AuditLogsPanel } from "./clientside/AuditLogs/AuditLogsPanel.tsx";
 import { TaxpayerWorkflowPanel, TaxpayerSubView } from "./modules/TaxpayerWorkflow/panel.tsx";
 import { RatesMasterPanel, RateTab } from "./modules/RatesMaster/panel.tsx";
 import { ArchitectureExplorerPanel } from "./modules/ArchitectureExplorer/panel.tsx";
@@ -1435,7 +1436,7 @@ export default function App() {
                   }}
                 />
               )}
-              {activeTab === "security_logs" && <SessionLogsPanel />}
+              {activeTab === "security_logs" && <AuditLogsPanel />}
               {activeTab === "rbac" && (
                 <RatesMasterPanel
                   currentLang={currentLang}
