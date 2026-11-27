@@ -40,6 +40,7 @@ import { DbStatusModal, DbStatusData } from "./components/DbStatusModal.tsx";
 import { PrivacyPolicyPage } from "./components/PrivacyPolicyPage.tsx";
 import { useIdleSessionTimeout } from "./hooks/useIdleSessionTimeout.ts";
 import { IdleSessionWarningModal } from "./components/IdleSessionWarningModal.tsx";
+import { useMessageBox } from "./components/MessageBox.tsx";
 import { ApiController } from "./api/controller.ts";
 import {
   LayoutDashboard,
@@ -68,7 +69,8 @@ import {
   Sliders,
   Settings,
   TrendingUp,
-  KeyRound
+  KeyRound,
+  RefreshCw
 } from "lucide-react";
 
 type NavigationTab =
@@ -196,6 +198,7 @@ const parseRouteFromLocation = (): {
 };
 
 export default function App() {
+  const { showError, MessageBoxModal } = useMessageBox();
   const initialRoute = parseRouteFromLocation();
   const [session, setSession] = useState<AuthSessionState | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -217,6 +220,18 @@ export default function App() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [menuLoading, setMenuLoading] = useState<boolean>(false);
+  const isFirstRenderRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+    setMenuLoading(true);
+    const timer = setTimeout(() => setMenuLoading(false), 240);
+    return () => clearTimeout(timer);
+  }, [activeTab, taxpayerSubView, calculationTab, rateSubTab, mastersSubTab, rbacSubTab, roleSubTab]);
 
   const handleToggleNavigation = () => {
     if (window.innerWidth >= 1024) {
@@ -549,7 +564,7 @@ export default function App() {
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      showError("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
       return;
     }
 
@@ -1335,7 +1350,15 @@ export default function App() {
         </header>
 
         {/* Main Panel Content Render Area - Protected by Route Authorization Guard */}
-        <main className="flex-1 p-[3px] w-full min-w-0">
+        <main className="flex-1 p-[3px] w-full min-w-0 relative">
+          {menuLoading && (
+            <div className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center bg-slate-900/10 backdrop-blur-[1px]">
+              <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl text-xs font-bold text-slate-700 dark:text-slate-200">
+                <RefreshCw className="w-4 h-4 text-emerald-600 animate-spin" />
+                <span>Loading module...</span>
+              </div>
+            </div>
+          )}
           {!isNavTabAllowed(session, activeTab) ? (
             <div className="p-8 max-w-lg mx-auto mt-10 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-2xl text-center space-y-3 shadow-sm">
               <Shield className="w-10 h-10 text-rose-500 mx-auto" />
@@ -1534,6 +1557,7 @@ export default function App() {
         onStayLoggedIn={resetIdleTimer}
         onLogoutNow={handleLogout}
       />
+      <MessageBoxModal />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { MenuKey } from "../../shared/rbacConfig.ts";
 import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 import {
   Calendar,
   Layers,
@@ -203,6 +204,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   filterGroup = "all",
   currentSession
 }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const t = translations[currentLang];
   const [activeTab, setActiveTab] = useState<RateTab>(initialTab);
   const [loading, setLoading] = useState(true);
@@ -447,103 +449,112 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this record? (Audit trails will mark is_deleted = true)")) return;
-    const res = await ApiController.deleteRateItem(activeTab, id);
-    if (res.success) {
-      setStatusMsg("Record deleted successfully (audit preserved)");
-      loadData();
-      setTimeout(() => setStatusMsg(null), 3000);
-    }
+    showConfirm("Are you sure you want to delete this record? (Audit trails will mark is_deleted = true)", async () => {
+      const res = await ApiController.deleteRateItem(activeTab, id);
+      if (res.success) {
+        showSuccess("Record deleted successfully (audit preserved)");
+        setStatusMsg("Record deleted successfully (audit preserved)");
+        loadData();
+        setTimeout(() => setStatusMsg(null), 3000);
+      } else {
+        showError(res.message || "Failed to delete record");
+      }
+    }, "Do you want to delete?");
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    let res: any;
-    if (activeTab === "company") {
-      res = await ApiController.saveCompany(formData, editingItem?.id);
-    } else if (activeTab === "application_setting") {
-      res = await ApiController.updateApplicationSettings({
-        ...formData,
-        code: formData.code || "APP-CONF-01",
-        fullname: formData.fullname || formData.fullanme || formData.municipality_name || "Kathmandu Metropolitan City",
-        fullanme: formData.fullanme || formData.fullname || formData.municipality_name || "Kathmandu Metropolitan City",
-        municipality_name: formData.municipality_name || formData.fullname || formData.fullanme || "Kathmandu Metropolitan City"
-      });
-    } else {
-      // Resolve numeric parent ID from hidden orginal_id (or matching parent display text) and save ID in parent_id
-      let resolvedParentId: number | null =
-        formData.orginal_id !== undefined && formData.orginal_id !== null && formData.orginal_id !== ""
-          ? Number(formData.orginal_id)
-          : formData.parent_id
-          ? Number(formData.parent_id)
-          : null;
+    showConfirm("Do you want to save this record?", async () => {
+      let res: any;
+      if (activeTab === "company") {
+        res = await ApiController.saveCompany(formData, editingItem?.id);
+      } else if (activeTab === "application_setting") {
+        res = await ApiController.updateApplicationSettings({
+          ...formData,
+          code: formData.code || "APP-CONF-01",
+          fullname: formData.fullname || formData.fullanme || formData.municipality_name || "Kathmandu Metropolitan City",
+          fullanme: formData.fullanme || formData.fullname || formData.municipality_name || "Kathmandu Metropolitan City",
+          municipality_name: formData.municipality_name || formData.fullname || formData.fullanme || "Kathmandu Metropolitan City"
+        });
+      } else {
+        // Resolve numeric parent ID from hidden orginal_id (or matching parent display text) and save ID in parent_id
+        let resolvedParentId: number | null =
+          formData.orginal_id !== undefined && formData.orginal_id !== null && formData.orginal_id !== ""
+            ? Number(formData.orginal_id)
+            : formData.parent_id
+            ? Number(formData.parent_id)
+            : null;
 
-      if (!resolvedParentId && formData.parent_display_text && String(formData.parent_display_text).trim()) {
-        const candidates = getParentListForTab(activeTab);
-        const typed = String(formData.parent_display_text).trim().toLowerCase();
-        const match = candidates.find(
-          (c: any) =>
-            (!editingItem || Number(c.id) !== Number(editingItem.id)) &&
-            (getRateDisplayText(c).toLowerCase() === typed ||
-              (c.name_np && String(c.name_np).trim().toLowerCase() === typed) ||
-              (c.code && String(c.code).trim().toLowerCase() === typed))
-        );
-        if (match) {
-          resolvedParentId = Number(match.id);
-        }
-      }
-      if (formData.parent_display_text === "" && !formData.orginal_id) {
-        resolvedParentId = null;
-      }
-
-      const { orginal_id: _omitOrginalId, parent_display_text: _omitParentText, ...restPayload } = formData;
-      const savePayload = {
-        ...restPayload,
-        parent_id: resolvedParentId && !Number.isNaN(resolvedParentId) ? resolvedParentId : null
-      };
-
-      res = await ApiController.saveRateItem(activeTab, savePayload, editingItem?.id);
-    }
-
-    if (res.success) {
-      setStatusMsg(editingItem ? "Record updated successfully!" : "New record created successfully!");
-      setIsModalOpen(false);
-      await loadData();
-
-      const changedFyId = formData.fiscal_year_id ? Number(formData.fiscal_year_id) : undefined;
-      const matchedFy = changedFyId ? masters.fiscalYears.find((f: any) => f.id === changedFyId) : undefined;
-      const fyCode = matchedFy?.code;
-
-      if (changedFyId) {
-        localStorage.setItem("gtax_active_fy_id", String(changedFyId));
-      }
-      if (fyCode) {
-        localStorage.setItem("gtax_active_fy_code", fyCode);
-      }
-
-      window.dispatchEvent(
-        new CustomEvent("gtax:rates_updated", {
-          detail: {
-            tab: activeTab,
-            fiscal_year_id: changedFyId,
-            fiscalYearCode: fyCode
+        if (!resolvedParentId && formData.parent_display_text && String(formData.parent_display_text).trim()) {
+          const candidates = getParentListForTab(activeTab);
+          const typed = String(formData.parent_display_text).trim().toLowerCase();
+          const match = candidates.find(
+            (c: any) =>
+              (!editingItem || Number(c.id) !== Number(editingItem.id)) &&
+              (getRateDisplayText(c).toLowerCase() === typed ||
+                (c.name_np && String(c.name_np).trim().toLowerCase() === typed) ||
+                (c.code && String(c.code).trim().toLowerCase() === typed))
+          );
+          if (match) {
+            resolvedParentId = Number(match.id);
           }
-        })
-      );
+        }
+        if (formData.parent_display_text === "" && !formData.orginal_id) {
+          resolvedParentId = null;
+        }
 
-      if (activeTab === "application_setting" || activeTab === "fiscal_year") {
+        const { orginal_id: _omitOrginalId, parent_display_text: _omitParentText, ...restPayload } = formData;
+        const savePayload = {
+          ...restPayload,
+          parent_id: resolvedParentId && !Number.isNaN(resolvedParentId) ? resolvedParentId : null
+        };
+
+        res = await ApiController.saveRateItem(activeTab, savePayload, editingItem?.id);
+      }
+
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setStatusMsg(editingItem ? "Record updated successfully!" : "New record created successfully!");
+        setIsModalOpen(false);
+        await loadData();
+
+        const changedFyId = formData.fiscal_year_id ? Number(formData.fiscal_year_id) : undefined;
+        const matchedFy = changedFyId ? masters.fiscalYears.find((f: any) => f.id === changedFyId) : undefined;
+        const fyCode = matchedFy?.code;
+
+        if (changedFyId) {
+          localStorage.setItem("gtax_active_fy_id", String(changedFyId));
+        }
+        if (fyCode) {
+          localStorage.setItem("gtax_active_fy_code", fyCode);
+        }
+
         window.dispatchEvent(
-          new CustomEvent("gtax:active_fy_changed", {
+          new CustomEvent("gtax:rates_updated", {
             detail: {
+              tab: activeTab,
               fiscal_year_id: changedFyId,
               fiscalYearCode: fyCode
             }
           })
         );
-      }
 
-      setTimeout(() => setStatusMsg(null), 3000);
-    }
+        if (activeTab === "application_setting" || activeTab === "fiscal_year") {
+          window.dispatchEvent(
+            new CustomEvent("gtax:active_fy_changed", {
+              detail: {
+                fiscal_year_id: changedFyId,
+                fiscalYearCode: fyCode
+              }
+            })
+          );
+        }
+
+        setTimeout(() => setStatusMsg(null), 3000);
+      } else {
+        showError(res.message || "Failed to save record");
+      }
+    }, "Do you want to save?");
   };
 
   const handleExecuteCopyRate = async (e: React.FormEvent) => {
@@ -2480,6 +2491,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
             : "Select Parent Land Rate from Tree"
         }
       />
+      <MessageBoxModal />
     </div>
   );
 };

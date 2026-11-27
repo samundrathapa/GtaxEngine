@@ -4,8 +4,10 @@ import { CompanyController } from "./CompanyController.ts";
 import { CompanyWindow } from "./CompanyWindow.tsx";
 import { ICompanyRecord } from "../../serverside/Company/CompanyModel.ts";
 import { Plus, Search, Trash2, Edit2, Building, RefreshCw, CheckCircle2, Phone, Mail } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const CompanyPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(companyStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const CompanyPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<ICompanyRecord>) => {
-    let res;
-    if (selectedCompany) {
-      res = await CompanyController.updateCompany(selectedCompany.id, formData);
-    } else {
-      res = await CompanyController.createCompany(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save company details?", async () => {
+      let res;
+      if (selectedCompany) {
+        res = await CompanyController.updateCompany(selectedCompany.id, formData);
+      } else {
+        res = await CompanyController.createCompany(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save company");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (comp: ICompanyRecord) => {
-    if (confirm(`Are you sure you want to delete company/entity ${comp.name}?`)) {
+    showConfirm(`Do you want to delete company/entity ${comp.name}?`, async () => {
       const res = await CompanyController.deleteCompany(comp.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete company");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { companies, loading } = storeState;
@@ -225,6 +239,7 @@ export const CompanyPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editCompany={selectedCompany}
       />
+      <MessageBoxModal />
     </div>
   );
 };

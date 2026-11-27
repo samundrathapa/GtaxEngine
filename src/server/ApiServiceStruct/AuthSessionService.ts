@@ -284,6 +284,19 @@ class AuthDatabaseStore {
     };
     this.userLogs.unshift(log);
     if (this.userLogs.length > 500) this.userLogs.pop();
+
+    // Auto-record to global audit log engine (tbl_user_log)
+    try {
+      TableCacheDbSyncService.logAuditEvent(
+        "tbl_user (Auth)",
+        action,
+        String(userId || "1"),
+        null,
+        { username: usernameAttempt, ip, details },
+        "session"
+      ).catch(() => {});
+    } catch {}
+
     return log;
   }
 

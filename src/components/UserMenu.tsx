@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AuthSessionState } from "../modules/Auth/model.ts";
 import { SupportedLang, SupportedTheme, translations, subscribeToTranslations } from "../utils/i18n.ts";
 import { ApiController } from "../api/controller.ts";
+import { useMessageBox } from "./MessageBox.tsx";
 import {
   User,
   LogOut,
@@ -51,6 +52,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onOpenDbColumnModal,
   onOpenPrivacy
 }) => {
+  const { showError, MessageBoxModal } = useMessageBox();
   const [isOpen, setIsOpen] = useState(false);
   const [syncingCache, setSyncingCache] = useState(false);
   const [syncSuccessModal, setSyncSuccessModal] = useState<any | null>(null);
@@ -139,10 +141,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         setSyncSuccessModal(data.data);
         window.dispatchEvent(new CustomEvent("gtax:cache-cleared-and-synced", { detail: data.data }));
       } else {
-        alert("Failed to sync cache: " + (data.errors?.[0] || "Unknown error"));
+        showError("Failed to sync cache: " + (data.errors?.[0] || "Unknown error"));
       }
     } catch (e: any) {
-      alert("Network error syncing cache: " + (e?.message || "Unknown error"));
+      showError("Network error syncing cache: " + (e?.message || "Unknown error"));
     } finally {
       setSyncingCache(false);
     }
@@ -642,6 +644,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         </div>,
         document.body
       )}
+      <MessageBoxModal />
     </div>
   );
 };

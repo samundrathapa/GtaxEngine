@@ -4,8 +4,10 @@ import { CalculationController } from "./CalculationController.ts";
 import { CalculationWindow } from "./CalculationWindow.tsx";
 import { ICalculationRecord } from "../../serverside/Calculation/CalculationModel.ts";
 import { Plus, Search, Trash2, Edit2, Calculator, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const CalculationPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(calculationStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const CalculationPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<ICalculationRecord>) => {
-    let res;
-    if (selectedCalculation) {
-      res = await CalculationController.updateCalculation(selectedCalculation.id, formData);
-    } else {
-      res = await CalculationController.createCalculation(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save this tax calculation?", async () => {
+      let res;
+      if (selectedCalculation) {
+        res = await CalculationController.updateCalculation(selectedCalculation.id, formData);
+      } else {
+        res = await CalculationController.createCalculation(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save calculation");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (calc: ICalculationRecord) => {
-    if (confirm(`Are you sure you want to delete tax calculation record #${calc.id}?`)) {
+    showConfirm(`Do you want to delete tax calculation record #${calc.id}?`, async () => {
       const res = await CalculationController.deleteCalculation(calc.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete calculation");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { calculations, loading } = storeState;
@@ -200,6 +214,7 @@ export const CalculationPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editCalculation={selectedCalculation}
       />
+      <MessageBoxModal />
     </div>
   );
 };

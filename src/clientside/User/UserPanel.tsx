@@ -7,6 +7,7 @@ import { AuthSessionState } from "../../modules/Auth/model.ts";
 import { SupportedLang, translations, subscribeToTranslations } from "../../utils/i18n.ts";
 import { hasActionRight, hasMenuRight } from "../../utils/permissions.ts";
 import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 import {
   Plus,
   Search,
@@ -33,6 +34,7 @@ interface UserPanelProps {
 }
 
 export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLang = "eng", onManageUserRights }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(userStoreInstance.getState());
   const [, setLangVersion] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -90,34 +92,40 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<IUserRecord>) => {
-    let res;
-    if (selectedUser) {
-      const targetId = selectedUser.id ?? selectedUser.user_id;
-      res = await UserController.updateUser(targetId, formData);
-    } else {
-      res = await UserController.createUser(formData);
-    }
-    if (res.success) {
-      setActionMessage(res.message);
-      setActionError(null);
-      setTimeout(() => setActionMessage(null), 4000);
-    } else {
-      setActionError(res.message);
-    }
+    showConfirm("Do you want to save user details?", async () => {
+      let res;
+      if (selectedUser) {
+        const targetId = selectedUser.id ?? selectedUser.user_id;
+        res = await UserController.updateUser(targetId, formData);
+      } else {
+        res = await UserController.createUser(formData);
+      }
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setActionMessage(res.message);
+        setActionError(null);
+        setTimeout(() => setActionMessage(null), 4000);
+      } else {
+        showError(res.message || "Failed to save user");
+        setActionError(res.message);
+      }
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (user: IUserRecord) => {
     const targetId = user.id ?? user.user_id;
-    if (confirm(`Are you sure you want to delete user ${user.fullname || user.username || targetId}?`)) {
+    showConfirm(`Do you want to delete user ${user.fullname || user.username || targetId}?`, async () => {
       const res = await UserController.deleteUser(targetId);
       if (res.success) {
+        showSuccess("Record deleted successfully.");
         setActionMessage(res.message);
         setActionError(null);
       } else {
+        showError(res.message || "Failed to delete user");
         setActionError(res.message);
       }
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const openSingleResetModal = (user: IUserRecord) => {
@@ -601,6 +609,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
           </div>
         </div>
       )}
+      <MessageBoxModal />
     </div>
   );
 };

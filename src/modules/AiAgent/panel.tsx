@@ -21,6 +21,7 @@ import {
   Compass,
   ArrowRight
 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 interface AiAgentPanelProps {
   onExecuteTaxCalculation?: (params: { grossAmount: number; destinationCountry: string; destinationRegion: string }) => void;
@@ -33,6 +34,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
   onExecuteTaxCalculation,
   onNavigateToSync
 }) => {
+  const { showError, MessageBoxModal } = useMessageBox();
   const [activeFeature, setActiveFeature] = useState<AiSubFeature>("multiturn_chat");
 
   // ----------------------------------------------------
@@ -171,7 +173,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
         setRecordingSeconds((s) => s + 1);
       }, 1000);
     } catch (err) {
-      alert("Microphone access permission required for audio recording.");
+      showError("Microphone access permission required for audio recording.");
     }
   };
 
@@ -744,6 +746,7 @@ export const AiAgentPanel: React.FC<AiAgentPanelProps> = ({
           </div>
         </div>
       )}
+      <MessageBoxModal />
     </div>
   );
 };

@@ -28,6 +28,7 @@ import {
 import { tCol, SupportedLang } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 interface TaxpayerDossierModalProps {
   taxpayerId: number;
@@ -48,6 +49,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   currentLang = "eng",
   currentSession
 }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const canNew = !currentSession || hasActionRight(currentSession, "taxpayer", "new");
   const canEdit = !currentSession || hasActionRight(currentSession, "taxpayer", "edit");
   const canDelete = !currentSession || hasActionRight(currentSession, "taxpayer", "delete");
@@ -242,36 +244,40 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
   // Taxpayer update
   const handleSaveTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    const resolvedName = tpForm.fullanme || tpForm.fullname || tpForm.full_name || "";
-    const resolvedPhone = tpForm.mobile_no || tpForm.phone_number || tpForm.mobile || "";
-    const resolvedPan = tpForm.pan_vat_no || tpForm.pan_number || "";
-    const resolvedCitizenship = tpForm.citizenship_no || tpForm.citizenship_number || "";
-    const resolvedWard = tpForm.ward_no !== undefined ? Number(tpForm.ward_no) : 1;
+    showConfirm("Do you want to save taxpayer details?", async () => {
+      const resolvedName = tpForm.fullanme || tpForm.fullname || tpForm.full_name || "";
+      const resolvedPhone = tpForm.mobile_no || tpForm.phone_number || tpForm.mobile || "";
+      const resolvedPan = tpForm.pan_vat_no || tpForm.pan_number || "";
+      const resolvedCitizenship = tpForm.citizenship_no || tpForm.citizenship_number || "";
+      const resolvedWard = tpForm.ward_no !== undefined ? Number(tpForm.ward_no) : 1;
 
-    const payload = {
-      ...tpForm,
-      full_name: resolvedName,
-      fullname: resolvedName,
-      fullanme: resolvedName,
-      phone_number: resolvedPhone,
-      mobile_no: resolvedPhone,
-      mobile: resolvedPhone,
-      pan_number: resolvedPan,
-      pan_vat_no: resolvedPan,
-      citizenship_number: resolvedCitizenship,
-      citizenship_no: resolvedCitizenship,
-      ward_no: resolvedWard
-    };
+      const payload = {
+        ...tpForm,
+        full_name: resolvedName,
+        fullname: resolvedName,
+        fullanme: resolvedName,
+        phone_number: resolvedPhone,
+        mobile_no: resolvedPhone,
+        mobile: resolvedPhone,
+        pan_number: resolvedPan,
+        pan_vat_no: resolvedPan,
+        citizenship_number: resolvedCitizenship,
+        citizenship_no: resolvedCitizenship,
+        ward_no: resolvedWard
+      };
 
-    const res = await ApiController.updateTaxpayer(taxpayerId, payload);
-    if (res.success) {
-      showNotify("Taxpayer details updated successfully!", "success");
-      await loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Taxpayer update failed");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+      const res = await ApiController.updateTaxpayer(taxpayerId, payload);
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        showNotify("Taxpayer details updated successfully!", "success");
+        await loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Taxpayer update failed");
+        showError(`Update Error: ${errText}`);
+        showNotify(`Validation / Error: ${errText}`, "error");
+      }
+    }, "Do you want to save?");
   };
 
   // Land actions
@@ -321,34 +327,41 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveLand = async (e: React.FormEvent) => {
     e.preventDefault();
-    let res;
-    if (landForm.id) {
-      res = await ApiController.updateLand(landForm.id, landForm);
-    } else {
-      res = await ApiController.createLand(landForm);
-    }
-    if (res.success) {
-      showNotify(landForm.id ? "Land parcel updated!" : "Land parcel registered!", "success");
-      setLandModalOpen(false);
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save land");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save land parcel details?", async () => {
+      let res;
+      if (landForm.id) {
+        res = await ApiController.updateLand(landForm.id, landForm);
+      } else {
+        res = await ApiController.createLand(landForm);
+      }
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        showNotify(landForm.id ? "Land parcel updated!" : "Land parcel registered!", "success");
+        setLandModalOpen(false);
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save land");
+        showError(`Save Error: ${errText}`);
+        showNotify(`Validation / Error: ${errText}`, "error");
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteLand = async (id: number) => {
-    if (!confirm("Delete this land parcel?")) return;
-    const res = await ApiController.deleteLand(id);
-    if (res.success) {
-      showNotify("Land parcel deleted.", "success");
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete land");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this land parcel?", async () => {
+      const res = await ApiController.deleteLand(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        showNotify("Land parcel deleted.", "success");
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete land");
+        showError(`Delete Error: ${errText}`);
+        showNotify(`Delete Error: ${errText}`, "error");
+      }
+    }, "Do you want to delete?");
   };
 
   // House actions
@@ -389,55 +402,62 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveHouse = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pLandId = housePrimaryLandId || houseForm.land_id || dossier?.lands?.[0]?.id || null;
-    const sLandId = houseLandMode === "two_lands" ? (houseSecondaryLandId || houseForm.secondary_land_id || null) : null;
-    const resolvedLandIds = [pLandId, sLandId].filter(Boolean).map(Number);
-    const pLand = dossier?.lands?.find((l: any) => l.id === pLandId);
-    const sLand = dossier?.lands?.find((l: any) => l.id === sLandId);
-    let kittaStr = houseKittaNumber || houseForm.kitta_numbers || "";
-    if (!kittaStr && pLand) {
-      kittaStr = (houseLandMode === "two_lands" && sLand && sLand.id !== pLand.id)
-        ? `${pLand.kitta_number}, ${sLand.kitta_number}`
-        : pLand.kitta_number;
-    }
+    showConfirm("Do you want to save house structure?", async () => {
+      const pLandId = housePrimaryLandId || houseForm.land_id || dossier?.lands?.[0]?.id || null;
+      const sLandId = houseLandMode === "two_lands" ? (houseSecondaryLandId || houseForm.secondary_land_id || null) : null;
+      const resolvedLandIds = [pLandId, sLandId].filter(Boolean).map(Number);
+      const pLand = dossier?.lands?.find((l: any) => l.id === pLandId);
+      const sLand = dossier?.lands?.find((l: any) => l.id === sLandId);
+      let kittaStr = houseKittaNumber || houseForm.kitta_numbers || "";
+      if (!kittaStr && pLand) {
+        kittaStr = (houseLandMode === "two_lands" && sLand && sLand.id !== pLand.id)
+          ? `${pLand.kitta_number}, ${sLand.kitta_number}`
+          : pLand.kitta_number;
+      }
 
-    const payload = {
-      ...houseForm,
-      taxpayer_id: taxpayerId,
-      land_id: pLandId,
-      secondary_land_id: sLandId,
-      land_ids: resolvedLandIds,
-      kitta_numbers: kittaStr
-    };
+      const payload = {
+        ...houseForm,
+        taxpayer_id: taxpayerId,
+        land_id: pLandId,
+        secondary_land_id: sLandId,
+        land_ids: resolvedLandIds,
+        kitta_numbers: kittaStr
+      };
 
-    let res;
-    if (houseForm.id) {
-      res = await ApiController.updateHouse(houseForm.id, payload);
-    } else {
-      res = await ApiController.createHouse(payload);
-    }
-    if (res.success) {
-      showNotify(houseForm.id ? `House structure updated (Linked to Kitta #${kittaStr})!` : `House structure registered (Linked to Kitta #${kittaStr})!`, "success");
-      setHouseModalOpen(false);
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save house");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+      let res;
+      if (houseForm.id) {
+        res = await ApiController.updateHouse(houseForm.id, payload);
+      } else {
+        res = await ApiController.createHouse(payload);
+      }
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        showNotify(houseForm.id ? `House structure updated (Linked to Kitta #${kittaStr})!` : `House structure registered (Linked to Kitta #${kittaStr})!`, "success");
+        setHouseModalOpen(false);
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save house");
+        showError(`Save Error: ${errText}`);
+        showNotify(`Validation / Error: ${errText}`, "error");
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteHouse = async (id: number) => {
-    if (!confirm("Delete this house structure and its floors?")) return;
-    const res = await ApiController.deleteHouse(id);
-    if (res.success) {
-      showNotify("House structure deleted.", "success");
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this house structure and its floors?", async () => {
+      const res = await ApiController.deleteHouse(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        showNotify("House structure deleted.", "success");
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
+        showError(`Delete Error: ${errText}`);
+        showNotify(`Delete Error: ${errText}`, "error");
+      }
+    }, "Do you want to delete?");
   };
 
   // Floor actions
@@ -465,34 +485,41 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveFloor = async (e: React.FormEvent) => {
     e.preventDefault();
-    let res;
-    if (floorForm.id) {
-      res = await ApiController.updateFloor(floorForm.id, floorForm);
-    } else {
-      res = await ApiController.createFloor(floorForm);
-    }
-    if (res.success) {
-      showNotify(floorForm.id ? "Floor updated!" : "Floor added!", "success");
-      setFloorModalOpen(false);
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save floor");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save floor details?", async () => {
+      let res;
+      if (floorForm.id) {
+        res = await ApiController.updateFloor(floorForm.id, floorForm);
+      } else {
+        res = await ApiController.createFloor(floorForm);
+      }
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        showNotify(floorForm.id ? "Floor updated!" : "Floor added!", "success");
+        setFloorModalOpen(false);
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to save floor");
+        showError(`Save Error: ${errText}`);
+        showNotify(`Validation / Error: ${errText}`, "error");
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteFloor = async (id: number) => {
-    if (!confirm("Delete this floor?")) return;
-    const res = await ApiController.deleteFloor(id);
-    if (res.success) {
-      showNotify("Floor deleted.", "success");
-      loadDossier();
-      onRefresh();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this floor?", async () => {
+      const res = await ApiController.deleteFloor(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        showNotify("Floor deleted.", "success");
+        loadDossier();
+        onRefresh();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
+        showError(`Delete Error: ${errText}`);
+        showNotify(`Delete Error: ${errText}`, "error");
+      }
+    }, "Do you want to delete?");
   };
 
   // =========================================================================
@@ -655,70 +682,75 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
   const handleSaveCalculation = async () => {
     if (!dossier?.taxpayer) return;
-    setIsSavingCalc(true);
-    try {
-      const res = await ApiController.saveCalculationMaster({
-        taxpayer_id: dossier.taxpayer.id,
-        fiscal_year_id: calcFiscalYearId,
-        total_tax: grandTotalTaxPayable,
-        calculate_date_bs: "2081-05-15",
-        insert_by: "OPERATOR",
-        lands: computedLands.filter((l: any) => l.isSelected).map((l: any) => ({
-          land_id: l.land_id,
-          unit_id: l.unit_id,
-          area_sqft: l.area_sqft,
-          calculated_amount: l.calculated_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: l.total_amount,
-          self_declared_amount: l.total_amount,
-          total_amount: l.total_amount
-        })),
-        houses: computedHouses.map((h: any) => ({
-          house_id: h.house_id,
-          area_sqft: h.area_sqft,
-          unit_id: h.unit_id,
-          depreciation_rate: h.depreciation_rate,
-          calculated_amount: h.calculated_amount,
-          depreciation_amount: h.depreciation_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: h.total_amount,
-          self_declared_amount: h.total_amount,
-          total_amount: h.total_amount
-        })),
-        floors: computedFloors.map((fl: any) => ({
-          floor_id: fl.floor_id,
-          area_in_sqft: fl.area_in_sqft,
-          depreciation_rate: fl.depreciation_rate,
-          calculated_amount: fl.calculated_amount,
-          depreciation_amount: fl.depreciation_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: fl.total_amount,
-          self_declared_amount: fl.total_amount,
-          total_amount: fl.total_amount
-        })),
-        additionals: [
-          {
-            collection_rate_id: 1,
-            flatamount: sanitationFee,
-            percent: 0,
-            amount: sanitationFee
-          }
-        ]
-      });
-      if (res.success) {
-        showNotify("Calculation saved successfully to database (calc_master, calc_land, calc_house, calc_floor)!", "success");
-      } else {
-        showNotify(res.message || "Failed to save calculation.", "error");
+    showConfirm("Do you want to save this property tax assessment calculation?", async () => {
+      setIsSavingCalc(true);
+      try {
+        const res = await ApiController.saveCalculationMaster({
+          taxpayer_id: dossier.taxpayer.id,
+          fiscal_year_id: calcFiscalYearId,
+          total_tax: grandTotalTaxPayable,
+          calculate_date_bs: "2081-05-15",
+          insert_by: "OPERATOR",
+          lands: computedLands.filter((l: any) => l.isSelected).map((l: any) => ({
+            land_id: l.land_id,
+            unit_id: l.unit_id,
+            area_sqft: l.area_sqft,
+            calculated_amount: l.calculated_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: l.total_amount,
+            self_declared_amount: l.total_amount,
+            total_amount: l.total_amount
+          })),
+          houses: computedHouses.map((h: any) => ({
+            house_id: h.house_id,
+            area_sqft: h.area_sqft,
+            unit_id: h.unit_id,
+            depreciation_rate: h.depreciation_rate,
+            calculated_amount: h.calculated_amount,
+            depreciation_amount: h.depreciation_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: h.total_amount,
+            self_declared_amount: h.total_amount,
+            total_amount: h.total_amount
+          })),
+          floors: computedFloors.map((fl: any) => ({
+            floor_id: fl.floor_id,
+            area_in_sqft: fl.area_in_sqft,
+            depreciation_rate: fl.depreciation_rate,
+            calculated_amount: fl.calculated_amount,
+            depreciation_amount: fl.depreciation_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: fl.total_amount,
+            self_declared_amount: fl.total_amount,
+            total_amount: fl.total_amount
+          })),
+          additionals: [
+            {
+              collection_rate_id: 1,
+              flatamount: sanitationFee,
+              percent: 0,
+              amount: sanitationFee
+            }
+          ]
+        });
+        if (res.success) {
+          showSuccess("Record saved successfully! (Calculation saved to database)");
+          showNotify("Calculation saved successfully to database (calc_master, calc_land, calc_house, calc_floor)!", "success");
+        } else {
+          showError(res.message || "Failed to save calculation.");
+          showNotify(res.message || "Failed to save calculation.", "error");
+        }
+      } catch (e: any) {
+        console.error(e);
+        showError(e?.message || "Failed to save calculation.");
+        showNotify(e?.message || "Failed to save calculation.", "error");
+      } finally {
+        setIsSavingCalc(false);
       }
-    } catch (e: any) {
-      console.error(e);
-      showNotify(e?.message || "Failed to save calculation.", "error");
-    } finally {
-      setIsSavingCalc(false);
-    }
+    }, "Do you want to save?");
   };
 
   const toggleSelectAllLands = () => {
@@ -2787,6 +2819,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
           </div>
         </div>
       )}
+      <MessageBoxModal />
     </div>
   );
 };

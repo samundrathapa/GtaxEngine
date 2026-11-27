@@ -13,6 +13,7 @@ import {
 } from "../../shared/rbacConfig.ts";
 import { hasActionRight, isSuperAdminSession } from "../../utils/permissions.ts";
 import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 import {
   Shield,
   Plus,
@@ -90,6 +91,7 @@ export const RolePanel: React.FC<RolePanelProps> = ({
   initialSubTab = "roles",
   initialTargetUserId = null
 }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const t = translations[currentLang];
   const [subTab, setSubTab] = useState<"roles" | "user_rights">(initialSubTab);
 
@@ -294,82 +296,98 @@ export const RolePanel: React.FC<RolePanelProps> = ({
   const handleSaveRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roleNameInput.trim()) {
+      showError("Role name is required.");
       notifyError("Role name is required.");
       return;
     }
 
-    setSaving(true);
-    try {
-      if (selectedRoleId === "new") {
-        const res = await ApiController.createRole({
-          role_name: roleNameInput.trim(),
-          description: roleDescInput.trim() || roleNameInput.trim(),
-          matrix: roleMatrix
-        });
-        if (res.success && res.data) {
-          notifySuccess(res.message || "Role created successfully.");
-          await loadRoles(Number(res.data.id));
-          window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
+    showConfirm("Do you want to save role details?", async () => {
+      setSaving(true);
+      try {
+        if (selectedRoleId === "new") {
+          const res = await ApiController.createRole({
+            role_name: roleNameInput.trim(),
+            description: roleDescInput.trim() || roleNameInput.trim(),
+            matrix: roleMatrix
+          });
+          if (res.success && res.data) {
+            showSuccess("Record saved successfully!");
+            notifySuccess(res.message || "Role created successfully.");
+            await loadRoles(Number(res.data.id));
+            window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
+          } else {
+            showError(res.message || "Failed to create role.");
+            notifyError(res.message || "Failed to create role.");
+          }
         } else {
-          notifyError(res.message || "Failed to create role.");
+          const res = await ApiController.updateRole(selectedRoleId, {
+            role_name: roleNameInput.trim(),
+            description: roleDescInput.trim(),
+            matrix: roleMatrix
+          });
+          if (res.success) {
+            showSuccess("Record saved successfully!");
+            notifySuccess(res.message || "Role permissions updated.");
+            await loadRoles(selectedRoleId);
+            window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
+          } else {
+            showError(res.message || "Failed to update role.");
+            notifyError(res.message || "Failed to update role.");
+          }
         }
-      } else {
-        const res = await ApiController.updateRole(selectedRoleId, {
-          role_name: roleNameInput.trim(),
-          description: roleDescInput.trim(),
-          matrix: roleMatrix
-        });
-        if (res.success) {
-          notifySuccess(res.message || "Role permissions updated.");
-          await loadRoles(selectedRoleId);
-          window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
-        } else {
-          notifyError(res.message || "Failed to update role.");
-        }
+      } catch (err: any) {
+        showError(err?.message || "Failed to save role.");
+        notifyError(err?.message || "Failed to save role.");
+      } finally {
+        setSaving(false);
       }
-    } catch (err: any) {
-      notifyError(err?.message || "Failed to save role.");
-    } finally {
-      setSaving(false);
-    }
+    }, "Do you want to save?");
   };
 
   const handleDeleteRole = async (role: RoleItem) => {
-    if (!confirm(`Delete custom role '${role.role_name}'?`)) return;
-    const res = await ApiController.deleteRole(role.id);
-    if (res.success) {
-      notifySuccess(res.message || "Role deleted.");
-      await loadRoles();
-      window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
-    } else {
-      notifyError(res.message || "Cannot delete role.");
-    }
+    showConfirm(`Do you want to delete custom role '${role.role_name}'?`, async () => {
+      const res = await ApiController.deleteRole(role.id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        notifySuccess(res.message || "Role deleted.");
+        await loadRoles();
+        window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
+      } else {
+        showError(res.message || "Cannot delete role.");
+        notifyError(res.message || "Cannot delete role.");
+      }
+    }, "Do you want to delete?");
   };
 
   const handleSaveUserRights = async () => {
     if (!selectedUserId) return;
-    setSaving(true);
-    try {
-      const res = await ApiController.saveUserRights(selectedUserId, {
-        role_name: selectedUserRoleName,
-        matrix: userMatrix
-      });
-      if (res.success && res.data) {
-        setSelectedUserRoleName(res.data.role?.role_name || selectedUserRoleName);
-        setUserRoleCodes(res.data.role_right_codes || []);
-        setUserOverrides(res.data.overrides || {});
-        setUserMatrix(res.data.effective_matrix || rightsToMatrix(res.data.effective_right_codes || []));
-        notifySuccess("User-wise menu and action rights saved.");
-        loadUsers();
-        window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
-      } else {
-        notifyError(res.message || "Failed to update user rights.");
+    showConfirm("Do you want to save user menu and action rights?", async () => {
+      setSaving(true);
+      try {
+        const res = await ApiController.saveUserRights(selectedUserId, {
+          role_name: selectedUserRoleName,
+          matrix: userMatrix
+        });
+        if (res.success && res.data) {
+          showSuccess("Record saved successfully!");
+          setSelectedUserRoleName(res.data.role?.role_name || selectedUserRoleName);
+          setUserRoleCodes(res.data.role_right_codes || []);
+          setUserOverrides(res.data.overrides || {});
+          setUserMatrix(res.data.effective_matrix || rightsToMatrix(res.data.effective_right_codes || []));
+          notifySuccess("User-wise menu and action rights saved.");
+          loadUsers();
+          window.dispatchEvent(new CustomEvent("gtax:rbac_updated"));
+        } else {
+          showError(res.message || "Failed to update user rights.");
+          notifyError(res.message || "Failed to update user rights.");
+        }
+      } catch (err: any) {
+        showError(err?.message || "Failed to save user rights.");
+        notifyError(err?.message || "Failed to save user rights.");
+      } finally {
+        setSaving(false);
       }
-    } catch (err: any) {
-      notifyError(err?.message || "Failed to save user rights.");
-    } finally {
-      setSaving(false);
-    }
+    }, "Do you want to save?");
   };
 
   const handleResetUserOverrides = async () => {
@@ -1018,6 +1036,7 @@ export const RolePanel: React.FC<RolePanelProps> = ({
           </div>
         </div>
       )}
+      <MessageBoxModal />
     </div>
   );
 };

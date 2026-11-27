@@ -4,8 +4,10 @@ import { ConstructionTypesController } from "./ConstructionTypesController.ts";
 import { ConstructionTypesWindow } from "./ConstructionTypesWindow.tsx";
 import { IConstructionTypeRecord } from "../../serverside/ConstructionTypes/ConstructionTypesModel.ts";
 import { Plus, Search, Trash2, Edit2, Building2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const ConstructionTypesPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(constructionTypesStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const ConstructionTypesPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<IConstructionTypeRecord>) => {
-    let res;
-    if (selectedType) {
-      res = await ConstructionTypesController.updateType(selectedType.id, formData);
-    } else {
-      res = await ConstructionTypesController.createType(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save construction type?", async () => {
+      let res;
+      if (selectedType) {
+        res = await ConstructionTypesController.updateType(selectedType.id, formData);
+      } else {
+        res = await ConstructionTypesController.createType(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save construction type");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (typeItem: IConstructionTypeRecord) => {
-    if (confirm(`Are you sure you want to delete construction type ${typeItem.name}?`)) {
+    showConfirm(`Do you want to delete construction type ${typeItem.name}?`, async () => {
       const res = await ConstructionTypesController.deleteType(typeItem.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete construction type");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { constructionTypes, loading } = storeState;
@@ -196,6 +210,7 @@ export const ConstructionTypesPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editType={selectedType}
       />
+      <MessageBoxModal />
     </div>
   );
 };

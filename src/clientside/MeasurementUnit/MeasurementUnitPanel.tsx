@@ -4,8 +4,10 @@ import { MeasurementUnitController } from "./MeasurementUnitController.ts";
 import { MeasurementUnitWindow } from "./MeasurementUnitWindow.tsx";
 import { IMeasurementUnitRecord } from "../../serverside/MeasurementUnit/MeasurementUnitModel.ts";
 import { Plus, Search, Trash2, Edit2, Sliders, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const MeasurementUnitPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(measurementUnitStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const MeasurementUnitPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<IMeasurementUnitRecord>) => {
-    let res;
-    if (selectedUnit) {
-      res = await MeasurementUnitController.updateUnit(selectedUnit.id, formData);
-    } else {
-      res = await MeasurementUnitController.createUnit(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save measurement unit?", async () => {
+      let res;
+      if (selectedUnit) {
+        res = await MeasurementUnitController.updateUnit(selectedUnit.id, formData);
+      } else {
+        res = await MeasurementUnitController.createUnit(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save unit");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (unit: IMeasurementUnitRecord) => {
-    if (confirm(`Are you sure you want to delete unit ${unit.name}?`)) {
+    showConfirm(`Do you want to delete unit ${unit.name}?`, async () => {
       const res = await MeasurementUnitController.deleteUnit(unit.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete unit");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { units, loading } = storeState;
@@ -196,6 +210,7 @@ export const MeasurementUnitPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editUnit={selectedUnit}
       />
+      <MessageBoxModal />
     </div>
   );
 };

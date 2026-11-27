@@ -15,6 +15,7 @@ import {
   DbColumnMappingDictionary,
   GeneralMappingDictionary
 } from "../utils/i18n.ts";
+import { useMessageBox } from "./MessageBox.tsx";
 import {
   Database,
   Languages,
@@ -71,6 +72,7 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
   currentLang,
   onLanguageChange
 }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [activeTab, setActiveTab] = useState<"table_view" | "json_editor">("table_view");
   const [categoryFilter, setCategoryFilter] = useState<"all" | MappingCategory>("all");
   const [colMapping, setColMapping] = useState<DbColumnMappingDictionary>(getActiveDbColumnMapping());
@@ -294,48 +296,55 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
   };
 
   const handleSaveInlineChanges = () => {
-    updateLanguageMappings(colMapping, genMapping);
-    setJsonText(exportDbColumnMappingJson());
-    showStatus("success", "Language mappings (General Names + DB Columns) saved & auto-reflected across app!");
+    showConfirm("Do you want to save language mapping changes?", () => {
+      updateLanguageMappings(colMapping, genMapping);
+      setJsonText(exportDbColumnMappingJson());
+      showSuccess("Record saved successfully!");
+      showStatus("success", "Language mappings (General Names + DB Columns) saved & auto-reflected across app!");
+    }, "Do you want to save?");
   };
 
   const handleApplyJsonEditor = () => {
     setJsonError(null);
-    try {
-      const parsed = JSON.parse(jsonText);
-      let nextCols: DbColumnMappingDictionary = colMapping;
-      let nextGen: GeneralMappingDictionary = genMapping;
+    showConfirm("Do you want to save and apply JSON language mappings?", () => {
+      try {
+        const parsed = JSON.parse(jsonText);
+        let nextCols: DbColumnMappingDictionary = colMapping;
+        let nextGen: GeneralMappingDictionary = genMapping;
 
-      if (parsed.columns && typeof parsed.columns === "object") {
-        nextCols = parsed.columns;
-      } else if (!parsed.general && typeof parsed === "object") {
-        nextCols = parsed;
-      }
-      if (parsed.general && typeof parsed.general === "object") {
-        nextGen = parsed.general;
-      }
+        if (parsed.columns && typeof parsed.columns === "object") {
+          nextCols = parsed.columns;
+        } else if (!parsed.general && typeof parsed === "object") {
+          nextCols = parsed;
+        }
+        if (parsed.general && typeof parsed.general === "object") {
+          nextGen = parsed.general;
+        }
 
-      updateLanguageMappings(nextCols, nextGen);
-      setColMapping(nextCols);
-      setGenMapping(nextGen);
-      showStatus("success", "JSON mappings (General Names + DB Columns) parsed & applied live!");
-    } catch (err: any) {
-      setJsonError("Invalid JSON syntax: " + err.message);
-      showStatus("error", "Failed to apply JSON. Please fix JSON syntax.");
-    }
+        updateLanguageMappings(nextCols, nextGen);
+        setColMapping(nextCols);
+        setGenMapping(nextGen);
+        showSuccess("Record saved successfully!");
+        showStatus("success", "JSON mappings (General Names + DB Columns) parsed & applied live!");
+      } catch (err: any) {
+        setJsonError("Invalid JSON syntax: " + err.message);
+        showError("Failed to apply JSON: " + err.message);
+        showStatus("error", "Failed to apply JSON. Please fix JSON syntax.");
+      }
+    }, "Do you want to save?");
   };
 
   const handleResetToDefaults = () => {
-    if (!confirm("Reset all General & DB Column mappings back to the default JSON file? Custom edits will be cleared.")) {
-      return;
-    }
-    resetDbColumnMappingToDefault();
-    const defCols = getActiveDbColumnMapping();
-    const defGen = getActiveGeneralMapping();
-    setColMapping(defCols);
-    setGenMapping(defGen);
-    setJsonText(exportDbColumnMappingJson());
-    showStatus("success", "All mappings reset to default db_column_mapping.json.");
+    showConfirm("Reset all General & DB Column mappings back to the default JSON file? Custom edits will be cleared.", () => {
+      resetDbColumnMappingToDefault();
+      const defCols = getActiveDbColumnMapping();
+      const defGen = getActiveGeneralMapping();
+      setColMapping(defCols);
+      setGenMapping(defGen);
+      setJsonText(exportDbColumnMappingJson());
+      showSuccess("Mappings reset to default.");
+      showStatus("success", "All mappings reset to default db_column_mapping.json.");
+    }, "Reset Mappings?");
   };
 
   const handleCopyJson = () => {
@@ -968,6 +977,7 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
           </button>
         </div>
       </div>
+      <MessageBoxModal />
     </div>
   );
 };

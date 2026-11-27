@@ -4,8 +4,10 @@ import { LandNatureController } from "./LandNatureController.ts";
 import { LandNatureWindow } from "./LandNatureWindow.tsx";
 import { ILandNatureRecord } from "../../serverside/LandNature/LandNatureModel.ts";
 import { Plus, Search, Trash2, Edit2, Globe, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const LandNaturePanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(landNatureStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const LandNaturePanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<ILandNatureRecord>) => {
-    let res;
-    if (selectedNature) {
-      res = await LandNatureController.updateNature(selectedNature.id, formData);
-    } else {
-      res = await LandNatureController.createNature(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save land nature record?", async () => {
+      let res;
+      if (selectedNature) {
+        res = await LandNatureController.updateNature(selectedNature.id, formData);
+      } else {
+        res = await LandNatureController.createNature(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save land nature");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (nature: ILandNatureRecord) => {
-    if (confirm(`Are you sure you want to delete land nature ${nature.name}?`)) {
+    showConfirm(`Do you want to delete land nature ${nature.name}?`, async () => {
       const res = await LandNatureController.deleteNature(nature.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete land nature");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { landNatures, loading } = storeState;
@@ -192,6 +206,7 @@ export const LandNaturePanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editNature={selectedNature}
       />
+      <MessageBoxModal />
     </div>
   );
 };

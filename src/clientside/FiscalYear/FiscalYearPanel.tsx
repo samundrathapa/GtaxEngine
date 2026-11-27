@@ -4,8 +4,10 @@ import { FiscalYearController } from "./FiscalYearController.ts";
 import { FiscalYearWindow } from "./FiscalYearWindow.tsx";
 import { IFiscalYearRecord } from "../../serverside/FiscalYear/FiscalYearModel.ts";
 import { Plus, Search, Trash2, Edit2, Calendar, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const FiscalYearPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(fiscalYearStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,22 +30,34 @@ export const FiscalYearPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<IFiscalYearRecord>) => {
-    let res;
-    if (selectedFiscalYear) {
-      res = await FiscalYearController.updateFiscalYear(selectedFiscalYear.id, formData);
-    } else {
-      res = await FiscalYearController.createFiscalYear(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save fiscal year record?", async () => {
+      let res;
+      if (selectedFiscalYear) {
+        res = await FiscalYearController.updateFiscalYear(selectedFiscalYear.id, formData);
+      } else {
+        res = await FiscalYearController.createFiscalYear(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save fiscal year");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (fy: IFiscalYearRecord) => {
-    if (confirm(`Are you sure you want to delete fiscal year ${fy.code || fy.id}?`)) {
+    showConfirm(`Do you want to delete fiscal year ${fy.code || fy.id}?`, async () => {
       const res = await FiscalYearController.deleteFiscalYear(fy.id);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete fiscal year");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { fiscalYears, loading } = storeState;
@@ -204,6 +218,7 @@ export const FiscalYearPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editFiscalYear={selectedFiscalYear}
       />
+      <MessageBoxModal />
     </div>
   );
 };

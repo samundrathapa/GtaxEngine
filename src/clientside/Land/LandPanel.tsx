@@ -4,8 +4,10 @@ import { LandController } from "./LandController.ts";
 import { LandWindow } from "./LandWindow.tsx";
 import { ILandRecord } from "../../serverside/Land/LandModel.ts";
 import { Plus, Search, Trash2, Edit2, Layers, RefreshCw, CheckCircle2, Hash } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const LandPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(landStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,32 +30,38 @@ export const LandPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<ILandRecord>) => {
-    let res;
-    if (selectedLand) {
-      res = await LandController.updateLand(selectedLand.id, formData);
-    } else {
-      res = await LandController.createLand(formData);
-    }
-    if (res.success) {
-      setActionMessage({ type: "success", text: res.message || "Land record saved successfully!" });
-      loadData(searchQuery);
-    } else {
-      setActionMessage({ type: "error", text: `Validation / Error: ${res.message}` });
-    }
-    setTimeout(() => setActionMessage(null), 6000);
+    showConfirm("Do you want to save land record?", async () => {
+      let res;
+      if (selectedLand) {
+        res = await LandController.updateLand(selectedLand.id, formData);
+      } else {
+        res = await LandController.createLand(formData);
+      }
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setActionMessage({ type: "success", text: res.message || "Land record saved successfully!" });
+        loadData(searchQuery);
+      } else {
+        showError(`Validation / Error: ${res.message}`);
+        setActionMessage({ type: "error", text: `Validation / Error: ${res.message}` });
+      }
+      setTimeout(() => setActionMessage(null), 6000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (land: ILandRecord) => {
-    if (confirm(`Are you sure you want to delete land kitta #${land.kitta_no || land.id}?`)) {
+    showConfirm(`Do you want to delete land kitta #${land.kitta_no || land.id}?`, async () => {
       const res = await LandController.deleteLand(land.id);
       if (res.success) {
+        showSuccess("Record deleted successfully.");
         setActionMessage({ type: "success", text: res.message || "Land record deleted successfully!" });
         loadData(searchQuery);
       } else {
+        showError(`Delete Error: ${res.message}`);
         setActionMessage({ type: "error", text: `Delete Error: ${res.message}` });
       }
       setTimeout(() => setActionMessage(null), 6000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { lands, loading } = storeState;
@@ -221,6 +229,7 @@ export const LandPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editLand={selectedLand}
       />
+      <MessageBoxModal />
     </div>
   );
 };

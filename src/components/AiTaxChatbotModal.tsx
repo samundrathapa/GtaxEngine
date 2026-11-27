@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { ApiController } from "../api/controller.ts";
 import { SupportedLang, translations } from "../utils/i18n.ts";
+import { useMessageBox } from "./MessageBox.tsx";
 
 export interface ChatMessage {
   id: string;
@@ -66,6 +67,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
   onOpenRatesMaster,
   initialQuery
 }) => {
+  const { showError, MessageBoxModal } = useMessageBox();
   const t = translations[currentLang];
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -194,7 +196,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
 
   const toggleListening = () => {
     if (!speechSupported) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or an audio-supported browser.");
+      showError("Speech recognition is not supported in this browser. Please use Chrome, Edge, or an audio-supported browser.");
       return;
     }
 
@@ -886,6 +888,7 @@ export const AiTaxChatbotModal: React.FC<AiTaxChatbotModalProps> = ({
           </form>
         </div>
       </div>
+      <MessageBoxModal />
     </div>
   );
 };

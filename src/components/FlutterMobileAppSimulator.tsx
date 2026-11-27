@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   FileText
 } from "lucide-react";
+import { useMessageBox } from "./MessageBox.tsx";
 
 interface FlutterMobileAppSimulatorProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
   onClose,
   lang = "eng"
 }) => {
+  const { showSuccess, MessageBoxModal } = useMessageBox();
   const [deviceFrame, setDeviceFrame] = useState<"ios" | "android">("ios");
   const [activeMobileTab, setActiveMobileTab] = useState<
     "dashboard" | "taxpayers" | "calculate" | "registration" | "ai" | "settings"
@@ -923,7 +925,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
 
                         <button
                           onClick={() => {
-                            alert("Mobile One-Door Registration saved to database via Single Common Entry Point!");
+                            showSuccess("Mobile One-Door Registration saved to database via Single Common Entry Point!");
                             setActiveMobileTab("calculate");
                           }}
                           className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-bold text-[10px] transition"
@@ -1277,6 +1279,7 @@ export const FlutterMobileAppSimulator: React.FC<FlutterMobileAppSimulatorProps>
         </div>
 
       </div>
+      <MessageBoxModal />
     </div>
   );
 };

@@ -4,8 +4,10 @@ import { TaxpayerController } from "./TaxpayerController.ts";
 import { TaxpayerWindow } from "./TaxpayerWindow.tsx";
 import { ITaxpayerRecord } from "../../serverside/Taxpayer/TaxpayerModel.ts";
 import { Plus, Search, Trash2, Edit2, Users, RefreshCw, CheckCircle2, Phone, Hash } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export const TaxpayerPanel: React.FC = () => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const [storeState, setStoreState] = useState(taxpayerStoreInstance.getState());
   const [searchQuery, setSearchQuery] = useState("");
   const [isWindowOpen, setIsWindowOpen] = useState(false);
@@ -28,24 +30,36 @@ export const TaxpayerPanel: React.FC = () => {
   }, [searchQuery]);
 
   const handleCreateOrUpdate = async (formData: Partial<ITaxpayerRecord>) => {
-    let res;
-    if (selectedTaxpayer) {
-      const targetId = selectedTaxpayer.taxpayer_id || selectedTaxpayer.id;
-      res = await TaxpayerController.updateTaxpayer(targetId, formData);
-    } else {
-      res = await TaxpayerController.createTaxpayer(formData);
-    }
-    setActionMessage(res.message);
-    setTimeout(() => setActionMessage(null), 4000);
+    showConfirm("Do you want to save taxpayer record?", async () => {
+      let res;
+      if (selectedTaxpayer) {
+        const targetId = selectedTaxpayer.taxpayer_id || selectedTaxpayer.id;
+        res = await TaxpayerController.updateTaxpayer(targetId, formData);
+      } else {
+        res = await TaxpayerController.createTaxpayer(formData);
+      }
+      if (res?.success) {
+        showSuccess("Record saved successfully!");
+      } else {
+        showError(res?.message || "Failed to save record");
+      }
+      setActionMessage(res.message);
+      setTimeout(() => setActionMessage(null), 4000);
+    }, "Do you want to save?");
   };
 
   const handleDelete = async (taxpayer: ITaxpayerRecord) => {
     const targetId = taxpayer.taxpayer_id || taxpayer.id;
-    if (confirm(`Are you sure you want to delete taxpayer ${taxpayer.fullname || targetId}?`)) {
+    showConfirm(`Do you want to delete taxpayer ${taxpayer.fullname || targetId}?`, async () => {
       const res = await TaxpayerController.deleteTaxpayer(targetId);
+      if (res?.success) {
+        showSuccess("Record deleted successfully.");
+      } else {
+        showError(res?.message || "Failed to delete taxpayer");
+      }
       setActionMessage(res.message);
       setTimeout(() => setActionMessage(null), 4000);
-    }
+    }, "Do you want to delete?");
   };
 
   const { taxpayers, loading } = storeState;
@@ -226,6 +240,7 @@ export const TaxpayerPanel: React.FC = () => {
         onSubmit={handleCreateOrUpdate}
         editTaxpayer={selectedTaxpayer}
       />
+      <MessageBoxModal />
     </div>
   );
 };

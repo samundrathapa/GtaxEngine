@@ -43,6 +43,7 @@ import { TaxpayerDossierModal } from "./DossierModal.tsx";
 import { OneDoorRegistrationModal } from "./OneDoorRegistrationModal.tsx";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 export type TaxpayerSubView = "overview" | "lands" | "houses" | "floors" | "assessment" | "multi_year_calc";
 
@@ -63,6 +64,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   openNewTaxpayerTrigger,
   currentSession
 }) => {
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const canNew = !currentSession || hasActionRight(currentSession, "taxpayer", "new");
   const canEdit = !currentSession || hasActionRight(currentSession, "taxpayer", "edit");
   const canDelete = !currentSession || hasActionRight(currentSession, "taxpayer", "delete");
@@ -386,31 +388,51 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleSaveEditLand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingLand) return;
-    const res = await ApiController.updateLand(editingLand.id, editingLand);
-    if (res.success) {
-      showNotify(`Land Parcel Kitta #${editingLand.kitta_number || editingLand.id} updated with recalculated valuation!`, "success");
-      setEditLandModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Failed to update land parcel");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+
+    showConfirm("Do you want to save changes to this land parcel?", async () => {
+      const uId = Number(editingLand.land_measuring_unit_id || editingLand.unit_id || 1);
+      let baseSqFt = 342.25;
+      if (uId === 1) baseSqFt = 342.25; // Aana
+      else if (uId === 2) baseSqFt = 5476.0; // Ropani
+      else if (uId === 3) baseSqFt = 342.25; // Aana
+      else if (uId === 4) baseSqFt = 3645.0; // Kattha
+      else if (uId === 7) baseSqFt = 1.0; // SqFt
+
+      const lr = masters.landRates.find((r: any) => Number(r.id) === Number(editingLand.land_rate_id)) || masters.landRates[0];
+      const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
+      const computedValuation = Math.round((Number(editingLand.area_sqfeet || 0) / baseSqFt) * rateVal);
+      const updatedPayload = {
+        ...editingLand,
+        assessed_valuation: computedValuation
+      };
+
+      const res = await ApiController.updateLand(editingLand.id, updatedPayload);
+      if (res.success) {
+        showSuccess(`Record saved successfully! Land Parcel Kitta #${editingLand.kitta_number || editingLand.id} valuation: Rs. ${computedValuation.toLocaleString()}`);
+        setEditLandModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Failed to update land parcel");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteLand = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this land record? ")) return;
-    const res = await ApiController.deleteLand(id);
-    if (res.success) {
-      showNotify("Land parcel deleted successfully.", "success");
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Failed to delete land parcel");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this land record?", async () => {
+      const res = await ApiController.deleteLand(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Failed to delete land parcel");
+        showError(`Delete Error: ${errText}`);
+      }
+    }, "Do you want to delete?");
   };
 
   // House Handlers
@@ -427,33 +449,35 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleCreateHouse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHouseNo) return;
-    const res = await ApiController.createHouse({
-      taxpayer_id: selectedTaxpayerId,
-      land_id: newHouseLandId,
-      house_no: newHouseNo,
-      area_sqfeet: newHouseArea,
-      plinth_area: newHousePlinth,
-      floor_no: newHouseFloors,
-      construction_type_id: newHouseConstType
-    });
-    if (res.success && res.data) {
-      // Auto register ground floor
-      await ApiController.createFloor({
-        house_id: res.data.id,
-        floor_no: 0,
-        area_sqfeet: newHousePlinth,
-        construction_type_id: newHouseConstType,
-        rate_id: 1,
-        remarks: "Ground Floor Residential",
-        depreciation_percent: 5
+    showConfirm("Do you want to save this building structure?", async () => {
+      const res = await ApiController.createHouse({
+        taxpayer_id: selectedTaxpayerId,
+        land_id: newHouseLandId,
+        house_no: newHouseNo,
+        area_sqfeet: newHouseArea,
+        plinth_area: newHousePlinth,
+        floor_no: newHouseFloors,
+        construction_type_id: newHouseConstType
       });
-      showNotify(`House ${newHouseNo} and ground floor registered!`, "success");
-      setNewHouseModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to register house");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+      if (res.success && res.data) {
+        // Auto register ground floor
+        await ApiController.createFloor({
+          house_id: res.data.id,
+          floor_no: 0,
+          area_sqfeet: newHousePlinth,
+          construction_type_id: newHouseConstType,
+          rate_id: 1,
+          remarks: "Ground Floor Residential",
+          depreciation_percent: 5
+        });
+        showSuccess(`Record saved successfully! House ${newHouseNo} registered.`);
+        setNewHouseModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to register house");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleOpenEditHouse = (house: any) => {
@@ -464,27 +488,30 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleSaveEditHouse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingHouse) return;
-    const res = await ApiController.updateHouse(editingHouse.id, editingHouse);
-    if (res.success) {
-      showNotify(`House ${editingHouse.house_no} updated successfully!`, "success");
-      setEditHouseModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update house");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save changes to this house?", async () => {
+      const res = await ApiController.updateHouse(editingHouse.id, editingHouse);
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setEditHouseModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update house");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteHouse = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this house structure and its associated floors?")) return;
-    const res = await ApiController.deleteHouse(id);
-    if (res.success) {
-      showNotify("House record deleted successfully.", "success");
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this house structure and its associated floors?", async () => {
+      const res = await ApiController.deleteHouse(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete house");
+        showError(`Delete Error: ${errText}`);
+      }
+    }, "Do you want to delete?");
   };
 
   // Floor Handlers
@@ -506,27 +533,29 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
   const handleCreateFloor = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await ApiController.createFloor({
-      house_id: newFloorHouseId,
-      floor_no: newFloorNo,
-      area_sqfeet: newFloorArea,
-      construction_type_id: newFloorConstType,
-      construction_date_ad: newFloorConstDateAd,
-      construction_date_bs: newFloorConstDateBs,
-      rate_id: newFloorRateId,
-      unit_id: newFloorUnitId,
-      measuring_unit_id: newFloorUnitId,
-      remarks: newFloorRemarks,
-      depreciation_percent: newFloorDepreciation
-    });
-    if (res.success) {
-      showNotify(`Floor #${newFloorNo} added successfully!`, "success");
-      setNewFloorModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to add floor");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save this floor?", async () => {
+      const res = await ApiController.createFloor({
+        house_id: newFloorHouseId,
+        floor_no: newFloorNo,
+        area_sqfeet: newFloorArea,
+        construction_type_id: newFloorConstType,
+        construction_date_ad: newFloorConstDateAd,
+        construction_date_bs: newFloorConstDateBs,
+        rate_id: newFloorRateId,
+        unit_id: newFloorUnitId,
+        measuring_unit_id: newFloorUnitId,
+        remarks: newFloorRemarks,
+        depreciation_percent: newFloorDepreciation
+      });
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setNewFloorModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to add floor");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleOpenEditFloor = (floor: any) => {
@@ -537,27 +566,30 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleSaveEditFloor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFloor) return;
-    const res = await ApiController.updateFloor(editingFloor.id, editingFloor);
-    if (res.success) {
-      showNotify(`Floor #${editingFloor.floor_no} updated with recalculated valuation!`, "success");
-      setEditFloorModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update floor");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save changes to this floor?", async () => {
+      const res = await ApiController.updateFloor(editingFloor.id, editingFloor);
+      if (res.success) {
+        showSuccess("Record saved successfully!");
+        setEditFloorModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to update floor");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteFloor = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this floor?")) return;
-    const res = await ApiController.deleteFloor(id);
-    if (res.success) {
-      showNotify("Floor deleted successfully.", "success");
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to delete this floor?", async () => {
+      const res = await ApiController.deleteFloor(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0 ? (res as any).errors.join(", ") : (res.message || "Failed to delete floor");
+        showError(`Delete Error: ${errText}`);
+      }
+    }, "Do you want to delete?");
   };
 
   // Taxpayer Handlers (Launches continuous One-Door Process)
@@ -568,34 +600,36 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleCreateTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTpName || !newTpMobile) {
-      showNotify("Validation Error: Full name and Mobile number are required for Taxpayer registration.", "error");
+      showError("Validation Error: Full name and Mobile number are required for Taxpayer registration.");
       return;
     }
-    const res = await ApiController.createTaxpayer({
-      full_name: newTpName,
-      fullname: newTpName,
-      fullanme: newTpName,
-      phone_number: newTpMobile,
-      mobile_no: newTpMobile,
-      mobile: newTpMobile,
-      email: newTpEmail,
-      ward_no: Number(newTpWard || 1),
-      pan_number: newTpPan,
-      pan_vat_no: newTpPan,
-      citizenship_number: newTpCitizenship,
-      citizenship_no: newTpCitizenship
-    });
-    if (res.success && res.data) {
-      showNotify(`Taxpayer ${res.data.fullanme || res.data.fullname || res.data.full_name} registered successfully!`, "success");
-      setSelectedTaxpayerId(res.data.id);
-      setNewTpModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Taxpayer registration failed");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save this taxpayer record?", async () => {
+      const res = await ApiController.createTaxpayer({
+        full_name: newTpName,
+        fullname: newTpName,
+        fullanme: newTpName,
+        phone_number: newTpMobile,
+        mobile_no: newTpMobile,
+        mobile: newTpMobile,
+        email: newTpEmail,
+        ward_no: Number(newTpWard || 1),
+        pan_number: newTpPan,
+        pan_vat_no: newTpPan,
+        citizenship_number: newTpCitizenship,
+        citizenship_no: newTpCitizenship
+      });
+      if (res.success && res.data) {
+        showSuccess(`Record saved successfully! Taxpayer ${res.data.fullanme || res.data.fullname || res.data.full_name} registered.`);
+        setSelectedTaxpayerId(res.data.id);
+        setNewTpModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Taxpayer registration failed");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleOpenEditTaxpayer = (tp: any) => {
@@ -625,56 +659,59 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   const handleSaveEditTaxpayer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTaxpayer) return;
-    const resolvedName = editingTaxpayer.fullanme || editingTaxpayer.fullname || editingTaxpayer.full_name || "";
-    const resolvedPhone = editingTaxpayer.mobile_no || editingTaxpayer.phone_number || editingTaxpayer.mobile || "";
-    const resolvedPan = editingTaxpayer.pan_vat_no || editingTaxpayer.pan_number || "";
-    const resolvedCitizenship = editingTaxpayer.citizenship_no || editingTaxpayer.citizenship_number || "";
-    const resolvedWard = editingTaxpayer.ward_no !== undefined ? Number(editingTaxpayer.ward_no) : 1;
+    showConfirm("Do you want to save changes to this taxpayer record?", async () => {
+      const resolvedName = editingTaxpayer.fullanme || editingTaxpayer.fullname || editingTaxpayer.full_name || "";
+      const resolvedPhone = editingTaxpayer.mobile_no || editingTaxpayer.phone_number || editingTaxpayer.mobile || "";
+      const resolvedPan = editingTaxpayer.pan_vat_no || editingTaxpayer.pan_number || "";
+      const resolvedCitizenship = editingTaxpayer.citizenship_no || editingTaxpayer.citizenship_number || "";
+      const resolvedWard = editingTaxpayer.ward_no !== undefined ? Number(editingTaxpayer.ward_no) : 1;
 
-    const payload = {
-      ...editingTaxpayer,
-      full_name: resolvedName,
-      fullname: resolvedName,
-      fullanme: resolvedName,
-      phone_number: resolvedPhone,
-      mobile_no: resolvedPhone,
-      mobile: resolvedPhone,
-      pan_number: resolvedPan,
-      pan_vat_no: resolvedPan,
-      citizenship_number: resolvedCitizenship,
-      citizenship_no: resolvedCitizenship,
-      ward_no: resolvedWard
-    };
+      const payload = {
+        ...editingTaxpayer,
+        full_name: resolvedName,
+        fullname: resolvedName,
+        fullanme: resolvedName,
+        phone_number: resolvedPhone,
+        mobile_no: resolvedPhone,
+        mobile: resolvedPhone,
+        pan_number: resolvedPan,
+        pan_vat_no: resolvedPan,
+        citizenship_number: resolvedCitizenship,
+        citizenship_no: resolvedCitizenship,
+        ward_no: resolvedWard
+      };
 
-    const res = await ApiController.updateTaxpayer(editingTaxpayer.id, payload);
-    if (res.success) {
-      setSelectedTaxpayerId(editingTaxpayer.id);
-      showNotify(`Taxpayer ${resolvedName} updated successfully!`, "success");
-      setEditTaxpayerModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Taxpayer update failed");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+      const res = await ApiController.updateTaxpayer(editingTaxpayer.id, payload);
+      if (res.success) {
+        setSelectedTaxpayerId(editingTaxpayer.id);
+        showSuccess(`Record saved successfully! Taxpayer ${resolvedName} updated.`);
+        setEditTaxpayerModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Taxpayer update failed");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleDeleteTaxpayer = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this taxpayer? All registered assets will be archived.")) return;
-    const res = await ApiController.deleteTaxpayer(id);
-    if (res.success) {
-      showNotify("Taxpayer deleted successfully.", "success");
-      if (selectedTaxpayerId === id) {
-        setDossierOpen(false);
+    showConfirm("Do you want to delete this taxpayer? All registered assets will be archived.", async () => {
+      const res = await ApiController.deleteTaxpayer(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        if (selectedTaxpayerId === id) {
+          setDossierOpen(false);
+        }
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Taxpayer deletion failed");
+        showError(`Delete Error: ${errText}`);
       }
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Taxpayer deletion failed");
-      showNotify(`Delete Error: ${errText}`, "error");
-    }
+    }, "Do you want to delete?");
   };
 
   // Filter taxpayers
@@ -813,70 +850,71 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
   const handleSaveCalculation = async () => {
     if (!taxpayerDossier?.taxpayer) return;
-    setIsSavingCalc(true);
-    try {
-      const res = await ApiController.saveCalculationMaster({
-        taxpayer_id: taxpayerDossier.taxpayer.id,
-        fiscal_year_id: calcFiscalYearId,
-        total_tax: grandTotalTaxPayable,
-        calculate_date_bs: "2081-05-15",
-        insert_by: "OPERATOR",
-        lands: computedLandsForCalc.filter((l: any) => l.isSelected).map((l: any) => ({
-          land_id: l.land_id,
-          unit_id: l.unit_id,
-          area_sqft: l.area_sqft,
-          calculated_amount: l.calculated_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: l.total_amount,
-          self_declared_amount: l.total_amount,
-          total_amount: l.total_amount
-        })),
-        houses: computedHousesForCalc.map((h: any) => ({
-          house_id: h.house_id,
-          area_sqft: h.area_sqft,
-          unit_id: h.unit_id,
-          depreciation_rate: h.depreciation_rate,
-          calculated_amount: h.calculated_amount,
-          depreciation_amount: h.depreciation_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: h.total_amount,
-          self_declared_amount: h.total_amount,
-          total_amount: h.total_amount
-        })),
-        floors: computedFloorsForCalc.map((fl: any) => ({
-          floor_id: fl.floor_id,
-          area_in_sqft: fl.area_in_sqft,
-          depreciation_rate: fl.depreciation_rate,
-          calculated_amount: fl.calculated_amount,
-          depreciation_amount: fl.depreciation_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: fl.total_amount,
-          self_declared_amount: fl.total_amount,
-          total_amount: fl.total_amount
-        })),
-        additionals: [
-          {
-            collection_rate_id: 1,
-            flatamount: sanitationFee,
-            percent: 0,
-            amount: sanitationFee
-          }
-        ]
-      });
-      if (res.success) {
-        showNotify("Calculation saved to database (calc_master, calc_land, calc_house, calc_floor)!", "success");
-      } else {
-        showNotify("Failed to save calculation.", "error");
+    showConfirm("Do you want to save this property tax assessment calculation?", async () => {
+      setIsSavingCalc(true);
+      try {
+        const res = await ApiController.saveCalculationMaster({
+          taxpayer_id: taxpayerDossier.taxpayer.id,
+          fiscal_year_id: calcFiscalYearId,
+          total_tax: grandTotalTaxPayable,
+          calculate_date_bs: "2081-05-15",
+          insert_by: "OPERATOR",
+          lands: computedLandsForCalc.filter((l: any) => l.isSelected).map((l: any) => ({
+            land_id: l.land_id,
+            unit_id: l.unit_id,
+            area_sqft: l.area_sqft,
+            calculated_amount: l.calculated_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: l.total_amount,
+            self_declared_amount: l.total_amount,
+            total_amount: l.total_amount
+          })),
+          houses: computedHousesForCalc.map((h: any) => ({
+            house_id: h.house_id,
+            area_sqft: h.area_sqft,
+            unit_id: h.unit_id,
+            depreciation_rate: h.depreciation_rate,
+            calculated_amount: h.calculated_amount,
+            depreciation_amount: h.depreciation_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: h.total_amount,
+            self_declared_amount: h.total_amount,
+            total_amount: h.total_amount
+          })),
+          floors: computedFloorsForCalc.map((fl: any) => ({
+            floor_id: fl.floor_id,
+            area_in_sqft: fl.area_in_sqft,
+            depreciation_rate: fl.depreciation_rate,
+            calculated_amount: fl.calculated_amount,
+            depreciation_amount: fl.depreciation_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: fl.total_amount,
+            self_declared_amount: fl.total_amount,
+            total_amount: fl.total_amount
+          })),
+          additionals: [
+            {
+              collection_rate_id: 1,
+              flatamount: sanitationFee,
+              percent: 0,
+              amount: sanitationFee
+            }
+          ]
+        });
+        if (res.success) {
+          showSuccess("Record saved successfully! Calculation saved to database.");
+        } else {
+          showError("Failed to save calculation.");
+        }
+      } catch (e: any) {
+        showError(`Failed to save calculation: ${e?.message || String(e)}`);
+      } finally {
+        setIsSavingCalc(false);
       }
-    } catch (e: any) {
-      console.error(e);
-      showNotify(`Failed to save calculation: ${e?.message || String(e)}`, "error");
-    } finally {
-      setIsSavingCalc(false);
-    }
+    }, "Do you want to save?");
   };
 
   return (
@@ -964,7 +1002,13 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
         </div>
 
         {/* Master Taxpayer Table */}
-        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
+        <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs relative min-h-[160px]">
+          {loading && (
+            <div className="absolute inset-0 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xs flex flex-col items-center justify-center z-20 gap-2">
+              <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">Loading taxpayer & property records...</span>
+            </div>
+          )}
           {isSearching && (
             <div className="px-4 py-2 bg-indigo-50/70 dark:bg-indigo-950/40 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 border-b border-indigo-100 dark:border-indigo-900 animate-in fade-in">
               <RefreshCw className="w-3 h-3 animate-spin shrink-0" />
@@ -3391,6 +3435,9 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           </div>
         </div>
       )}
+
+      {/* Reusable Confirm & Status Message Modal */}
+      <MessageBoxModal />
     </div>
   );
 };

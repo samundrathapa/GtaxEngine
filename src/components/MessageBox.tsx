@@ -108,3 +108,84 @@ export const MessageBox: React.FC<MessageBoxProps> = ({
     </div>
   );
 };
+
+export interface MessageBoxState {
+  isOpen: boolean;
+  type: MessageBoxType;
+  title?: string;
+  message: string;
+  onConfirm?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+}
+
+export const useMessageBox = () => {
+  const [state, setState] = React.useState<MessageBoxState>({
+    isOpen: false,
+    type: "confirm",
+    title: "",
+    message: ""
+  });
+
+  const showConfirm = (
+    message: string,
+    onConfirm: () => void,
+    title = "Do you want to proceed?",
+    confirmText = "Yes",
+    cancelText = "No"
+  ) => {
+    setState({
+      isOpen: true,
+      type: "confirm",
+      title,
+      message,
+      onConfirm,
+      confirmText,
+      cancelText
+    });
+  };
+
+  const showSuccess = (message: string, title = "Success") => {
+    setState({
+      isOpen: true,
+      type: "success",
+      title,
+      message
+    });
+  };
+
+  const showError = (message: string, title = "Error") => {
+    setState({
+      isOpen: true,
+      type: "error",
+      title,
+      message
+    });
+  };
+
+  const close = () => {
+    setState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const MessageBoxModal = () => (
+    <MessageBox
+      isOpen={state.isOpen}
+      type={state.type}
+      title={state.title}
+      message={state.message}
+      onConfirm={state.onConfirm}
+      onClose={close}
+      confirmText={state.confirmText}
+      cancelText={state.cancelText}
+    />
+  );
+
+  return {
+    showConfirm,
+    showSuccess,
+    showError,
+    close,
+    MessageBoxModal
+  };
+};
+

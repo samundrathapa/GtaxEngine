@@ -27,6 +27,7 @@ import {
   RefreshCw,
   Edit2
 } from "lucide-react";
+import { useMessageBox } from "../../components/MessageBox.tsx";
 
 interface OneDoorRegistrationModalProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 }) => {
   if (!isOpen) return null;
 
+  const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   // Active Wizard Step: 1 = Taxpayer, 2 = Land, 3 = House, 4 = Floor, 5 = Calculate
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -250,47 +252,56 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   const handleSaveTaxpayerAndContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tpForm.fullanme || !tpForm.mobile_no) {
+      showError("Please enter Full Name and Mobile Number.");
       setStatusMsg({ type: "error", text: "Please enter Full Name and Mobile Number." });
       return;
     }
-    setLoading(true);
-    setStatusMsg(null);
-    try {
-      if (taxpayerId) {
-        // Update existing in-session taxpayer
-        const res = await ApiController.updateTaxpayer(taxpayerId, tpForm);
-        if (res.success) {
-          setStatusMsg({ type: "success", text: `Taxpayer ${tpForm.fullanme} updated successfully!` });
-          await refreshTaxpayerAssets(taxpayerId);
-          setCurrentStep(2);
-        }
-      } else {
-        // Create new taxpayer
-        const res = await ApiController.createTaxpayer(tpForm);
-        if (res.success && res.data) {
-          setTaxpayerId(res.data.id);
-          setCreatedTaxpayer(res.data);
-          setStatusMsg({
-            type: "success",
-            text: `Taxpayer ${res.data.fullanme} registered (Code: ${res.data.code})! Continuing to Land Entry...`
-          });
-          // Preset land form taxpayer id
-          setLandForm((prev: any) => ({
-            ...prev,
-            taxpayer_id: res.data.id,
-            ward_no: res.data.ward_no || 1
-          }));
-          await refreshTaxpayerAssets(res.data.id);
-          setCurrentStep(2);
+    showConfirm("Do you want to save taxpayer details?", async () => {
+      setLoading(true);
+      setStatusMsg(null);
+      try {
+        if (taxpayerId) {
+          // Update existing in-session taxpayer
+          const res = await ApiController.updateTaxpayer(taxpayerId, tpForm);
+          if (res.success) {
+            showSuccess("Record saved successfully!");
+            setStatusMsg({ type: "success", text: `Taxpayer ${tpForm.fullanme} updated successfully!` });
+            await refreshTaxpayerAssets(taxpayerId);
+            setCurrentStep(2);
+          } else {
+            showError("Failed to update taxpayer. Please check details.");
+          }
         } else {
-          setStatusMsg({ type: "error", text: "Failed to register taxpayer. Please check details." });
+          // Create new taxpayer
+          const res = await ApiController.createTaxpayer(tpForm);
+          if (res.success && res.data) {
+            showSuccess("Record saved successfully!");
+            setTaxpayerId(res.data.id);
+            setCreatedTaxpayer(res.data);
+            setStatusMsg({
+              type: "success",
+              text: `Taxpayer ${res.data.fullanme} registered (Code: ${res.data.code})! Continuing to Land Entry...`
+            });
+            // Preset land form taxpayer id
+            setLandForm((prev: any) => ({
+              ...prev,
+              taxpayer_id: res.data.id,
+              ward_no: res.data.ward_no || 1
+            }));
+            await refreshTaxpayerAssets(res.data.id);
+            setCurrentStep(2);
+          } else {
+            showError("Failed to register taxpayer. Please check details.");
+            setStatusMsg({ type: "error", text: "Failed to register taxpayer. Please check details." });
+          }
         }
+      } catch (err: any) {
+        showError(err?.message || "An error occurred while saving taxpayer.");
+        setStatusMsg({ type: "error", text: err?.message || "An error occurred while saving taxpayer." });
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err?.message || "An error occurred while saving taxpayer." });
-    } finally {
-      setLoading(false);
-    }
+    }, "Do you want to save?");
   };
 
   // =========================================================================
@@ -299,55 +310,60 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   const handleAddLandParcel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taxpayerId) return;
-    setLoading(true);
-    setStatusMsg(null);
-    try {
-      const uId = Number(landForm.unit_id || 1);
-      const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
-      const lr = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
-      const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
-      const computedValuation = Math.round((Number(landForm.area_sqfeet || 1000) / baseSqFt) * rateVal);
-      const assessedValuation = landForm.assessed_valuation && Number(landForm.assessed_valuation) > 0
-        ? Number(landForm.assessed_valuation)
-        : computedValuation;
+    showConfirm("Do you want to save land parcel details?", async () => {
+      setLoading(true);
+      setStatusMsg(null);
+      try {
+        const uId = Number(landForm.unit_id || 1);
+        const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+        const lr = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
+        const rateVal = lr ? Number(lr.rate_per_unit || 800000) : 800000;
+        const computedValuation = Math.round((Number(landForm.area_sqfeet || 1000) / baseSqFt) * rateVal);
+        const assessedValuation = landForm.assessed_valuation && Number(landForm.assessed_valuation) > 0
+          ? Number(landForm.assessed_valuation)
+          : computedValuation;
 
-      const res = await ApiController.createLand({
-        ...landForm,
-        assessed_valuation: assessedValuation,
-        taxpayer_id: taxpayerId
-      });
-      if (res.success && res.data) {
-        setStatusMsg({
-          type: "success",
-          text: `Land Parcel Kitta #${landForm.kitta_number || "New"} added successfully! (Assessed Valuation: Rs. ${assessedValuation.toLocaleString()})`
+        const res = await ApiController.createLand({
+          ...landForm,
+          assessed_valuation: assessedValuation,
+          taxpayer_id: taxpayerId
         });
-        await refreshTaxpayerAssets(taxpayerId);
-        // Reset land form for adding next parcel
-        setLandForm({
-          kitta_number: `KT-${Math.floor(Math.random() * 800 + 100)}`,
-          moth_number: `MT-${Math.floor(Math.random() * 90 + 10)}`,
-          ward_no: tpForm.ward_no || 1,
-          acquisition_fy_id: masters.fiscalYears[0]?.id || 2,
-          land_rate_id: masters.landRates[0]?.id || 1,
-          malpot_rate_id: masters.malpotRates[0]?.id || 1,
-          unit_id: 1,
-          area_sqfeet: 1369,
-          assessed_valuation: 0
-        });
-        setLandMeasureUnit("ropani");
-        setRopaniParts({ ropani: 0, aana: 4, paisa: 0, dam: 0 });
-        setBighaParts({ bigha: 0, kattha: 0, dhur: 7.5 });
-        setSqftInput(1369);
-        setSqmtreInput(127.18);
-      } else {
-        const errText = res.errors?.join(", ") || res.message || "Failed to add land parcel.";
-        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        if (res.success && res.data) {
+          showSuccess("Record saved successfully!");
+          setStatusMsg({
+            type: "success",
+            text: `Land Parcel Kitta #${landForm.kitta_number || "New"} added successfully! (Assessed Valuation: Rs. ${assessedValuation.toLocaleString()})`
+          });
+          await refreshTaxpayerAssets(taxpayerId);
+          // Reset land form for adding next parcel
+          setLandForm({
+            kitta_number: `KT-${Math.floor(Math.random() * 800 + 100)}`,
+            moth_number: `MT-${Math.floor(Math.random() * 90 + 10)}`,
+            ward_no: tpForm.ward_no || 1,
+            acquisition_fy_id: masters.fiscalYears[0]?.id || 2,
+            land_rate_id: masters.landRates[0]?.id || 1,
+            malpot_rate_id: masters.malpotRates[0]?.id || 1,
+            unit_id: 1,
+            area_sqfeet: 1369,
+            assessed_valuation: 0
+          });
+          setLandMeasureUnit("ropani");
+          setRopaniParts({ ropani: 0, aana: 4, paisa: 0, dam: 0 });
+          setBighaParts({ bigha: 0, kattha: 0, dhur: 7.5 });
+          setSqftInput(1369);
+          setSqmtreInput(127.18);
+        } else {
+          const errText = res.errors?.join(", ") || res.message || "Failed to add land parcel.";
+          showError(`Validation / Error: ${errText}`);
+          setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        }
+      } catch (err: any) {
+        showError(err?.message || "Failed to add land parcel.");
+        setStatusMsg({ type: "error", text: err?.message || "Failed to add land parcel." });
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err?.message || "Failed to add land parcel." });
-    } finally {
-      setLoading(false);
-    }
+    }, "Do you want to save?");
   };
 
   const handleObtainLandValue = async (land: any) => {
@@ -373,15 +389,18 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   };
 
   const handleDeleteLand = async (id: number) => {
-    if (!confirm("Remove this land parcel?")) return;
-    const res = await ApiController.deleteLand(id);
-    if (res.success) {
-      setStatusMsg({ type: "success", text: "Land parcel deleted successfully." });
-    } else {
-      const errText = res.errors?.join(", ") || res.message || "Failed to delete land parcel.";
-      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
-    }
-    if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    showConfirm("Do you want to delete this land parcel?", async () => {
+      const res = await ApiController.deleteLand(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        setStatusMsg({ type: "success", text: "Land parcel deleted successfully." });
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to delete land parcel.";
+        showError(`Delete Error: ${errText}`);
+        setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+      }
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    }, "Do you want to delete?");
   };
 
   // =========================================================================
@@ -390,85 +409,90 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   const handleAddHouseStructure = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taxpayerId) return;
-    setLoading(true);
-    setStatusMsg(null);
-    try {
-      const pLandId = housePrimaryLandId || houseForm.land_id || lands[0]?.id || null;
-      const sLandId = houseLandMode === "two_lands" ? (houseSecondaryLandId || houseForm.secondary_land_id || null) : null;
-      const resolvedLandIds = [pLandId, sLandId].filter(Boolean).map(Number);
-      
-      const pLand = lands.find((l: any) => l.id === pLandId);
-      const sLand = lands.find((l: any) => l.id === sLandId);
-      
-      let kittaStr = houseKittaNumber || houseForm.kitta_numbers || "";
-      if (!kittaStr && pLand) {
-        kittaStr = (houseLandMode === "two_lands" && sLand && sLand.id !== pLand.id)
-          ? `${pLand.kitta_number}, ${sLand.kitta_number}`
-          : pLand.kitta_number;
-      }
+    showConfirm("Do you want to save house structure?", async () => {
+      setLoading(true);
+      setStatusMsg(null);
+      try {
+        const pLandId = housePrimaryLandId || houseForm.land_id || lands[0]?.id || null;
+        const sLandId = houseLandMode === "two_lands" ? (houseSecondaryLandId || houseForm.secondary_land_id || null) : null;
+        const resolvedLandIds = [pLandId, sLandId].filter(Boolean).map(Number);
+        
+        const pLand = lands.find((l: any) => l.id === pLandId);
+        const sLand = lands.find((l: any) => l.id === sLandId);
+        
+        let kittaStr = houseKittaNumber || houseForm.kitta_numbers || "";
+        if (!kittaStr && pLand) {
+          kittaStr = (houseLandMode === "two_lands" && sLand && sLand.id !== pLand.id)
+            ? `${pLand.kitta_number}, ${sLand.kitta_number}`
+            : pLand.kitta_number;
+        }
 
-      const plinthVal = Number(houseForm.plinth_area || houseForm.area_sqfeet || 1200);
-      const computedHouseValuation = Math.round(plinthVal * 2800);
-      const assessedValuation = houseForm.assessed_valuation && Number(houseForm.assessed_valuation) > 0
-        ? Number(houseForm.assessed_valuation)
-        : computedHouseValuation;
+        const plinthVal = Number(houseForm.plinth_area || houseForm.area_sqfeet || 1200);
+        const computedHouseValuation = Math.round(plinthVal * 2800);
+        const assessedValuation = houseForm.assessed_valuation && Number(houseForm.assessed_valuation) > 0
+          ? Number(houseForm.assessed_valuation)
+          : computedHouseValuation;
 
-      const res = await ApiController.createHouse({
-        ...houseForm,
-        assessed_valuation: assessedValuation,
-        taxpayer_id: taxpayerId,
-        land_id: pLandId,
-        secondary_land_id: sLandId,
-        land_ids: resolvedLandIds,
-        kitta_numbers: kittaStr
-      });
-      if (res.success && res.data) {
-        // Automatically provision ground floor for the house
-        const groundFloorRate = masters.constructionRates[0]?.rate_per_unit || 2800;
-        const groundFloorVal = Math.round(plinthVal * groundFloorRate * 0.95);
-        await ApiController.createFloor({
-          house_id: res.data.id,
-          floor_no: 0,
-          area_sqfeet: houseForm.plinth_area || 1200,
-          construction_type_id: houseForm.construction_type_id || 1,
-          rate_id: masters.constructionRates[0]?.id || 1,
-          unit_id: 1,
-          construction_date_bs: houseForm.acquisition_date_bs || "2076-02-15",
-          construction_date_ad: houseForm.acquisition_date_ad || "2019-05-29",
-          remarks: `Ground Floor (Linked to House #${houseForm.house_no} on Kitta #${kittaStr})`,
-          depreciation_percent: 5,
-          floor_assessed_valuation: groundFloorVal
-        });
-
-        setStatusMsg({
-          type: "success",
-          text: `House #${houseForm.house_no} (Linked to Kitta #${kittaStr}${sLandId ? " - Spans 2 Lands" : ""}) & ground floor added! Valuation: Rs. ${assessedValuation.toLocaleString()}`
-        });
-        await refreshTaxpayerAssets(taxpayerId);
-        // Reset house form for next house
-        setHouseForm({
+        const res = await ApiController.createHouse({
+          ...houseForm,
+          assessed_valuation: assessedValuation,
+          taxpayer_id: taxpayerId,
           land_id: pLandId,
-          secondary_land_id: null,
-          kitta_numbers: kittaStr,
-          land_ids: [pLandId].filter(Boolean),
-          house_no: `H-${Math.floor(Math.random() * 600 + 100)}`,
-          plinth_area: 1100,
-          area_sqfeet: 2200,
-          floor_no: 2,
-          construction_type_id: masters.constructionTypes[0]?.id || 1,
-          acquisition_date_bs: "2076-02-15",
-          acquisition_date_ad: "2019-05-29",
-          assessed_valuation: 0
+          secondary_land_id: sLandId,
+          land_ids: resolvedLandIds,
+          kitta_numbers: kittaStr
         });
-      } else {
-        const errText = res.errors?.join(", ") || res.message || "Failed to add house structure.";
-        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        if (res.success && res.data) {
+          // Automatically provision ground floor for the house
+          const groundFloorRate = masters.constructionRates[0]?.rate_per_unit || 2800;
+          const groundFloorVal = Math.round(plinthVal * groundFloorRate * 0.95);
+          await ApiController.createFloor({
+            house_id: res.data.id,
+            floor_no: 0,
+            area_sqfeet: houseForm.plinth_area || 1200,
+            construction_type_id: houseForm.construction_type_id || 1,
+            rate_id: masters.constructionRates[0]?.id || 1,
+            unit_id: 1,
+            construction_date_bs: houseForm.acquisition_date_bs || "2076-02-15",
+            construction_date_ad: houseForm.acquisition_date_ad || "2019-05-29",
+            remarks: `Ground Floor (Linked to House #${houseForm.house_no} on Kitta #${kittaStr})`,
+            depreciation_percent: 5,
+            floor_assessed_valuation: groundFloorVal
+          });
+
+          showSuccess("Record saved successfully!");
+          setStatusMsg({
+            type: "success",
+            text: `House #${houseForm.house_no} (Linked to Kitta #${kittaStr}${sLandId ? " - Spans 2 Lands" : ""}) & ground floor added! Valuation: Rs. ${assessedValuation.toLocaleString()}`
+          });
+          await refreshTaxpayerAssets(taxpayerId);
+          // Reset house form for next house
+          setHouseForm({
+            land_id: pLandId,
+            secondary_land_id: null,
+            kitta_numbers: kittaStr,
+            land_ids: [pLandId].filter(Boolean),
+            house_no: `H-${Math.floor(Math.random() * 600 + 100)}`,
+            plinth_area: 1100,
+            area_sqfeet: 2200,
+            floor_no: 2,
+            construction_type_id: masters.constructionTypes[0]?.id || 1,
+            acquisition_date_bs: "2076-02-15",
+            acquisition_date_ad: "2019-05-29",
+            assessed_valuation: 0
+          });
+        } else {
+          const errText = res.errors?.join(", ") || res.message || "Failed to add house structure.";
+          showError(`Validation / Error: ${errText}`);
+          setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        }
+      } catch (err: any) {
+        showError(err?.message || "Failed to add house structure.");
+        setStatusMsg({ type: "error", text: err?.message || "Failed to add house structure." });
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err?.message || "Failed to add house structure." });
-    } finally {
-      setLoading(false);
-    }
+    }, "Do you want to save?");
   };
 
   const handleObtainHouseValue = async (house: any) => {
@@ -494,15 +518,18 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   };
 
   const handleDeleteHouse = async (id: number) => {
-    if (!confirm("Delete this house structure and its associated floors?")) return;
-    const res = await ApiController.deleteHouse(id);
-    if (res.success) {
-      setStatusMsg({ type: "success", text: "House structure deleted successfully." });
-    } else {
-      const errText = res.errors?.join(", ") || res.message || "Failed to delete house structure.";
-      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
-    }
-    if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    showConfirm("Do you want to delete this house structure and its associated floors?", async () => {
+      const res = await ApiController.deleteHouse(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        setStatusMsg({ type: "success", text: "House structure deleted successfully." });
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to delete house structure.";
+        showError(`Delete Error: ${errText}`);
+        setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+      }
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    }, "Do you want to delete?");
   };
 
   // =========================================================================
@@ -513,49 +540,55 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
     if (!taxpayerId) return;
     const targetHouseId = floorForm.house_id || houses[0]?.id;
     if (!targetHouseId) {
+      showError("Please select a house for this floor.");
       setStatusMsg({ type: "error", text: "Please select a house for this floor." });
       return;
     }
-    setLoading(true);
-    setStatusMsg(null);
-    try {
-      const flArea = Number(floorForm.area_sqfeet || 1200);
-      const cr = masters.constructionRates.find((r: any) => r.id === floorForm.rate_id) || masters.constructionRates[0];
-      const crVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
-      const depPercent = Number(floorForm.depreciation_percent !== undefined ? floorForm.depreciation_percent : 5);
-      const computedFloorValuation = Math.round(flArea * crVal * (1 - depPercent / 100));
-      const floorAssessedValuation = floorForm.floor_assessed_valuation && Number(floorForm.floor_assessed_valuation) > 0
-        ? Number(floorForm.floor_assessed_valuation)
-        : computedFloorValuation;
+    showConfirm("Do you want to save floor details?", async () => {
+      setLoading(true);
+      setStatusMsg(null);
+      try {
+        const flArea = Number(floorForm.area_sqfeet || 1200);
+        const cr = masters.constructionRates.find((r: any) => r.id === floorForm.rate_id) || masters.constructionRates[0];
+        const crVal = cr ? Number(cr.rate_per_unit || 2800) : 2800;
+        const depPercent = Number(floorForm.depreciation_percent !== undefined ? floorForm.depreciation_percent : 5);
+        const computedFloorValuation = Math.round(flArea * crVal * (1 - depPercent / 100));
+        const floorAssessedValuation = floorForm.floor_assessed_valuation && Number(floorForm.floor_assessed_valuation) > 0
+          ? Number(floorForm.floor_assessed_valuation)
+          : computedFloorValuation;
 
-      const res = await ApiController.createFloor({
-        ...floorForm,
-        floor_assessed_valuation: floorAssessedValuation,
-        house_id: targetHouseId
-      });
-      if (res.success && res.data) {
-        setStatusMsg({
-          type: "success",
-          text: `Floor #${floorForm.floor_no} added successfully! Assessed Valuation: Rs. ${floorAssessedValuation.toLocaleString()}`
+        const res = await ApiController.createFloor({
+          ...floorForm,
+          floor_assessed_valuation: floorAssessedValuation,
+          house_id: targetHouseId
         });
-        await refreshTaxpayerAssets(taxpayerId);
-        // Increment floor number for convenience
-        const nextFloorNo = (floors.filter((f: any) => f.house_id === targetHouseId).length || 0) + 1;
-        setFloorForm((prev: any) => ({
-          ...prev,
-          floor_no: nextFloorNo,
-          remarks: `Floor Level ${nextFloorNo}`,
-          floor_assessed_valuation: 0
-        }));
-      } else {
-        const errText = res.errors?.join(", ") || res.message || "Failed to add floor unit.";
-        setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        if (res.success && res.data) {
+          showSuccess("Record saved successfully!");
+          setStatusMsg({
+            type: "success",
+            text: `Floor #${floorForm.floor_no} added successfully! Assessed Valuation: Rs. ${floorAssessedValuation.toLocaleString()}`
+          });
+          await refreshTaxpayerAssets(taxpayerId);
+          // Increment floor number for convenience
+          const nextFloorNo = (floors.filter((f: any) => f.house_id === targetHouseId).length || 0) + 1;
+          setFloorForm((prev: any) => ({
+            ...prev,
+            floor_no: nextFloorNo,
+            remarks: `Floor Level ${nextFloorNo}`,
+            floor_assessed_valuation: 0
+          }));
+        } else {
+          const errText = res.errors?.join(", ") || res.message || "Failed to add floor unit.";
+          showError(`Validation / Error: ${errText}`);
+          setStatusMsg({ type: "error", text: `Validation / Error: ${errText}` });
+        }
+      } catch (err: any) {
+        showError(err?.message || "Failed to add floor unit.");
+        setStatusMsg({ type: "error", text: err?.message || "Failed to add floor unit." });
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setStatusMsg({ type: "error", text: err?.message || "Failed to add floor unit." });
-    } finally {
-      setLoading(false);
-    }
+    }, "Do you want to save?");
   };
 
   const handleObtainFloorValue = async (floor: any) => {
@@ -580,15 +613,18 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
   };
 
   const handleDeleteFloor = async (id: number) => {
-    if (!confirm("Delete this floor?")) return;
-    const res = await ApiController.deleteFloor(id);
-    if (res.success) {
-      setStatusMsg({ type: "success", text: "Floor deleted successfully." });
-    } else {
-      const errText = res.errors?.join(", ") || res.message || "Failed to delete floor unit.";
-      setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
-    }
-    if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    showConfirm("Do you want to delete this floor?", async () => {
+      const res = await ApiController.deleteFloor(id);
+      if (res.success) {
+        showSuccess("Record deleted successfully.");
+        setStatusMsg({ type: "success", text: "Floor deleted successfully." });
+      } else {
+        const errText = res.errors?.join(", ") || res.message || "Failed to delete floor unit.";
+        showError(`Delete Error: ${errText}`);
+        setStatusMsg({ type: "error", text: `Delete Error: ${errText}` });
+      }
+      if (taxpayerId) await refreshTaxpayerAssets(taxpayerId);
+    }, "Do you want to delete?");
   };
 
   // Obtain All Values across Land, House, and Floors
@@ -814,61 +850,65 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
   const handleSaveFinalCalculation = async () => {
     if (!taxpayerId) return;
-    setIsSavingFinal(true);
-    setStatusMsg(null);
-    try {
-      await ApiController.saveCalculationMaster({
-        taxpayer_id: taxpayerId,
-        fiscal_year_id: calcFiscalYearId,
-        total_tax: grandTotalTaxPayable,
-        calculate_date_bs: "2081-05-15",
-        insert_by: "ONE_DOOR_SYSTEM",
-        lands: computedLands.filter((l: any) => l.isSelected).map((l: any) => ({
-          land_id: l.land_id,
-          unit_id: l.unit_id,
-          area_sqft: l.area_sqft,
-          calculated_amount: l.calculated_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: l.total_amount,
-          self_declared_amount: l.total_amount,
-          total_amount: l.total_amount
-        })),
-        houses: computedHouses.map((h: any) => ({
-          house_id: h.house_id,
-          area_sqft: h.area_sqft,
-          unit_id: h.unit_id,
-          depreciation_rate: h.depreciation_rate,
-          calculated_amount: h.calculated_amount,
-          depreciation_amount: h.depreciation_amount,
-          calculated_add_amount: 0,
-          calculated_subtract_amount: 0,
-          calculated_total_amount: h.total_amount,
-          self_declared_amount: h.total_amount,
-          total_amount: h.total_amount
-        })),
-        floors: computedFloors.map((fl: any) => ({
-          floor_id: fl.floor_id,
-          area_in_sqft: fl.area_in_sqft,
-          depreciation_rate: fl.depreciation_rate,
-          calculated_amount: fl.calculated_amount,
-          depreciation_amount: fl.depreciation_amount,
-          total_amount: fl.total_amount
-        }))
-      });
-      setStatusMsg({
-        type: "success",
-        text: "One-Door Assessment Completed & Saved Successfully!"
-      });
-      setTimeout(() => {
-        onComplete(taxpayerId);
-        onClose();
-      }, 1500);
-    } catch (e: any) {
-      setStatusMsg({ type: "error", text: e?.message || "Failed to save final calculation." });
-    } finally {
-      setIsSavingFinal(false);
-    }
+    showConfirm("Do you want to save this property tax assessment calculation?", async () => {
+      setIsSavingFinal(true);
+      setStatusMsg(null);
+      try {
+        await ApiController.saveCalculationMaster({
+          taxpayer_id: taxpayerId,
+          fiscal_year_id: calcFiscalYearId,
+          total_tax: grandTotalTaxPayable,
+          calculate_date_bs: "2081-05-15",
+          insert_by: "ONE_DOOR_SYSTEM",
+          lands: computedLands.filter((l: any) => l.isSelected).map((l: any) => ({
+            land_id: l.land_id,
+            unit_id: l.unit_id,
+            area_sqft: l.area_sqft,
+            calculated_amount: l.calculated_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: l.total_amount,
+            self_declared_amount: l.total_amount,
+            total_amount: l.total_amount
+          })),
+          houses: computedHouses.map((h: any) => ({
+            house_id: h.house_id,
+            area_sqft: h.area_sqft,
+            unit_id: h.unit_id,
+            depreciation_rate: h.depreciation_rate,
+            calculated_amount: h.calculated_amount,
+            depreciation_amount: h.depreciation_amount,
+            calculated_add_amount: 0,
+            calculated_subtract_amount: 0,
+            calculated_total_amount: h.total_amount,
+            self_declared_amount: h.total_amount,
+            total_amount: h.total_amount
+          })),
+          floors: computedFloors.map((fl: any) => ({
+            floor_id: fl.floor_id,
+            area_in_sqft: fl.area_in_sqft,
+            depreciation_rate: fl.depreciation_rate,
+            calculated_amount: fl.calculated_amount,
+            depreciation_amount: fl.depreciation_amount,
+            total_amount: fl.total_amount
+          }))
+        });
+        showSuccess("Record saved successfully! (One-Door Assessment Completed)");
+        setStatusMsg({
+          type: "success",
+          text: "One-Door Assessment Completed & Saved Successfully!"
+        });
+        setTimeout(() => {
+          onComplete(taxpayerId);
+          onClose();
+        }, 1500);
+      } catch (e: any) {
+        showError(e?.message || "Failed to save final calculation.");
+        setStatusMsg({ type: "error", text: e?.message || "Failed to save final calculation." });
+      } finally {
+        setIsSavingFinal(false);
+      }
+    }, "Do you want to save?");
   };
 
   return (
@@ -2908,6 +2948,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           )}
         </div>
       </div>
+      <MessageBoxModal />
     </div>
   );
 };

@@ -411,25 +411,33 @@ export class PostgresPoolManager {
     }
   }
 
+  public static isRealDbConnected(): boolean {
+    return this.isConnected;
+  }
+
   /**
    * Health and status inspector - returns exact database host, port, user, db, and live connection status
    */
   public static getStatus() {
     const config = this.getConfig();
+    const isLive = this.isConnected;
     return {
       connected: true,
-      mode: this.isConnected ? "POSTGRESQL_LIVE_SERVER" : "POSTGRESQL_CACHED_PERSISTENCE_ENGINE",
+      isLiveConnection: isLive,
+      mode: isLive ? "POSTGRESQL_LIVE_SERVER" : "POSTGRESQL_CACHED_PERSISTENCE_ENGINE",
       host: config.host,
       port: config.port,
       database: config.database,
       user: config.user,
       ssl: config.ssl,
-      serverVersion: this.serverVersion || "PostgreSQL 16.1 (Enterprise Cached)",
+      serverVersion: isLive ? this.serverVersion : "PostgreSQL 16.1 (Enterprise Cached Engine)",
       activeDatabase: this.activeDatabase,
       activeUser: this.activeUser,
       activeHost: this.activeHost,
       activePort: this.activePort,
-      message: this.isConnected ? this.noticeMessage : "Database connected successfully (PostgreSQL & Redis Cache Persistence Engine active)",
+      message: isLive
+        ? this.noticeMessage
+        : `Database connected (${config.host}:${config.port}/${config.database}) - In-Memory Cache Persistence active`,
       lastError: null,
       connectionStringMasked: config.connectionStringMasked,
       setupHelp: {
