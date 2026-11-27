@@ -920,21 +920,20 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 m-[3px]">
       {/* Top Banner: Only Taxpayer Detail */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-emerald-600" />
             <span>Taxpayer Detail (करदाता विवरण)</span>
           </h2>
-        
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={loadAllData}
-            className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors cursor-pointer"
             title="Reload Data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -943,7 +942,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           {canNew && (
             <button
               onClick={handleOpenAddTaxpayer}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all cursor-pointer"
               title="Continuous Save and Continue Process (Taxpayer -> Lands -> Houses -> Floors -> Valuation)"
             >
               <Plus className="w-4 h-4" />
@@ -955,7 +954,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
       {statusMsg && (
         <div
-          className={`p-3 text-xs rounded-xl flex items-center justify-between border ${
+          className={`p-2.5 text-xs rounded-xl flex items-center justify-between border ${
             statusMsg.type === "success"
               ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
               : "bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
@@ -972,7 +971,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
       )}
 
       {/* Main Taxpayer Master Grid with Search & Ward Filter */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1019,7 +1018,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+              <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px] tracking-wider">
                 <tr>
                   <th className="p-3.5 w-14 text-center">R.Num</th>
                   <th className="p-3.5">{tCol("fullname", currentLang)}</th>
@@ -1442,7 +1441,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                    <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                       <tr>
                         <th className="py-2.5 px-3.5">Asset Type</th>
                         <th className="py-2.5 px-3.5">Identifier / Moth / Ward</th>
@@ -1546,7 +1545,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                    <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                       <tr>
                         <th className="py-2.5 px-3.5 w-12 text-center">R.Num</th>
                         <th className="py-2.5 px-3.5">Kitta / Moth</th>
@@ -1705,7 +1704,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
                           {houseFloors.length > 0 && (
                             <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900">
                               <table className="w-full text-left text-[11px]">
-                                <thead className="bg-slate-100/60 dark:bg-slate-800 text-slate-600 font-semibold uppercase">
+                                <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase">
                                   <tr>
                                     <th className="py-1.5 px-3">Floor Level</th>
                                     <th className="py-1.5 px-3">Area (Sq.Ft)</th>
@@ -1778,7 +1777,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+                <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px] tracking-wider">
                   <tr>
                     <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">Kitta / Moth</th>
@@ -1912,7 +1911,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+                <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px] tracking-wider">
                   <tr>
                     <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">House Number (घर नं.)</th>
@@ -2033,7 +2032,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+                <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px] tracking-wider">
                   <tr>
                     <th className="p-3.5 w-14 text-center">R.Num</th>
                     <th className="p-3.5">Floor Level</th>
@@ -2186,7 +2185,7 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
           {/* Itemized Breakdown Table */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100/70 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 font-semibold uppercase text-slate-600 dark:text-slate-300">
+              <thead className="bg-slate-200/75 border-b border-slate-300 font-bold uppercase text-slate-900">
                 <tr>
                   <th className="py-2.5 px-3">Asset Description</th>
                   <th className="py-2.5 px-3">Identifier / Kitta / House</th>

@@ -49,8 +49,9 @@ export type RateTab =
 interface RatesMasterPanelProps {
   currentLang: SupportedLang;
   initialTab?: RateTab;
-  filterGroup?: "rate" | "masters" | "rbac" | "all";
+  filterGroup?: "rate" | "masters" | "rbac" | "settings" | "all";
   currentSession?: AuthSessionState | null;
+  onTabChange?: (tab: RateTab) => void;
 }
 
 interface ParentTreeModalProps {
@@ -202,7 +203,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   currentLang,
   initialTab = "land_rate",
   filterGroup = "all",
-  currentSession
+  currentSession,
+  onTabChange
 }) => {
   const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const t = translations[currentLang];
@@ -322,19 +324,31 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
 
     // Masters Group
     { id: "fiscal_year", label: "Fiscal Year", sub: "Municipal accounting calendar", icon: Calendar, count: masters.fiscalYears.length, group: "masters" },
-    { id: "construction_type", label: "Construction Types", sub: "Building structure classifications", icon: Building, count: masters.constructionTypes.length, group: "masters" },
     { id: "unit", label: "Measurement Unit", sub: "Ropani, Bigha, Sq.Ft, Sq.Metre", icon: Sliders, count: masters.units.length, group: "masters" },
+    { id: "construction_type", label: "Construction Types", sub: "Building structure classifications", icon: Building, count: masters.constructionTypes.length, group: "masters" },
     { id: "land_nature", label: "Land Nature", sub: "Zoning & residential classifications", icon: Trees, count: masters.landNatures.length, group: "masters" },
 
     // RBAC Group
-    { id: "company", label: "Company Profile", sub: "Municipal organization entity", icon: Landmark, count: masters.companies.length, group: "rbac" },
+    { id: "company", label: "Company Profiles", sub: "Municipal organization entity", icon: Landmark, count: masters.companies.length, group: "rbac" },
     { id: "application_setting", label: "Application Settings", sub: "Global system configuration", icon: Settings, count: masters.applicationSettings.length, group: "rbac" }
   ];
 
-  const tabConfigs = allTabConfigs.filter((t) => {
-    if (filterGroup === "all") return true;
-    return t.group === filterGroup;
-  });
+  const settingsTabOrder: RateTab[] = ["fiscal_year", "unit", "company", "construction_type"];
+  const tabConfigs =
+    filterGroup === "settings"
+      ? settingsTabOrder
+          .map((id) => allTabConfigs.find((t) => t.id === id))
+          .filter((t): t is NonNullable<typeof t> => Boolean(t))
+      : allTabConfigs.filter((t) => {
+          if (filterGroup === "all") return true;
+          return t.group === filterGroup;
+        });
+
+  useEffect(() => {
+    if (tabConfigs.length > 0 && !tabConfigs.some((t) => t.id === activeTab)) {
+      setActiveTab(tabConfigs[0].id);
+    }
+  }, [filterGroup, activeTab]);
 
   const getCurrentList = () => {
     switch (activeTab) {
@@ -714,15 +728,15 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const HeaderIcon = headerInfo.icon;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 m-[3px]">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <HeaderIcon className={`w-5 h-5 ${headerInfo.iconColor}`} />
             <span>{headerInfo.title}</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             {headerInfo.subtitle}
           </p>
         </div>
@@ -738,16 +752,16 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 setCopyCategory(activeTab);
                 setIsCopyRateModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition-colors shadow-2xs cursor-pointer"
               title="Copy rates from Universal Default (Null) or another Fiscal Year"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-4 h-4 text-emerald-600" />
               <span>Copy Rate (दररेट प्रतिलिपि)</span>
             </button>
           )}
           <button
             onClick={loadData}
-            className="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors cursor-pointer"
             title="Reload Data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -755,7 +769,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
           {(!currentSession || hasActionRight(currentSession, (filterGroup === "rbac" || activeTab === "company" || activeTab === "application_setting") ? "company" : "master", "new")) && (
             <button
               onClick={handleOpenAdd}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{headerInfo.addLabel}</span>
@@ -776,8 +790,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         </div>
       )}
 
-      {/* Tabs navigation for all 9 rate tables */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar border-b border-slate-200 dark:border-slate-800">
+      {/* Tabs navigation */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 no-scrollbar border-b border-slate-200">
         {tabConfigs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -787,18 +801,19 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               onClick={() => {
                 setActiveTab(tab.id);
                 setSearchTerm("");
+                if (onTabChange) onTabChange(tab.id);
               }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer ${
                 isActive
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  ? "bg-slate-200/75 text-slate-950 font-bold border border-slate-300/60 shadow-2xs"
+                  : "bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-normal border border-slate-200"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                  isActive ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isActive ? "bg-white text-slate-900 border border-slate-200" : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {tab.count}
@@ -862,7 +877,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         )}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
+            <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px] tracking-wider">
               <tr>
                 <th className="p-3.5 w-14 text-center">R.Num</th>
                 <th className="p-3.5">Name / Description</th>

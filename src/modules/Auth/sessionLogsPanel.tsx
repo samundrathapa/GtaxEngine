@@ -83,7 +83,7 @@ export const SessionLogsPanel: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-100/60 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-600">
+            <thead className="bg-slate-200/75 border-b border-slate-300 font-bold uppercase tracking-wider text-slate-900">
               <tr>
                 <th className="py-2.5 px-4">Session ID</th>
                 <th className="py-2.5 px-4">User ID</th>
@@ -155,7 +155,7 @@ export const SessionLogsPanel: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-100/60 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-600 sticky top-0 bg-slate-100">
+            <thead className="bg-slate-200 border-b border-slate-300 font-bold uppercase tracking-wider text-slate-900 sticky top-0">
               <tr>
                 <th className="py-2.5 px-4">Event ID</th>
                 <th className="py-2.5 px-4">User / Attempt</th>

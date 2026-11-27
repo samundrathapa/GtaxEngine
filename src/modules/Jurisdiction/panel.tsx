@@ -103,7 +103,7 @@ export const JurisdictionPanel: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+            <thead className="bg-slate-200/75 border-b border-slate-300 text-xs font-bold uppercase tracking-wider text-slate-900">
               <tr>
                 <th className="py-3 px-4">Jurisdiction</th>
                 <th className="py-3 px-4">Level</th>

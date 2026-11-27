@@ -46,6 +46,7 @@ interface RolePanelProps {
   currentLang?: SupportedLang;
   initialSubTab?: "roles" | "user_rights";
   initialTargetUserId?: number | null;
+  hideSubTabs?: boolean;
 }
 
 function buildEmptyMatrix(): RoleMatrixMap {
@@ -89,7 +90,8 @@ export const RolePanel: React.FC<RolePanelProps> = ({
   currentSession,
   currentLang = "eng",
   initialSubTab = "roles",
-  initialTargetUserId = null
+  initialTargetUserId = null,
+  hideSubTabs = false
 }) => {
   const { showConfirm, showSuccess, showError, MessageBoxModal } = useMessageBox();
   const t = translations[currentLang];
@@ -454,9 +456,9 @@ export const RolePanel: React.FC<RolePanelProps> = ({
     String(selectedUserObj?.email || "").toLowerCase() === "superadmin@gtax.enterprise";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <KeyRound className="w-5 h-5" />
@@ -472,32 +474,34 @@ export const RolePanel: React.FC<RolePanelProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
-            <button
-              type="button"
-              onClick={() => setSubTab("roles")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
-                subTab === "roles"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Role Matrix</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSubTab("user_rights")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
-                subTab === "user_rights"
-                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
-                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>User-Wise Menu Rights</span>
-            </button>
-          </div>
+          {!hideSubTabs && (
+            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setSubTab("roles")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  subTab === "roles"
+                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Role Matrix</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubTab("user_rights")}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  subTab === "user_rights"
+                    ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>User-Wise Menu Rights</span>
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
@@ -719,7 +723,7 @@ export const RolePanel: React.FC<RolePanelProps> = ({
               <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <thead className="bg-slate-200/75 border-b border-slate-300 text-[11px] font-bold uppercase tracking-wider text-slate-900">
                       <tr>
                         <th className="py-2.5 px-3.5">Menu / Feature</th>
                         <th className="py-2.5 px-2.5 text-center">Menu</th>
@@ -946,7 +950,7 @@ export const RolePanel: React.FC<RolePanelProps> = ({
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                      <thead className="bg-slate-200/75 border-b border-slate-300 text-[11px] font-bold uppercase tracking-wider text-slate-900">
                         <tr>
                           <th className="py-2.5 px-3.5">Menu / Feature</th>
                           <th className="py-2.5 px-2.5 text-center">Menu</th>

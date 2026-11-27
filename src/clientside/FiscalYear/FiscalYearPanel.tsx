@@ -135,7 +135,7 @@ export const FiscalYearPanel: React.FC = () => {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <thead className="bg-slate-200/75 border-b border-slate-300 text-xs font-bold uppercase tracking-wider text-slate-900">
               <tr>
                 <th className="py-3 px-4">Fiscal Year Code</th>
                 <th className="py-3 px-4">Description / Name</th>

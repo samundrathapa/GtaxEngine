@@ -311,7 +311,7 @@ export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ curren
                 </h4>
                 <div className="border border-slate-200 rounded-lg overflow-hidden">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+                    <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase tracking-wider">
                       <tr>
                         <th className="py-2 px-3">Jurisdiction</th>
                         <th className="py-2 px-3">Type</th>
@@ -416,7 +416,7 @@ export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ curren
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/60 border-b border-slate-200 font-semibold uppercase tracking-wider text-slate-600">
+            <thead className="bg-slate-200/75 border-b border-slate-300 font-bold uppercase tracking-wider text-slate-900">
               <tr>
                 <th className="py-2.5 px-4">Invoice / ID</th>
                 <th className="py-2.5 px-4">Destination</th>

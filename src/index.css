@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Kalimati';
+  src: url('/fonts/Kalimati.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Kalimati', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Kalimati', ui-serif, Georgia, serif;
+  --font-mono: 'Kalimati', ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  input,
+  button,
+  select,
+  textarea,
+  label,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  th,
+  td {
+    font-family: 'Kalimati', ui-sans-serif, system-ui, sans-serif;
+  }
+}

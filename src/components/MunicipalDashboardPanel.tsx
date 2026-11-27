@@ -169,37 +169,35 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-2 m-[3px] animate-in fade-in duration-200">
       {/* Top Banner / Municipal Overview */}
-      <div className="p-6 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl border border-indigo-500/20 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-indigo-500/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-3.5 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-200 rounded-full border border-indigo-400/30 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-indigo-300" />
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 rounded-full border border-slate-200 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                 <span>FY {stats.activeFiscalYear} Live</span>
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               {tr("Municipal Property Tax Administration")}
             </h1>
-           
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               onClick={() => onNavigate("taxpayer")}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition"
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 transition cursor-pointer"
             >
               <Users className="w-4 h-4" />
               <span>{tr("Taxpayer Registry")}</span>
             </button>
             <button
               onClick={() => onNavigate("calculation")}
-              className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-amber-600/30 flex items-center gap-2 transition"
+              className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold rounded-xl shadow-xs flex items-center gap-2 transition cursor-pointer"
             >
-              <Calculator className="w-4 h-4" />
+              <Calculator className="w-4 h-4 text-amber-500" />
               <span>{tr("Valuation Window")}</span>
             </button>
           </div>
@@ -207,21 +205,21 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
         {/* Total Taxpayers */}
         <div
           onClick={() => onNavigate("taxpayer")}
-          className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition cursor-pointer group"
+          className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/40 transition cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {tr("Taxpayer Citizens")}
             </span>
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">
             {stats.totalTaxpayers}
           </div>
           <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
@@ -233,17 +231,17 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         {/* Total Assessed Valuation */}
         <div
           onClick={() => onNavigate("calculation")}
-          className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-amber-500/40 transition cursor-pointer group"
+          className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-amber-500/40 transition cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {tr("assessedValuation")}
             </span>
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+            <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
               <Building className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">
             {stats.totalValuation}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -254,7 +252,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
         {/* Tax Revenue Collected */}
         <div
           onClick={() => onNavigate("calculation")}
-          className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-500/40 transition cursor-pointer group"
+          className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-500/40 transition cursor-pointer group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -341,7 +339,7 @@ export const MunicipalDashboardPanel: React.FC<MunicipalDashboardPanelProps> = (
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-200 dark:border-slate-800">
+            <thead className="bg-slate-200/75 text-slate-900 uppercase text-[11px] tracking-wider font-bold border-b border-slate-300">
               <tr>
                 <th className="p-3.5 pl-5">{tr("Taxpayer Citizen")}</th>
                 <th className="p-3.5">{tr("code")}</th>

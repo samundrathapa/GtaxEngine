@@ -520,7 +520,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                  <tr className="bg-slate-200/75 border-b border-slate-300 text-[11px] text-slate-900 font-bold uppercase tracking-wider">
                     <th className="px-4 py-3">Fiscal Year</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-right">Land Valuation</th>

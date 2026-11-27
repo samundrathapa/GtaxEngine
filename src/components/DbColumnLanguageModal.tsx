@@ -787,7 +787,7 @@ export const DbColumnLanguageModal: React.FC<DbColumnLanguageModalProps> = ({
             {/* Editable Mapping Table */}
             <div className="flex-1 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs overflow-y-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                <thead className="bg-slate-200 sticky top-0 z-10 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                   <tr>
                     <th className="p-2.5 w-24">Type</th>
                     <th className="p-2.5 w-44">Key / Column</th>

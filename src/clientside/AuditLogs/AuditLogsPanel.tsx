@@ -89,25 +89,25 @@ export const AuditLogsPanel: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 m-[3px]">
       {/* Header & Reload Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <span>Audit & Security Logs</span>
-            <span className="text-xs px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full font-mono">
+          <h2 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            <span>Audit &amp; Security Logs</span>
+            <span className="text-xs px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
               Live Event Tracking
             </span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500">
             Every insert, update, delete, login, logout, and search event is logged with table name, field changes, old value, and new value.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => loadData(searchQuery)}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs transition"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 shadow-xs transition cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Reload Logs</span>
@@ -116,7 +116,7 @@ export const AuditLogsPanel: React.FC = () => {
       </div>
 
       {/* Advanced Filter Toolbar */}
-      <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+      <div className="p-2.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
           <Filter className="w-4 h-4 text-emerald-600" />
           <span>Advanced Audit Log Filters</span>
@@ -228,7 +228,7 @@ export const AuditLogsPanel: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider text-[11px]">
+            <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="p-3.5">Log ID</th>
                 <th className="p-3.5">Operation</th>

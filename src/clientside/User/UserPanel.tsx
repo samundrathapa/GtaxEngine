@@ -222,14 +222,13 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
   const { paginatedItems: paginatedUsers } = getPaginationSlice(users, currentPage, itemsPerPage);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {/* Header & Sub-toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
             <span>{t.userManagement}</span>
           </h2>
-      
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
@@ -316,7 +315,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ currentSession, currentLan
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <thead className="bg-slate-200/75 border-b border-slate-300 text-xs font-bold uppercase tracking-wider text-slate-900">
               <tr>
                 <th className="py-3 px-4">Operator / Name</th>
                 <th className="py-3 px-4">Role</th>

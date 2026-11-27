@@ -1016,7 +1016,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                        <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                           <tr>
                             <th className="p-3">{tCol("kitta_number", currentLang)}</th>
                             <th className="p-3">{tCol("ward_no", currentLang)}</th>
@@ -1138,7 +1138,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                        <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                           <tr>
                             <th className="p-3">{tCol("house_no", currentLang)}</th>
                             <th className="p-3">{tCol("kitta_numbers", currentLang)}</th>
@@ -1256,7 +1256,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                        <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                           <tr>
                             <th className="p-3">{tCol("floor_no", currentLang)}</th>
                             <th className="p-3">{tCol("area_sqfeet", currentLang)}</th>
@@ -1432,7 +1432,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                       <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-[11px] uppercase">
+                          <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold text-[11px] uppercase">
                             <tr>
                               <th className="p-2.5">Fiscal Year</th>
                               <th className="p-2.5">Land Valuation</th>
@@ -1537,7 +1537,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                          <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                             <tr>
                               <th className="p-3 w-10 text-center">Select</th>
                               <th className="p-3">Kitta / Moth</th>
@@ -1785,7 +1785,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900 shadow-xs">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold uppercase text-[11px]">
+                          <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                             <tr>
                               <th className="p-3">Floor # & Ref</th>
                               <th className="p-3">Area (Sq.Ft)</th>

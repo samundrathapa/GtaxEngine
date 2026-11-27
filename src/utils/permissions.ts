@@ -87,6 +87,8 @@ export function isNavTabAllowed(session: AuthSessionState | null | undefined, ta
   switch (tab) {
     case "dashboard":
       return hasMenuRight(session, "dashboard");
+    case "new_taxpayer":
+      return hasMenuRight(session, "taxpayer") && hasActionRight(session, "taxpayer", "new");
     case "taxpayer":
       return hasMenuRight(session, "taxpayer");
     case "calculation":
@@ -95,12 +97,14 @@ export function isNavTabAllowed(session: AuthSessionState | null | undefined, ta
     case "masters":
     case "rate":
       return hasMenuRight(session, "master");
+    case "settings":
+      return hasMenuRight(session, "master") || hasMenuRight(session, "company");
     case "roles":
       return hasMenuRight(session, "role");
     case "users":
       return hasMenuRight(session, "user");
     case "rbac":
-      return hasMenuRight(session, "company");
+      return hasMenuRight(session, "user") || hasMenuRight(session, "role");
     case "security_logs":
       return hasMenuRight(session, "audit_logs");
     case "reports":
@@ -112,14 +116,14 @@ export function isNavTabAllowed(session: AuthSessionState | null | undefined, ta
 
 export function getFirstAllowedNavTab(
   session: AuthSessionState | null | undefined
-): "dashboard" | "taxpayer" | "calculation" | "masters" | "roles" | "users" | "rbac" | "security_logs" {
-  const order: Array<"dashboard" | "taxpayer" | "calculation" | "masters" | "roles" | "users" | "rbac" | "security_logs"> = [
+): "dashboard" | "new_taxpayer" | "taxpayer" | "calculation" | "rate" | "settings" | "rbac" | "security_logs" {
+  const order: Array<"dashboard" | "new_taxpayer" | "taxpayer" | "calculation" | "rate" | "settings" | "rbac" | "security_logs"> = [
     "dashboard",
+    "new_taxpayer",
     "taxpayer",
     "calculation",
-    "masters",
-    "roles",
-    "users",
+    "rate",
+    "settings",
     "rbac",
     "security_logs"
   ];

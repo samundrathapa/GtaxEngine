@@ -87,9 +87,8 @@ export const ReportsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
         <div>
-        
           <h2 className="text-xl font-bold tracking-tight text-slate-900">
             Multi-Format Tax Liability Reports Engine
           </h2>
@@ -186,7 +185,7 @@ export const ReportsPanel: React.FC = () => {
 
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-600">
+              <thead className="bg-slate-200/75 border-b border-slate-300 font-bold text-slate-900">
                 <tr>
                   <th className="py-2 px-3">Invoice</th>
                   <th className="py-2 px-3">Destination</th>

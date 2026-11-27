@@ -716,7 +716,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-wider border-y border-slate-200 dark:border-slate-800">
+            <thead className="bg-slate-200/75 text-slate-900 font-bold uppercase text-[10px] tracking-wider border-y border-slate-300">
               <tr>
                 <th className="py-3 px-4">Evaluation Metric</th>
                 <th className="py-3 px-4 text-blue-600 dark:text-blue-400">

@@ -507,9 +507,9 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 m-[3px]">
       {/* Elevated Top Header & Context Banner */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             {/* <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1.5">
@@ -521,8 +521,8 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                 {activeTab === "calculator" ? "Live Calculation Studio" : activeTab === "multi_year" ? "Multi-Year Arrears Engine" : activeTab === "history" ? "calc_master Registry" : "Cross-Year Analytics"}
               </span>
             </div> */}
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center shadow-sm">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 text-amber-500 flex items-center justify-center">
                 <Calculator className="w-4 h-4" />
               </span>
               <span>Tax Calculation & Assessment Studio</span>
@@ -538,10 +538,10 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
             </div>
 
             {currentTaxpayer && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-semibold">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-semibold">
                 <span className="font-bold">Active:</span>
                 <span className="truncate max-w-[150px]">{currentTaxpayer.fullanme}</span>
-                <span className="font-mono text-[10px] text-indigo-600">({currentTaxpayer.code})</span>
+                <span className="text-[10px] text-slate-600">({currentTaxpayer.code})</span>
               </div>
             )}
           </div>
@@ -551,56 +551,55 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
           <button
             onClick={() => switchTab("calculator")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${
               activeTab === "calculator"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+                ? "bg-slate-200/75 text-slate-950 font-bold border border-slate-300/60"
+                : "bg-white hover:bg-slate-50 text-slate-600 font-normal border border-slate-200/80"
             }`}
           >
-            <Calculator className={`w-4 h-4 ${activeTab === "calculator" ? "text-amber-300" : "text-amber-500"}`} />
+            <Calculator className="w-4 h-4 text-amber-500" />
             <span>Calculation Studio</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "calculator" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white text-slate-700 border border-slate-200">
               Live
             </span>
           </button>
 
           <button
             onClick={() => switchTab("multi_year")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${
               activeTab === "multi_year"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+                ? "bg-slate-200/75 text-slate-950 font-bold border border-slate-300/60"
+                : "bg-white hover:bg-slate-50 text-slate-600 font-normal border border-slate-200/80"
             }`}
           >
-            <TrendingUp className={`w-4 h-4 ${activeTab === "multi_year" ? "text-emerald-300" : "text-emerald-500"}`} />
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
             <span>Multi-Year Engine</span>
-            <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${activeTab === "multi_year" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-700"}`}>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               2021-2086 BS
             </span>
           </button>
 
           <button
             onClick={() => switchTab("history")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${
               activeTab === "history"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+                ? "bg-slate-200/75 text-slate-950 font-bold border border-slate-300/60"
+                : "bg-white hover:bg-slate-50 text-slate-600 font-normal border border-slate-200/80"
             }`}
           >
-            <FileText className={`w-4 h-4 ${activeTab === "history" ? "text-blue-300" : "text-blue-500"}`} />
+            <FileText className="w-4 h-4 text-sky-600" />
             <span>Saved Records</span>
-          
           </button>
 
           <button
             onClick={() => switchTab("comparison")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${
               activeTab === "comparison"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-500"
-                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80"
+                ? "bg-slate-200/75 text-slate-950 font-bold border border-slate-300/60"
+                : "bg-white hover:bg-slate-50 text-slate-600 font-normal border border-slate-200/80"
             }`}
           >
-            <BarChart3 className={`w-4 h-4 ${activeTab === "comparison" ? "text-purple-300" : "text-purple-500"}`} />
+            <BarChart3 className="w-4 h-4 text-violet-600" />
             <span>Cross-Year Visualization</span>
           </button>
         </div>
@@ -917,7 +916,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                  <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold text-[11px]">
                     <tr>
                       <th className="p-3">Kitta No</th>
                       <th className="p-3">Ward</th>
@@ -980,7 +979,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
             {/* 2. calc_house & calc_floor Breakdown Table */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Home className="w-4 h-4 text-purple-600" />
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
@@ -994,7 +993,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                  <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold text-[11px]">
                     <tr>
                       <th className="p-3">Floor Unit</th>
                       <th className="p-3">Area (Sq.Ft)</th>
@@ -1051,7 +1050,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
             {/* 3. calc_additional Fees Table */}
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-teal-600" />
                   <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
@@ -1187,7 +1186,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px] uppercase">
+              <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold text-[11px] uppercase">
                 <tr>
                   <th className="p-3">Record ID</th>
                   <th className="p-3">Taxpayer Name</th>
