@@ -352,32 +352,34 @@ export const TaxpayerWorkflowPanel: React.FC<TaxpayerWorkflowPanelProps> = ({
     e.preventDefault();
     const targetTpId = selectedTaxpayerId || taxpayerDossier?.taxpayer?.id || (taxpayers && taxpayers.length > 0 ? taxpayers[0].id : 1);
     if (!targetTpId) {
-      showNotify("Validation Error: Please select or register a Taxpayer first before adding a land parcel.", "error");
+      showError("Validation Error: Please select or register a Taxpayer first before adding a land parcel.");
       return;
     }
-    const res = await ApiController.createLand({
-      taxpayer_id: targetTpId,
-      kitta_number: newLandKitta || "101",
-      moth_number: newLandMoth || "1",
-      ward_no: newLandWard || 1,
-      area_sqfeet: newLandArea || 1000,
-      unit_id: newLandUnitId,
-      land_measuring_unit_id: newLandUnitId,
-      nature_id: newLandNatureId,
-      land_rate_id: newLandRateId,
-      malpot_rate_id: newLandMalpotRateId,
-      acquisition_fy_id: newLandAcquisitionFyId
-    });
-    if (res.success) {
-      showNotify(`Land Parcel Kitta #${newLandKitta || "101"} registered successfully!`, "success");
-      setNewLandModalOpen(false);
-      await loadAllData();
-    } else {
-      const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
-        ? (res as any).errors.join(", ")
-        : (res.message || "Failed to register land parcel");
-      showNotify(`Validation / Error: ${errText}`, "error");
-    }
+    showConfirm("Do you want to save this land parcel?", async () => {
+      const res = await ApiController.createLand({
+        taxpayer_id: targetTpId,
+        kitta_number: newLandKitta || "101",
+        moth_number: newLandMoth || "1",
+        ward_no: newLandWard || 1,
+        area_sqfeet: newLandArea || 1000,
+        unit_id: newLandUnitId,
+        land_measuring_unit_id: newLandUnitId,
+        nature_id: newLandNatureId,
+        land_rate_id: newLandRateId,
+        malpot_rate_id: newLandMalpotRateId,
+        acquisition_fy_id: newLandAcquisitionFyId
+      });
+      if (res.success) {
+        showSuccess(`Record saved successfully! Land Parcel Kitta #${newLandKitta || "101"} registered.`);
+        setNewLandModalOpen(false);
+        await loadAllData();
+      } else {
+        const errText = Array.isArray((res as any).errors) && (res as any).errors.length > 0
+          ? (res as any).errors.join(", ")
+          : (res.message || "Failed to register land parcel");
+        showError(`Validation / Error: ${errText}`);
+      }
+    }, "Do you want to save?");
   };
 
   const handleOpenEditLand = (land: any) => {

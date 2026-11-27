@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { AlertCircle, CheckCircle2, HelpCircle, X } from "lucide-react";
 
 export type MessageBoxType = "confirm" | "success" | "error" | "info";
@@ -30,8 +31,8 @@ export const MessageBox: React.FC<MessageBoxProps> = ({
   const isSuccess = type === "success";
   const isError = type === "error";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+  const content = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
         <div className="flex items-start gap-4">
           <div
@@ -82,8 +83,8 @@ export const MessageBox: React.FC<MessageBoxProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (onConfirm) onConfirm();
                   onClose();
+                  if (onConfirm) onConfirm();
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition"
               >
@@ -107,6 +108,8 @@ export const MessageBox: React.FC<MessageBoxProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(content, document.body) : content;
 };
 
 export interface MessageBoxState {
@@ -127,57 +130,63 @@ export const useMessageBox = () => {
     message: ""
   });
 
-  const showConfirm = (
-    message: string,
-    onConfirm: () => void,
-    title = "Do you want to proceed?",
-    confirmText = "Yes",
-    cancelText = "No"
-  ) => {
-    setState({
-      isOpen: true,
-      type: "confirm",
-      title,
-      message,
-      onConfirm,
-      confirmText,
-      cancelText
-    });
-  };
+  const showConfirm = React.useCallback(
+    (
+      message: string,
+      onConfirm: () => void,
+      title = "Do you want to proceed?",
+      confirmText = "Yes",
+      cancelText = "No"
+    ) => {
+      setState({
+        isOpen: true,
+        type: "confirm",
+        title,
+        message,
+        onConfirm,
+        confirmText,
+        cancelText
+      });
+    },
+    []
+  );
 
-  const showSuccess = (message: string, title = "Success") => {
+  const showSuccess = React.useCallback((message: string, title = "Success") => {
     setState({
       isOpen: true,
       type: "success",
       title,
       message
     });
-  };
+  }, []);
 
-  const showError = (message: string, title = "Error") => {
+  const showError = React.useCallback((message: string, title = "Error") => {
     setState({
       isOpen: true,
       type: "error",
       title,
       message
     });
-  };
+  }, []);
 
-  const close = () => {
+  const close = React.useCallback(() => {
     setState((prev) => ({ ...prev, isOpen: false }));
-  };
+  }, []);
 
-  const MessageBoxModal = () => (
-    <MessageBox
-      isOpen={state.isOpen}
-      type={state.type}
-      title={state.title}
-      message={state.message}
-      onConfirm={state.onConfirm}
-      onClose={close}
-      confirmText={state.confirmText}
-      cancelText={state.cancelText}
-    />
+  const MessageBoxModal = React.useCallback(
+    () => (
+      <MessageBox
+        isOpen={state.isOpen}
+        type={state.type}
+        title={state.title}
+        message={state.message}
+        onConfirm={state.onConfirm}
+        onClose={close}
+        confirmText={state.confirmText}
+        cancelText={state.cancelText}
+      />
+    ),
+    [state, close]
   );
 
   return {
