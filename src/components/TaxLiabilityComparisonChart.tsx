@@ -30,7 +30,7 @@ import {
   Sliders
 } from "lucide-react";
 import { ApiController } from "../api/controller.ts";
-import { SupportedLang, translations } from "../utils/i18n.ts";
+import { SupportedLang, translations, pickLang, localizeRecordText } from "../utils/i18n.ts";
 
 interface TaxLiabilityComparisonChartProps {
   currentLang?: SupportedLang;
@@ -203,19 +203,19 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
   // Recharts Chart Data
   const valuationChartData = [
     {
-      category: "Land Valuation (जग्गा मुल्यांकन)",
+      category: pickLang(currentLang, "Land Valuation", "जग्गा मूल्यांकन"),
       [dataA?.code || "Year A"]: dataA?.landValuation || 0,
       [dataB?.code || "Year B"]: dataB?.landValuation || 0,
       diff: landDiff.diff
     },
     {
-      category: "House/Floor Valuation (घर मुल्यांकन)",
+      category: pickLang(currentLang, "House/Floor Valuation", "घर मूल्यांकन"),
       [dataA?.code || "Year A"]: dataA?.houseValuation || 0,
       [dataB?.code || "Year B"]: dataB?.houseValuation || 0,
       diff: houseDiff.diff
     },
     {
-      category: "Total Assessed Valuation (कुल सम्पत्ति)",
+      category: pickLang(currentLang, "Total Assessed Valuation", "कुल सम्पत्ति"),
       [dataA?.code || "Year A"]: dataA?.totalValuation || 0,
       [dataB?.code || "Year B"]: dataB?.totalValuation || 0,
       diff: totalValDiff.diff
@@ -224,22 +224,22 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
   const taxBreakdownChartData = [
     {
-      category: "Base Tax Liability (आधार कर)",
+      category: pickLang(currentLang, "Base Tax Liability", "आधार कर"),
       [dataA?.code || "Year A"]: dataA?.baseTaxLiability || 0,
       [dataB?.code || "Year B"]: dataB?.baseTaxLiability || 0
     },
     {
-      category: "Penalties / Fine (जरिवाना)",
+      category: pickLang(currentLang, "Penalties / Fine", "जरिवाना"),
       [dataA?.code || "Year A"]: dataA?.fineAmount || 0,
       [dataB?.code || "Year B"]: dataB?.fineAmount || 0
     },
     {
-      category: "Rebates Deducted (छुट रकम)",
+      category: pickLang(currentLang, "Rebates Deducted", "छुट रकम"),
       [dataA?.code || "Year A"]: dataA?.rebateAmount || 0,
       [dataB?.code || "Year B"]: dataB?.rebateAmount || 0
     },
     {
-      category: "Net Tax Payable (खुद बुझाउने रकम)",
+      category: pickLang(currentLang, "Net Tax Payable", "खुद बुझाउने रकम"),
       [dataA?.code || "Year A"]: dataA?.netPayable || 0,
       [dataB?.code || "Year B"]: dataB?.netPayable || 0
     }
@@ -288,7 +288,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <User className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Taxpayer (करदाता)</span>
+              <span>{pickLang(currentLang, "Taxpayer", "करदाता")}</span>
             </label>
             <select
               value={selectedTaxpayerId}
@@ -301,7 +301,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
             >
               {taxpayers.map((tp) => (
                 <option key={tp.id} value={tp.id}>
-                  {tp.fullanme} ({tp.code})
+                  {localizeRecordText(tp.fullanme, currentLang)} ({tp.code})
                 </option>
               ))}
             </select>
@@ -311,7 +311,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-blue-500" />
-              <span>Baseline Year A (पहिलो आ.व.)</span>
+              <span>{pickLang(currentLang, "Baseline Year A", "पहिलो आ.व.")}</span>
             </label>
             <select
               value={yearAId}
@@ -320,7 +320,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
             >
               {fiscalYears.map((fy) => (
                 <option key={fy.id} value={fy.id}>
-                  {fy.code} - {fy.fullname.split("(")[0]}
+                  {fy.code} - {localizeRecordText(fy.fullname, currentLang)}
                 </option>
               ))}
             </select>
@@ -330,7 +330,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Comparison Year B (तुलना आ.व.)</span>
+              <span>{pickLang(currentLang, "Comparison Year B", "तुलना आ.व.")}</span>
             </label>
             <select
               value={yearBId}
@@ -339,7 +339,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
             >
               {fiscalYears.map((fy) => (
                 <option key={fy.id} value={fy.id}>
-                  {fy.code} - {fy.fullname.split("(")[0]}
+                  {fy.code} - {localizeRecordText(fy.fullname, currentLang)}
                 </option>
               ))}
             </select>
@@ -349,7 +349,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
           <div>
             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Layers className="w-3.5 h-3.5 text-purple-500" />
-              <span>Property Scope (सम्पत्ति दायरा)</span>
+              <span>{pickLang(currentLang, "Property Scope", "सम्पत्ति दायरा")}</span>
             </label>
             <select
               value={scope}
@@ -357,8 +357,8 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
               className="w-full text-xs font-medium bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">Consolidated (Land + House)</option>
-              <option value="land">Land Parcels Only (जग्गा मात्र)</option>
-              <option value="house">House & Floors Only (घर मात्र)</option>
+              <option value="land">{pickLang(currentLang, "Land Parcels Only", "जग्गा मात्र")}</option>
+              <option value="house">{pickLang(currentLang, "House & Floors Only", "घर मात्र")}</option>
             </select>
           </div>
         </div>
@@ -368,7 +368,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-900 dark:text-white">
-                {taxpayerRecord.fullanme}
+                {localizeRecordText(taxpayerRecord.fullanme, currentLang)}
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800">
                 Ward No: {taxpayerRecord.ward_no || 1}
@@ -397,7 +397,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between pb-2">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Land Valuation (जग्गा)
+              {pickLang(currentLang, "Land Valuation", "जग्गा")}
             </span>
             <div className="p-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
               <MapPin className="w-3.5 h-3.5" />
@@ -442,7 +442,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between pb-2">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              House Valuation (घर)
+              {pickLang(currentLang, "House Valuation", "घर")}
             </span>
             <div className="p-1.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-lg">
               <Building className="w-3.5 h-3.5" />
@@ -489,7 +489,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between pb-2">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Total Valuation (कुल सम्पत्ति)
+              {pickLang(currentLang, "Total Valuation", "कुल सम्पत्ति")}
             </span>
             <div className="p-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg">
               <Layers className="w-3.5 h-3.5" />
@@ -527,7 +527,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
         <div className="bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between pb-2">
             <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-              Net Tax Payable (खुद कर)
+              {pickLang(currentLang, "Net Tax Payable", "खुद कर")}
             </span>
             <div className="p-1.5 bg-indigo-600 text-white rounded-lg shadow-xs">
               <DollarSign className="w-3.5 h-3.5" />
@@ -577,7 +577,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
               <BarChart className="w-4 h-4 text-indigo-500" />
               <span>
                 {activeChartView === "valuation"
-                  ? "Valuation Comparison Chart (मुल्यांकन तुलना)"
+                  ? pickLang(currentLang, "Valuation Comparison Chart", "मूल्यांकन तुलना ग्राफ")
                   : "Tax Liabilities & Fine/Rebate Breakdown Chart"}
               </span>
             </h3>
@@ -596,7 +596,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              Valuations (सम्पत्ति मुल्यांकन)
+              {pickLang(currentLang, "Valuations", "सम्पत्ति मूल्यांकन")}
             </button>
             <button
               onClick={() => setActiveChartView("tax_breakdown")}
@@ -606,7 +606,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              Tax & Penalties (कर दायित्व)
+              {pickLang(currentLang, "Tax & Penalties", "कर दायित्व")}
             </button>
           </div>
         </div>
@@ -711,7 +711,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs overflow-hidden">
         <h3 className="text-sm font-black text-slate-900 dark:text-white pb-3 flex items-center gap-2">
           <Info className="w-4 h-4 text-indigo-500" />
-          <span>Audit Variance Matrix (विवरणगत तुलना तालिका)</span>
+          <span>{pickLang(currentLang, "Audit Variance Matrix", "विवरणगत तुलना तालिका")}</span>
         </h3>
 
         <div className="overflow-x-auto">
@@ -733,7 +733,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
               <tr>
                 <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                  Land Assessed Valuation (जग्गा)
+                  {pickLang(currentLang, "Land Assessed Valuation", "जग्गा मूल्यांकन")}
                 </td>
                 <td className="py-3 px-4 font-mono">{formatNpr(dataA?.landValuation || 0)}</td>
                 <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
@@ -752,7 +752,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
               <tr>
                 <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                  House / Floor Valuation (घर)
+                  {pickLang(currentLang, "House / Floor Valuation", "घर मूल्यांकन")}
                 </td>
                 <td className="py-3 px-4 font-mono">{formatNpr(dataA?.houseValuation || 0)}</td>
                 <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-white">
@@ -771,7 +771,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
               <tr className="bg-slate-50/50 dark:bg-slate-950/30">
                 <td className="py-3 px-4 font-black text-slate-900 dark:text-white">
-                  Total Municipal Assessment (कुल सम्पत्ति)
+                  {pickLang(currentLang, "Total Municipal Assessment", "कुल सम्पत्ति")}
                 </td>
                 <td className="py-3 px-4 font-mono font-bold">{formatNpr(dataA?.totalValuation || 0)}</td>
                 <td className="py-3 px-4 font-mono font-black text-slate-900 dark:text-white">
@@ -803,7 +803,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
               <tr>
                 <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                  Base Tax Liability (आधार कर)
+                  {pickLang(currentLang, "Base Tax Liability", "आधार कर")}
                 </td>
                 <td className="py-3 px-4 font-mono">{formatNpr(dataA?.baseTaxLiability || 0)}</td>
                 <td className="py-3 px-4 font-mono font-bold">{formatNpr(dataB?.baseTaxLiability || 0)}</td>
@@ -836,7 +836,7 @@ export const TaxLiabilityComparisonChart: React.FC<TaxLiabilityComparisonChartPr
 
               <tr className="bg-indigo-50/70 dark:bg-indigo-950/40">
                 <td className="py-3.5 px-4 font-black text-indigo-900 dark:text-indigo-200">
-                  Net Tax Payable (खुद तिर्नुपर्ने कर)
+                  {pickLang(currentLang, "Net Tax Payable", "खुद तिर्नुपर्ने कर")}
                 </td>
                 <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
                   {formatNpr(dataA?.netPayable || 0)}

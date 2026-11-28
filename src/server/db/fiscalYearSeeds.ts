@@ -37,7 +37,7 @@ export function generateFiscalYears2021To2086(): SeedFiscalYear[] {
     const isCurrent = y === 2081;
     const isProjected = y > 2081;
     const tag = isCurrent ? " [Current]" : isProjected ? " [Projected]" : "";
-    const fullname = `Fiscal Year ${y}/${y + 1} BS (आर्थिक वर्ष ${y}/${nextShort})${tag}`;
+    const fullname = `Fiscal Year ${y}/${y + 1} BS${tag}`;
     const adStart = `${y - 57}-07-16`;
     const adEnd = `${y - 56}-07-15`;
 

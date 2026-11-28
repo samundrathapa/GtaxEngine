@@ -25,7 +25,7 @@ import {
   getDepreciationAmount,
   getIPTAmount
 } from "../../utils/calculationEngine.ts";
-import { tCol, SupportedLang } from "../../utils/i18n.ts";
+import { tCol, SupportedLang, pickLang, localizeRecordText } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { useMessageBox } from "../../components/MessageBox.tsx";
@@ -782,7 +782,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  {dossier?.taxpayer?.fullanme || "Taxpayer Dossier"}
+                  {localizeRecordText(dossier?.taxpayer?.fullanme, currentLang) || pickLang(currentLang, "Taxpayer Dossier", "करदाता विवरण")}
                 </h2>
                 <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800">
                   {dossier?.taxpayer?.code}
@@ -807,10 +807,10 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
         {/* Tab Strip: taxpayer, land, house, calculate */}
         <div className="px-6 pt-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-white dark:bg-slate-900 overflow-x-auto no-scrollbar">
           {[
-            { id: "taxpayer", label: "Taxpayer Detail", icon: User, count: null, visible: true },
-            { id: "land", label: "Land Info (जग्गा)", icon: MapPin, count: dossier?.lands?.length || 0, visible: true },
-            { id: "house", label: "House Info (घर तथा तला)", icon: Home, count: dossier?.houses?.length || 0, visible: true },
-            { id: "calculate", label: "Calculate (कर गणना)", icon: Calculator, count: null, visible: canCalc }
+            { id: "taxpayer", label: pickLang(currentLang, "Taxpayer Detail", "करदाता विवरण"), icon: User, count: null, visible: true },
+            { id: "land", label: pickLang(currentLang, "Land Info", "जग्गा विवरण"), icon: MapPin, count: dossier?.lands?.length || 0, visible: true },
+            { id: "house", label: pickLang(currentLang, "House & Floor Info", "घर तथा तला"), icon: Home, count: dossier?.houses?.length || 0, visible: true },
+            { id: "calculate", label: pickLang(currentLang, "Calculate", "कर गणना"), icon: Calculator, count: null, visible: canCalc }
           ].filter((tItem) => tItem.visible).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -871,7 +871,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                        Taxpayer Master Information (करदाता मुख्य विवरण)
+                        {pickLang(currentLang, "Taxpayer Master Information", "करदाता मुख्य विवरण")}
                       </h3>
                       <p className="text-xs text-slate-500">
                         Edit contact details, registration ward, and fiscal identity numbers.
@@ -883,7 +883,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                          Full Name (पूरा नाम) *
+                          {pickLang(currentLang, "Full Name", "पूरा नाम")} *
                         </label>
                         <input
                           type="text"
@@ -896,7 +896,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                          Taxpayer Code (करदाता कोड)
+                          {pickLang(currentLang, "Taxpayer Code", "करदाता कोड")}
                         </label>
                         <input
                           type="text"
@@ -997,7 +997,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-emerald-600" />
-                        <span>Registered Land Parcels (जग्गा कित्ता विवरण)</span>
+                        <span>{pickLang(currentLang, "Registered Land Parcels", "जग्गा कित्ता विवरण")}</span>
                       </h3>
                    
                     </div>
@@ -1064,11 +1064,11 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                     </span>
                                   </td>
                                   <td className="p-3 text-slate-700 dark:text-slate-300 text-[11px]">
-                                    <div className="font-semibold">{lr?.rate_name || lr?.code || `Rate #${l.land_rate_id}`}</div>
+                                    <div className="font-semibold">{localizeRecordText(lr?.rate_name || lr?.code || `Rate #${l.land_rate_id}`, currentLang)}</div>
                                     <div className="text-[10px] text-slate-400">Rs. {Number(lr?.rate_per_unit || 800000).toLocaleString()}</div>
                                   </td>
                                   <td className="p-3 text-slate-700 dark:text-slate-300 text-[11px]">
-                                    <div className="font-semibold">{mr?.rate_name || mr?.code || `Rate #${l.malpot_rate_id}`}</div>
+                                    <div className="font-semibold">{localizeRecordText(mr?.rate_name || mr?.code || `Rate #${l.malpot_rate_id}`, currentLang)}</div>
                                     <div className="text-[10px] text-slate-400">Rs. {Number(mr?.rate_per_unit || 600000).toLocaleString()}</div>
                                   </td>
                                   <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
@@ -1118,7 +1118,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                       <div>
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                           <Home className="w-4 h-4 text-purple-600" />
-                          <span>Building & House Structures (घर विवरण)</span>
+                          <span>{pickLang(currentLang, "Building & House Structures", "घर विवरण")}</span>
                         </h3>
                         {/* <p className="text-xs text-slate-500">
                           Structures registered with plinth areas, floors, and construction types.
@@ -1187,7 +1187,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                       {h.floor_no} Floors
                                     </span>
                                   </td>
-                                  <td className="p-3 font-sans text-slate-700 dark:text-slate-300">{cType?.fullanme || "RCC Frame"}</td>
+                                  <td className="p-3 font-sans text-slate-700 dark:text-slate-300">{localizeRecordText(cType?.fullanme, currentLang) || "RCC Frame"}</td>
                                   <td className="p-3 text-slate-600 dark:text-slate-400">{h.acquisition_date_bs || "2076-02-15"}</td>
                                   <td className="p-3 font-bold text-purple-600 dark:text-purple-400">
                                     Rs. {Number(h.assessed_valuation || 0).toLocaleString()}
@@ -1236,7 +1236,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                       <div>
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                           <Layers className="w-4 h-4 text-indigo-600" />
-                          <span>Floor Slabs (तला इकाइहरू)</span>
+                          <span>{pickLang(currentLang, "Floor Slabs", "तला इकाइहरू")}</span>
                         </h4>
                         {/* <p className="text-xs text-slate-500">
                           Individual floor units evaluated by construction rate and annual depreciation.
@@ -1412,7 +1412,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                 : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                             }`}
                           >
-                            {calcUseMalpot ? "Malpot Rate (सरकारी दर)" : "Land Rate (नगरपालिका दर)"}
+                            {calcUseMalpot ? pickLang(currentLang, "Malpot Rate", "सरकारी दर") : pickLang(currentLang, "Land Rate", "नगरपालिका दर")}
                           </button>
                         </div>
                       </div>
@@ -1453,7 +1453,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                                   className={`transition-colors ${isInspected ? "bg-indigo-50/40 dark:bg-indigo-950/30 font-bold" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/40"}`}
                                 >
                                   <td className="p-2.5 text-indigo-600 dark:text-indigo-400">
-                                    {row.fiscal_year_code} ({row.fiscal_year_name})
+                                    {row.fiscal_year_code} ({localizeRecordText(row.fiscal_year_name, currentLang)})
                                   </td>
                                   <td className="p-2.5">Rs. {row.land_valuation.toLocaleString()}</td>
                                   <td className="p-2.5">Rs. {row.house_valuation.toLocaleString()}</td>
@@ -1524,7 +1524,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-xs space-y-1.5">
                       <div className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
                         <MapPin className="w-4 h-4 text-emerald-600" />
-                        <span>How land_amount is Calculated (जग्गा मूल्याङ्कन सूत्र):</span>
+                        <span>{pickLang(currentLang, "How Land Amount is Calculated:", "जग्गा मूल्याङ्कन सूत्र:")}</span>
                       </div>
                       <p className="text-slate-700 dark:text-slate-300 text-[11px]">
                         Normalized parcel area is divided by area_per_unit and multiplied by rate_per_unit based on unit brackets.
@@ -1669,7 +1669,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     <div className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-xs space-y-2">
                       <div className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
                         <Home className="w-4 h-4 text-purple-600" />
-                        <span>How House Evaluation is Done (घर मूल्याङ्कन विधि)</span>
+                        <span>{pickLang(currentLang, "How House Evaluation is Done", "घर मूल्याङ्कन विधि")}</span>
                       </div>
                       <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
                         House evaluation aggregates all registered floor slabs belonging to the structure. For each floor, the built-up area is multiplied by the construction rate based on building category (e.g. RCC framed, brick masonry). Then, an age-based depreciation percentage is subtracted based on the acquisition year. The house valuation can also be adjusted using an editable formula multiplier or custom municipal factors below.
@@ -1997,7 +1997,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Kitta Number (कित्ता नं.) *
+                    {pickLang(currentLang, "Kitta Number", "कित्ता नं.")} *
                   </label>
                   <input
                     type="text"
@@ -2011,7 +2011,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Ward No (वडा नं.) *
+                    {pickLang(currentLang, "Ward No", "वडा नं.")} *
                   </label>
                   <input
                     type="number"
@@ -2024,7 +2024,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Moth / Shresta No (मोठ नं.)
+                    {pickLang(currentLang, "Moth / Shresta No", "मोठ नं.")}
                   </label>
                   <input
                     type="text"
@@ -2040,7 +2040,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Acquisition Fiscal Year (प्राप्ति आ.व.)
+                    {pickLang(currentLang, "Acquisition Fiscal Year", "प्राप्ति आ.व.")}
                   </label>
                   <select
                     value={landForm.acquisition_fy_id || masters.fiscalYears[0]?.id || 2}
@@ -2049,7 +2049,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   >
                     {masters.fiscalYears.map((fy: any) => (
                       <option key={fy.id} value={fy.id}>
-                        {fy.code} - {fy.fullname}
+                        {fy.code} - {localizeRecordText(fy.fullname, currentLang)}
                       </option>
                     ))}
                   </select>
@@ -2057,7 +2057,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Land Rate (नगरपालिका दर)
+                    {pickLang(currentLang, "Land Rate", "नगरपालिका दर")}
                   </label>
                   <select
                     value={landForm.land_rate_id || masters.landRates[0]?.id || 1}
@@ -2066,7 +2066,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   >
                     {masters.landRates.map((lr: any) => (
                       <option key={lr.id} value={lr.id}>
-                        {lr.rate_name || lr.code} (Rs. {Number(lr.rate_per_unit).toLocaleString()})
+                        {localizeRecordText(lr.rate_name || lr.code, currentLang)} (Rs. {Number(lr.rate_per_unit).toLocaleString()})
                       </option>
                     ))}
                   </select>
@@ -2074,7 +2074,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                    Malpot Rate (मालपोत दर)
+                    {pickLang(currentLang, "Malpot Rate", "मालपोत दर")}
                   </label>
                   <select
                     value={landForm.malpot_rate_id || masters.malpotRates[0]?.id || 1}
@@ -2083,7 +2083,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   >
                     {masters.malpotRates.map((mr: any) => (
                       <option key={mr.id} value={mr.id}>
-                        {mr.rate_name || mr.code} (Rs. {Number(mr.rate_per_unit).toLocaleString()})
+                        {localizeRecordText(mr.rate_name || mr.code, currentLang)} (Rs. {Number(mr.rate_per_unit).toLocaleString()})
                       </option>
                     ))}
                   </select>
@@ -2160,7 +2160,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Ropani (रोपनी)
+                        {pickLang(currentLang, "Ropani", "रोपनी")}
                       </label>
                       <input
                         type="number"
@@ -2181,7 +2181,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Aana (आना)
+                        {pickLang(currentLang, "Aana", "आना")}
                       </label>
                       <input
                         type="number"
@@ -2204,7 +2204,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Paisa (पैसा)
+                        {pickLang(currentLang, "Paisa", "पैसा")}
                       </label>
                       <input
                         type="number"
@@ -2227,7 +2227,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Daam (दाम)
+                        {pickLang(currentLang, "Daam", "दाम")}
                       </label>
                       <input
                         type="number"
@@ -2255,7 +2255,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Bigha (बिघा)
+                        {pickLang(currentLang, "Bigha", "बिघा")}
                       </label>
                       <input
                         type="number"
@@ -2276,7 +2276,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Kattha (कठ्ठा)
+                        {pickLang(currentLang, "Kattha", "कठ्ठा")}
                       </label>
                       <input
                         type="number"
@@ -2299,7 +2299,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                        Dhur (धुर)
+                        {pickLang(currentLang, "Dhur", "धुर")}
                       </label>
                       <input
                         type="number"
@@ -2326,7 +2326,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                 {landMeasureUnit === "sqft" && (
                   <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Square Feet (वर्ग फिट)
+                      {pickLang(currentLang, "Square Feet", "वर्ग फिट")}
                     </label>
                     <input
                       type="number"
@@ -2349,7 +2349,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                 {landMeasureUnit === "sqmtre" && (
                   <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Square Metre (वर्ग मिटर) (1 sqm = 10.7639 sq.ft)
+                      {pickLang(currentLang, "Square Metre (1 sqm = 10.7639 sq.ft)", "वर्ग मिटर (१ वर्ग मि. = १०.७६३९ वर्ग फिट)")}
                     </label>
                     <input
                       type="number"
@@ -2435,7 +2435,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   <div>
                     <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Land Parcel Association (घर बनेको जग्गा छनोट) *</span>
+                      <span>{pickLang(currentLang, "Land Parcel Association", "घर बनेको जग्गा छनोट")} *</span>
                     </label>
                     <p className="text-[11px] text-slate-500">
                       House is linked with land. A house may be made in single land or spanning two lands.
@@ -2456,7 +2456,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                           : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                       }`}
                     >
-                      Single Land (एकल कित्ता)
+                      {pickLang(currentLang, "Single Land", "एकल कित्ता")}
                     </button>
                     <button
                       type="button"
@@ -2471,7 +2471,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                           : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                       }`}
                     >
-                      Spanning Two Lands (दुई कित्तामा बनेको)
+                      {pickLang(currentLang, "Spanning Two Lands", "दुई कित्तामा बनेको")}
                     </button>
                   </div>
                 </div>
@@ -2480,7 +2480,9 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-[11px]">
-                      {houseLandMode === "two_lands" ? "Primary Land Parcel (पहिलो जग्गा कित्ता) *" : "Taxpayer Land Parcel (करदाताको जग्गा कित्ता) *"}
+                      {houseLandMode === "two_lands"
+                        ? pickLang(currentLang, "Primary Land Parcel", "पहिलो जग्गा कित्ता")
+                        : pickLang(currentLang, "Taxpayer Land Parcel", "करदाताको जग्गा कित्ता")} *
                     </label>
                     <select
                       value={housePrimaryLandId || (dossier?.lands?.[0]?.id ?? "")}
@@ -2506,7 +2508,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                   {houseLandMode === "two_lands" ? (
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-[11px]">
-                        Secondary Land Parcel (दोस्रो जग्गा कित्ता - Spanning Land) *
+                        {pickLang(currentLang, "Secondary Land Parcel", "दोस्रो जग्गा कित्ता")} *
                       </label>
                       <select
                         value={houseSecondaryLandId || (dossier?.lands?.[1]?.id ?? dossier?.lands?.[0]?.id ?? "")}
@@ -2564,7 +2566,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">House Number (घर नं.) *</label>
+                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">{pickLang(currentLang, "House Number", "घर नं.")} *</label>
                   <input
                     type="text"
                     required
@@ -2582,7 +2584,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
                   >
                     {masters.constructionTypes.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.fullanme}</option>
+                      <option key={c.id} value={c.id}>{localizeRecordText(c.fullanme, currentLang)}</option>
                     ))}
                   </select>
                 </div>
@@ -2671,7 +2673,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
               {/* House Structure Association */}
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Belongs to House Structure (कुन घरको तला हो - Linked to House) *
+                  {pickLang(currentLang, "Belongs to House Structure (Linked to House)", "घर छनोट (तला जोडिएको घर)")} *
                 </label>
                 <select
                   value={floorForm.house_id || (dossier?.houses?.[0]?.id ?? "")}
@@ -2732,7 +2734,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
-                    Floor Level (तला क्रम नं. - 0 = Ground Floor) *
+                    {pickLang(currentLang, "Floor Level (0 = Ground Floor)", "तला क्रम नं. (० = भुईं तला)")} *
                   </label>
                   <input
                     type="number"
@@ -2756,14 +2758,14 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Construction Rate (दर)</label>
+                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">{pickLang(currentLang, "Construction Rate", "संरचना दर")}</label>
                   <select
                     value={floorForm.rate_id || 1}
                     onChange={(e) => setFloorForm({ ...floorForm, rate_id: Number(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                   >
                     {masters.constructionRates.map((cr: any) => (
-                      <option key={cr.id} value={cr.id}>{cr.rate_name || cr.code} (Rs. {Number(cr.rate_per_unit).toLocaleString()})</option>
+                      <option key={cr.id} value={cr.id}>{localizeRecordText(cr.rate_name || cr.code, currentLang)} (Rs. {Number(cr.rate_per_unit).toLocaleString()})</option>
                     ))}
                   </select>
                 </div>
@@ -2780,7 +2782,7 @@ export const TaxpayerDossierModal: React.FC<TaxpayerDossierModalProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">Depreciation % (ह्रास कट्टी)</label>
+                  <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">{pickLang(currentLang, "Depreciation %", "ह्रास कट्टी %")}</label>
                   <input
                     type="number"
                     step="any"

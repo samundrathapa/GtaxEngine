@@ -81,8 +81,8 @@
     "pan_number": {
       "table": "tbl_taxpayer",
       "eng": "PAN Number",
-      "nep": "स्थायी लेखा नम्बर (PAN)",
-      "ind": "पैन नंबर (PAN)"
+      "nep": "स्थायी लेखा नम्बर",
+      "ind": "पैन नंबर"
     },
     "national_id_number": {
       "table": "tbl_taxpayer",
@@ -308,25 +308,25 @@
     },
     "boundary_east": {
       "table": "tbl_land",
-      "eng": "East Boundary (पूर्व साँध)",
+      "eng": "East Boundary",
       "nep": "पूर्व साँध",
       "ind": "पूर्व सीमा"
     },
     "boundary_west": {
       "table": "tbl_land",
-      "eng": "West Boundary (पश्चिम साँध)",
+      "eng": "West Boundary",
       "nep": "पश्चिम साँध",
       "ind": "पश्चिम सीमा"
     },
     "boundary_north": {
       "table": "tbl_land",
-      "eng": "North Boundary (उत्तर साँध)",
+      "eng": "North Boundary",
       "nep": "उत्तर साँध",
       "ind": "उत्तर सीमा"
     },
     "boundary_south": {
       "table": "tbl_land",
-      "eng": "South Boundary (दक्षिण साँध)",
+      "eng": "South Boundary",
       "nep": "दक्षिण साँध",
       "ind": "दक्षिण सीमा"
     },
@@ -460,7 +460,7 @@
       "table": "tbl_calculation",
       "eng": "Integrated Property Tax (IPT)",
       "nep": "एकीकृत सम्पत्ति कर",
-      "ind": "एकीकृत संपत्ति कर (IPT)"
+      "ind": "एकीकृत संपत्ति कर"
     },
     "sanitation_fee": {
       "table": "tbl_calculation",
@@ -494,8 +494,8 @@
     },
     "fiscal_year_code": {
       "table": "tbl_fiscal_year",
-      "eng": "Fiscal Year (आ.व.)",
-      "nep": "आर्थिक वर्ष (कोड)",
+      "eng": "Fiscal Year",
+      "nep": "आर्थिक वर्ष",
       "ind": "वित्तीय वर्ष"
     },
     "rate_per_unit": {
@@ -769,6 +769,270 @@
       "eng": "Actions",
       "nep": "कार्यहरू",
       "ind": "कार्रवाई"
+    },
+    "label_one_door_process": {
+      "scope": "taxpayer_workflow",
+      "eng": "One-Door Process",
+      "nep": "एकीकृत प्रणाली",
+      "ind": "एकीकृत प्रणाली"
+    },
+    "label_step1_taxpayer_id": {
+      "scope": "taxpayer_workflow",
+      "eng": "Step 1: Taxpayer Identification",
+      "nep": "चरण १: करदाता परिचय",
+      "ind": "चरण 1: करदाता पहचान"
+    },
+    "label_step2_land_parcels": {
+      "scope": "taxpayer_workflow",
+      "eng": "Step 2: Land Parcels",
+      "nep": "चरण २: जग्गा कित्ताहरू",
+      "ind": "चरण 2: भूमि कित्ता"
+    },
+    "label_step3_house_structures": {
+      "scope": "taxpayer_workflow",
+      "eng": "Step 3: House Structures",
+      "nep": "चरण ३: घर संरचनाहरू",
+      "ind": "चरण 3: भवन संरचना"
+    },
+    "label_step4_floor_slabs": {
+      "scope": "taxpayer_workflow",
+      "eng": "Step 4: Floor Slabs",
+      "nep": "चरण ४: तला इकाइहरू",
+      "ind": "चरण 4: मंजिल इकाइयाँ"
+    },
+    "label_taxpayer_detail": {
+      "scope": "taxpayer_workflow",
+      "eng": "Taxpayer Detail",
+      "nep": "करदाता विवरण",
+      "ind": "करदाता विवरण"
+    },
+    "label_taxpayer_master_info": {
+      "scope": "taxpayer_workflow",
+      "eng": "Taxpayer Master Information",
+      "nep": "करदाता मुख्य विवरण",
+      "ind": "करदाता मुख्य विवरण"
+    },
+    "label_pan_vat": {
+      "scope": "taxpayer_workflow",
+      "eng": "PAN / VAT Number",
+      "nep": "स्थायी लेखा नं.",
+      "ind": "पैन / वैट नंबर"
+    },
+    "label_citizenship_no": {
+      "scope": "taxpayer_workflow",
+      "eng": "Citizenship No",
+      "nep": "नागरिकता नं.",
+      "ind": "नागरिकता सं."
+    },
+    "label_kitta_number": {
+      "scope": "taxpayer_workflow",
+      "eng": "Kitta Number",
+      "nep": "कित्ता नं.",
+      "ind": "खसरा / कित्ता सं."
+    },
+    "label_moth_number": {
+      "scope": "taxpayer_workflow",
+      "eng": "Moth Number",
+      "nep": "मोठ नं.",
+      "ind": "मोठ / खाता सं."
+    },
+    "label_moth_shresta_no": {
+      "scope": "taxpayer_workflow",
+      "eng": "Moth / Shresta No",
+      "nep": "मोठ नं.",
+      "ind": "मोठ / खाता सं."
+    },
+    "label_land_rate": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Rate",
+      "nep": "नगरपालिका दर",
+      "ind": "नगर निगम दर"
+    },
+    "label_malpot_rate": {
+      "scope": "taxpayer_workflow",
+      "eng": "Malpot Rate",
+      "nep": "मालपोत दर",
+      "ind": "मालपोत दर"
+    },
+    "label_land_measurement": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Measurement",
+      "nep": "क्षेत्रफल नाप",
+      "ind": "भूमि मापन"
+    },
+    "label_square_feet": {
+      "scope": "taxpayer_workflow",
+      "eng": "Square Feet",
+      "nep": "वर्ग फिट",
+      "ind": "वर्ग फुट"
+    },
+    "label_square_metre": {
+      "scope": "taxpayer_workflow",
+      "eng": "Square Metre",
+      "nep": "वर्ग मिटर",
+      "ind": "वर्ग मीटर"
+    },
+    "label_land_info": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Info",
+      "nep": "जग्गा विवरण",
+      "ind": "भूमि विवरण"
+    },
+    "label_house_info": {
+      "scope": "taxpayer_workflow",
+      "eng": "House Info",
+      "nep": "घर तथा तला",
+      "ind": "भवन एवं मंजिल"
+    },
+    "label_registered_land_parcels": {
+      "scope": "taxpayer_workflow",
+      "eng": "Registered Land Parcels",
+      "nep": "जग्गा कित्ता विवरण",
+      "ind": "पंजीकृत भूमि कित्ता"
+    },
+    "label_building_house_structures": {
+      "scope": "taxpayer_workflow",
+      "eng": "Building & House Structures",
+      "nep": "घर विवरण",
+      "ind": "भवन संरचनाएँ"
+    },
+    "label_floor_slabs": {
+      "scope": "taxpayer_workflow",
+      "eng": "Floor Slabs",
+      "nep": "तला इकाइहरू",
+      "ind": "मंजिल इकाइयाँ"
+    },
+    "label_register_house_structure": {
+      "scope": "taxpayer_workflow",
+      "eng": "Register House Structure",
+      "nep": "घर संरचना फाराम",
+      "ind": "भवन संरचना फॉर्म"
+    },
+    "label_register_floor_unit": {
+      "scope": "taxpayer_workflow",
+      "eng": "Register Floor Unit",
+      "nep": "तला फाराम",
+      "ind": "मंजिल फॉर्म"
+    },
+    "label_land_parcel_association": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Parcel Association",
+      "nep": "घर बनेको जग्गा छनोट",
+      "ind": "भूमि कित्ता चयन"
+    },
+    "label_single_land": {
+      "scope": "taxpayer_workflow",
+      "eng": "Single Land",
+      "nep": "एकल कित्ता",
+      "ind": "एकल कित्ता"
+    },
+    "label_spanning_two_lands": {
+      "scope": "taxpayer_workflow",
+      "eng": "Spanning Two Lands",
+      "nep": "दुई कित्तामा बनेको",
+      "ind": "दो कित्तों में निर्मित"
+    },
+    "label_primary_land_parcel": {
+      "scope": "taxpayer_workflow",
+      "eng": "Primary Land Parcel",
+      "nep": "पहिलो जग्गा कित्ता",
+      "ind": "प्राथमिक भूमि कित्ता"
+    },
+    "label_taxpayer_land_parcel": {
+      "scope": "taxpayer_workflow",
+      "eng": "Taxpayer Land Parcel",
+      "nep": "करदाताको जग्गा कित्ता",
+      "ind": "करदाता भूमि कित्ता"
+    },
+    "label_secondary_land_parcel": {
+      "scope": "taxpayer_workflow",
+      "eng": "Secondary Land Parcel",
+      "nep": "दोस्रो जग्गा कित्ता",
+      "ind": "द्वितीय भूमि कित्ता"
+    },
+    "label_house_number": {
+      "scope": "taxpayer_workflow",
+      "eng": "House Number",
+      "nep": "घर नं.",
+      "ind": "मकान नं."
+    },
+    "label_floor_count": {
+      "scope": "taxpayer_workflow",
+      "eng": "Floor Count",
+      "nep": "कुल तला",
+      "ind": "कुल मंजिल"
+    },
+    "label_belongs_to_house": {
+      "scope": "taxpayer_workflow",
+      "eng": "Belongs to House Structure",
+      "nep": "कुन घरको तला हो",
+      "ind": "संबद्ध भवन संरचना"
+    },
+    "label_floor_level": {
+      "scope": "taxpayer_workflow",
+      "eng": "Floor Level",
+      "nep": "तला क्रम नं.",
+      "ind": "मंजिल क्रम सं."
+    },
+    "label_construction_rate": {
+      "scope": "taxpayer_workflow",
+      "eng": "Construction Rate",
+      "nep": "संरचना दर",
+      "ind": "निर्माण दर"
+    },
+    "label_obtain_value": {
+      "scope": "taxpayer_workflow",
+      "eng": "Obtain Value",
+      "nep": "मान प्राप्त गर्नुहोस्",
+      "ind": "मान प्राप्त करें"
+    },
+    "label_land_value": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Value",
+      "nep": "जग्गा मूल्य",
+      "ind": "भूमि मूल्य"
+    },
+    "label_building_value": {
+      "scope": "taxpayer_workflow",
+      "eng": "Building Value",
+      "nep": "घर मूल्य",
+      "ind": "भवन मूल्य"
+    },
+    "label_early_rebate": {
+      "scope": "taxpayer_workflow",
+      "eng": "Early Rebate",
+      "nep": "छुट",
+      "ind": "छूट"
+    },
+    "label_net_payable_tax": {
+      "scope": "taxpayer_workflow",
+      "eng": "Net Payable Tax",
+      "nep": "तिर्नुपर्ने कर",
+      "ind": "शुद्ध देय कर"
+    },
+    "label_land_parcel": {
+      "scope": "taxpayer_workflow",
+      "eng": "Land Parcel",
+      "nep": "जग्गा कित्ता",
+      "ind": "भूमि कित्ता"
+    },
+    "label_building_structure": {
+      "scope": "taxpayer_workflow",
+      "eng": "Building Structure",
+      "nep": "भवन संरचना",
+      "ind": "भवन संरचना"
+    },
+    "label_copy_rate": {
+      "scope": "rates_master",
+      "eng": "Copy Rate",
+      "nep": "दररेट प्रतिलिपि",
+      "ind": "दर प्रतिलिपि"
+    },
+    "label_copy_rate_matrix": {
+      "scope": "rates_master",
+      "eng": "Copy Rate Matrix",
+      "nep": "दररेट प्रतिलिपि",
+      "ind": "दर मैट्रिक्स प्रतिलिपि"
     }
   }
 }

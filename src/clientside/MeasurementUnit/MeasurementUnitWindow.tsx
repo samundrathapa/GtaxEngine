@@ -80,7 +80,7 @@ export const MeasurementUnitWindow: React.FC<MeasurementUnitWindowProps> = ({
               value={formData.name || ""}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              placeholder="e.g. Square Feet (वर्ग फिट)"
+              placeholder="e.g. Square Feet"
             />
           </div>
 

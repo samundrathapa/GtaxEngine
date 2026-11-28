@@ -469,6 +469,36 @@ export function translateUiText(keyOrEnglishText: string, lang: SupportedLang = 
 export const tText = translateUiText;
 
 /**
+ * Return strictly one language string (English, Nepali, or Hindi) according to selected language.
+ */
+export function pickLang(lang: SupportedLang = "eng", eng: string, nep: string, ind?: string): string {
+  if (lang === "nep") return nep;
+  if (lang === "ind") return ind || eng;
+  return eng;
+}
+
+/**
+ * Strip double-naming such as "English Name (नेपाली नाम)" from DB/seed records
+ * so only English OR Nepali is shown based on the active language.
+ */
+export function localizeRecordText(raw: string | null | undefined, lang: SupportedLang = "eng"): string {
+  if (!raw) return "";
+  const str = String(raw);
+  const match = str.match(/^(.*?)\s*\(([^()]*[\u0900-\u097F][^()]*)\)(.*)$/);
+  if (match) {
+    const before = match[1].trim();
+    const devPart = match[2].trim();
+    const after = match[3].trim();
+    if (lang === "nep") {
+      const cleanNep = devPart.replace(/\s*\/\s*[A-Za-z0-9\s.&-]+$/, "").trim() || devPart;
+      return after ? `${cleanNep} ${after}`.replace(/\s{2,}/g, " ").trim() : cleanNep;
+    }
+    return `${before}${after ? ` ${after}` : ""}`.replace(/\s{2,}/g, " ").trim();
+  }
+  return str;
+}
+
+/**
  * Imperative async Google Translate helper (JSON first, else calls Google Translate API directly)
  */
 export async function translateTextNow(
@@ -836,9 +866,9 @@ export const baseUiTranslations = {
     units: "मापन एकाई (रोपनी/आना/कठ्ठा/वर्गफुट)",
     landRates: "जग्गाको सरकारी/स्थानीय मूल्यांकन दर",
     malpotRates: "मालपोत मूल्यांकन दर",
-    constructionTypes: "संरचना निर्माण प्रकार (RCC/काठ/इँटा)",
+    constructionTypes: "संरचना निर्माण प्रकार",
     constructionRates: "भवन निर्माण दररेट",
-    depreciation: "ह्रासकट्टी (Depreciation) प्रतिशत",
+    depreciation: "ह्रासकट्टी प्रतिशत",
     fineRebate: "जरिवाना तथा छुट नीति",
     landNature: "जग्गाको प्रकृति (कृषि/व्यापारिक/आवासीय)",
     taxpayerMaster: "करदाता मुख्य दर्ता",
@@ -901,13 +931,13 @@ export const baseUiTranslations = {
     step5: "५. भूमि खसरा / कित्ता",
     step6: "६. भवन एवं मंजिलों का विवरण",
     step7: "७. कर निर्धारण एवं रसीद",
-    fiscalYear: "वित्तीय वर्ष (Fiscal Year)",
+    fiscalYear: "वित्तीय वर्ष",
     units: "मापन इकाइयाँ (वर्गफुट / गज / बीघा)",
     landRates: "भूमि सर्किल दरें",
     malpotRates: "राजस्व मूल्यांकन दरें",
     constructionTypes: "निर्माण प्रकार (आरसीसी / ईंट / स्टील)",
     constructionRates: "भवन निर्माण दरें",
-    depreciation: "मूल्यह्रास (Depreciation) दर",
+    depreciation: "मूल्यह्रास दर",
     fineRebate: "जुर्माना एवं छूट नियम",
     landNature: "भूमि की प्रकृति (कृषि / व्यावसायिक / आवासीय)",
     taxpayerMaster: "करदाता मास्टर रिकॉर्ड",

@@ -6,13 +6,15 @@ import { TaxTransactionRecord } from "../../server/ApiServiceStruct/TaxCalcApiSe
 import { TaxLiabilityComparisonChart } from "../../components/TaxLiabilityComparisonChart.tsx";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
+import { SupportedLang } from "../../utils/i18n.ts";
 import { Calculator, ArrowRight, CheckCircle2, AlertTriangle, Layers, Eye, RefreshCw, Radio, TrendingUp } from "lucide-react";
 
 interface TaxCalculationPanelProps {
   currentSession?: AuthSessionState | null;
+  currentLang?: SupportedLang;
 }
 
-export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ currentSession }) => {
+export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ currentSession, currentLang = "eng" }) => {
   const canCalculate = !currentSession || hasActionRight(currentSession, "calculation", "calculation");
   const [activeSubTab, setActiveSubTab] = useState<"comparison_chart" | "transaction_engine">("comparison_chart");
   const [params, setParams] = useState<TaxCalculationParams>(defaultTaxCalcParams);
@@ -100,7 +102,7 @@ export const TaxCalculationPanel: React.FC<TaxCalculationPanelProps> = ({ curren
       </div>
 
       {activeSubTab === "comparison_chart" && (
-        <TaxLiabilityComparisonChart />
+        <TaxLiabilityComparisonChart currentLang={currentLang} />
       )}
 
       {activeSubTab === "transaction_engine" && (

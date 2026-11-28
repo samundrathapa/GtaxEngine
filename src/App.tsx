@@ -716,31 +716,31 @@ export default function App() {
   const themeClasses: Record<SupportedTheme, { bg: string; sidebarBg: string; text: string; cardBg: string; headerBg: string }> = {
     dark: {
       bg: "bg-slate-950 text-slate-100",
-      sidebarBg: "bg-white border-slate-200 text-slate-800",
+      sidebarBg: "bg-slate-900/95 border-slate-800 text-slate-100 shadow-sm",
       text: "text-slate-100",
       cardBg: "bg-slate-900 border-slate-800",
       headerBg: "bg-slate-900/90 border-slate-800"
     },
     slate: {
-      bg: "bg-slate-50 text-slate-900",
-      sidebarBg: "bg-white border-slate-200 text-slate-800",
+      bg: "bg-slate-100/60 text-slate-900",
+      sidebarBg: "bg-slate-50/95 border-slate-200/90 text-slate-900 shadow-xs",
       text: "text-slate-900",
       cardBg: "bg-white border-slate-200",
-      headerBg: "bg-white/90 border-slate-200"
+      headerBg: "bg-white/95 border-slate-200"
     },
     emerald: {
-      bg: "bg-emerald-950/20 text-slate-900",
-      sidebarBg: "bg-white border-slate-200 text-slate-800",
+      bg: "bg-emerald-950/10 text-slate-900",
+      sidebarBg: "bg-emerald-50/50 border-emerald-200/80 text-slate-900 shadow-xs",
       text: "text-slate-900",
       cardBg: "bg-white border-emerald-100",
-      headerBg: "bg-white/90 border-emerald-200"
+      headerBg: "bg-white/95 border-emerald-200"
     },
     light: {
-      bg: "bg-zinc-50 text-zinc-900",
-      sidebarBg: "bg-white border-slate-200 text-slate-800",
+      bg: "bg-zinc-100/60 text-zinc-900",
+      sidebarBg: "bg-zinc-50/95 border-zinc-200/90 text-zinc-900 shadow-xs",
       text: "text-zinc-900",
       cardBg: "bg-white border-zinc-200",
-      headerBg: "bg-white/90 border-zinc-200"
+      headerBg: "bg-white/95 border-zinc-200"
     }
   };
 
@@ -1294,6 +1294,7 @@ export default function App() {
                   onTabChange={(tab) => setCalculationTab(tab)}
                   selectedTaxpayerIdProp={selectedTaxpayerId}
                   currentSession={session}
+                  currentLang={currentLang}
                 />
               )}
 
@@ -1306,7 +1307,7 @@ export default function App() {
                 />
               )}
 
-              {activeTab === "tax_calc" && <TaxCalculationPanel currentSession={session} />}
+              {activeTab === "tax_calc" && <TaxCalculationPanel currentSession={session} currentLang={currentLang} />}
               {activeTab === "reports" && <ReportsPanel />}
               {activeTab === "architecture" && <ArchitectureExplorerPanel />}
               {activeTab === "ai_agent" && <AiAgentPanel />}
@@ -1417,6 +1418,7 @@ export default function App() {
         isOpen={isIdleWarningOpen}
         secondsRemaining={idleSecondsRemaining}
         timeoutMinutes={idleTimeoutMinutes}
+        currentLang={currentLang}
         onStayLoggedIn={resetIdleTimer}
         onLogoutNow={handleLogout}
       />

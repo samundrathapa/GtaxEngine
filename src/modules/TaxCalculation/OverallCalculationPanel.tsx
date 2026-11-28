@@ -5,6 +5,7 @@ import { MultiYearTaxEngine } from "./MultiYearTaxEngine.tsx";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
+import { SupportedLang, pickLang, localizeRecordText } from "../../utils/i18n.ts";
 import {
   Calculator,
   Search,
@@ -36,13 +37,15 @@ export interface OverallCalculationPanelProps {
   onTabChange?: (tab: "calculator" | "multi_year" | "history" | "comparison") => void;
   selectedTaxpayerIdProp?: number;
   currentSession?: AuthSessionState | null;
+  currentLang?: SupportedLang;
 }
 
 export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = ({
   initialTab = "calculator",
   onTabChange,
   selectedTaxpayerIdProp,
-  currentSession
+  currentSession,
+  currentLang = "eng"
 }) => {
   const canCalculate = !currentSession || hasActionRight(currentSession, "calculation", "calculation");
   const canSaveCalc = !currentSession || hasActionRight(currentSession, "calculation", "new");
@@ -671,7 +674,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   >
                     {masters.fiscalYears.map((fy: any) => (
                       <option key={fy.id} value={fy.id}>
-                        {fy.code} ({fy.fullname ? fy.fullname.split("(")[0] : "BS"})
+                        {fy.code} ({localizeRecordText(fy.fullname, currentLang)?.split("(")[0] || "BS"})
                       </option>
                     ))}
                   </select>
@@ -699,7 +702,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs text-slate-900 truncate">
-                            {tp.fullanme}
+                            {localizeRecordText(tp.fullanme, currentLang)}
                           </span>
                           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                             Ward #{tp.ward_no}
@@ -859,11 +862,11 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
               <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-lg">
-                    {currentTaxpayer.fullanme.charAt(0)}
+                    {localizeRecordText(currentTaxpayer.fullanme, currentLang).charAt(0)}
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                      <span>{currentTaxpayer.fullanme}</span>
+                      <span>{localizeRecordText(currentTaxpayer.fullanme, currentLang)}</span>
                       <span className="text-[10px] font-mono px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100">
                         {currentTaxpayer.code}
                       </span>
@@ -1158,7 +1161,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
       {/* VIEW 2: MULTI-YEAR LIABILITY ENGINE */}
       {activeTab === "multi_year" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-          <MultiYearTaxEngine currentLang="nep" initialTaxpayerId={selectedTaxpayerId} currentSession={currentSession} />
+          <MultiYearTaxEngine currentLang={currentLang} initialTaxpayerId={selectedTaxpayerId} currentSession={currentSession} />
         </div>
       )}
 
@@ -1212,10 +1215,10 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                         CALC-{rec.id.toString().padStart(4, "0")}
                       </td>
                       <td className="p-3 font-bold text-slate-900">
-                        {rec.taxpayer_name}
+                        {localizeRecordText(rec.taxpayer_name, currentLang)}
                       </td>
                       <td className="p-3 font-mono text-slate-600">
-                        {rec.fiscal_year_name}
+                        {localizeRecordText(rec.fiscal_year_name, currentLang)}
                       </td>
                       <td className="p-3 font-mono text-slate-500">
                         {rec.calculate_date_bs}
@@ -1257,7 +1260,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
       {/* VIEW 3: CROSS-YEAR VISUALIZATION (Recharts) */}
       {activeTab === "comparison" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-          <TaxLiabilityComparisonChart initialTaxpayerId={selectedTaxpayerId} />
+          <TaxLiabilityComparisonChart currentLang={currentLang} initialTaxpayerId={selectedTaxpayerId} />
         </div>
       )}
 
@@ -1271,7 +1274,7 @@ export const OverallCalculationPanel: React.FC<OverallCalculationPanelProps> = (
                   Certified Tax Assessment Breakdown (CALC-{selectedHistoryItem.id})
                 </h3>
                 <div className="text-xs text-slate-500">
-                  Taxpayer: {selectedHistoryItem.taxpayer_name} · FY: {selectedHistoryItem.fiscal_year_name}
+                  Taxpayer: {localizeRecordText(selectedHistoryItem.taxpayer_name, currentLang)} · FY: {localizeRecordText(selectedHistoryItem.fiscal_year_name, currentLang)}
                 </div>
               </div>
               <button

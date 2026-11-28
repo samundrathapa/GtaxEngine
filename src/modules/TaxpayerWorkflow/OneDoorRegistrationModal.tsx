@@ -8,7 +8,7 @@ import {
   getHouseValuationBreakdown,
   getFloorValuationBreakdown
 } from "../../utils/calculationEngine.ts";
-import { tCol, SupportedLang } from "../../utils/i18n.ts";
+import { tCol, pickLang, localizeRecordText, SupportedLang } from "../../utils/i18n.ts";
 import {
   User,
   MapPin,
@@ -112,6 +112,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
   // 2. Lands State (one taxpayer has multiple lands)
   const [lands, setLands] = useState<any[]>([]);
+  const [showRegisteredLands] = useState<boolean>(false);
   const [landForm, setLandForm] = useState<any>({
     kitta_number: `KT-${Math.floor(Math.random() * 800 + 100)}`,
     moth_number: `MT-${Math.floor(Math.random() * 90 + 10)}`,
@@ -1002,11 +1003,11 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-800 border border-slate-200">
-                  One-Door Process · एकीकृत प्रणाली
+                  {pickLang(currentLang, "One-Door Process", "एकीकृत प्रणाली")}
                 </span>
                 {createdTaxpayer && (
                   <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
-                    Taxpayer: {createdTaxpayer.fullanme} ({createdTaxpayer.code})
+                    {pickLang(currentLang, "Taxpayer", "करदाता")}: {localizeRecordText(createdTaxpayer.fullanme, currentLang)} ({createdTaxpayer.code})
                   </span>
                 )}
               </div>
@@ -1115,8 +1116,8 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           </div>
         )}
 
-        {/* Scrollable Wizard Body */}
-        <div className={inline ? "p-[3px] space-y-3 text-xs" : "flex-1 overflow-y-auto p-6 space-y-6 text-xs scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"}>
+        {/* Wizard Body */}
+        <div className={inline ? "p-[3px] space-y-2 text-xs" : "flex-1 overflow-y-auto p-3.5 space-y-2.5 text-xs scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"}>
           
           {/* ========================================================= */}
           {/* STEP 1: TAXPAYER MASTER FORM                              */}
@@ -1126,7 +1127,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
               <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
                 <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                   <User className="w-4 h-4 text-indigo-600" />
-                  <span>Step 1: Taxpayer Identification (करदाता परिचय)</span>
+                  <span>{pickLang(currentLang, "Step 1: Taxpayer Identification", "चरण १: करदाता परिचय")}</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Save taxpayer details first. The workflow will stay open and proceed directly to adding land parcels.
@@ -1138,7 +1139,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                   <div className="md:col-span-3">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Taxpayer Code (करदाता संकेत नं.) *
+                      {pickLang(currentLang, "Taxpayer Code", "करदाता संकेत नं.")} *
                     </label>
                     <input
                       type="text"
@@ -1155,12 +1156,12 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div className="md:col-span-5">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Full Name (करदाताको पूरा नाम) *
+                      {pickLang(currentLang, "Full Name", "करदाताको पूरा नाम")} *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Ramesh Kumar Adhikari (रमेश कुमार अधिकारी)"
+                      placeholder={pickLang(currentLang, "e.g. Ramesh Kumar Adhikari", "उदा. रमेश कुमार अधिकारी")}
                       value={tpForm.fullanme}
                       onChange={(e) => setTpForm({ ...tpForm, fullanme: e.target.value })}
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
@@ -1169,7 +1170,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div className="md:col-span-4">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Mobile Number (मोबाइल नं.) *
+                      {pickLang(currentLang, "Mobile Number", "मोबाइल नं.")} *
                     </label>
                     <input
                       type="text"
@@ -1186,7 +1187,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Ward Number (वडा नं.) *
+                      {pickLang(currentLang, "Ward Number", "वडा नं.")} *
                     </label>
                     <select
                       value={tpForm.ward_no}
@@ -1195,7 +1196,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                     >
                       {Array.from({ length: 32 }, (_, i) => i + 1).map((w) => (
                         <option key={w} value={w}>
-                          Ward {w} (वडा नं. {w})
+                          {pickLang(currentLang, `Ward ${w}`, `वडा नं. ${w}`)}
                         </option>
                       ))}
                     </select>
@@ -1203,7 +1204,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      PAN / VAT Number (स्थायी लेखा नं.)
+                      {pickLang(currentLang, "PAN / VAT Number", "स्थायी लेखा नं.")}
                     </label>
                     <input
                       type="text"
@@ -1216,7 +1217,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Citizenship No (नागरिकता नं.)
+                      {pickLang(currentLang, "Citizenship No", "नागरिकता नं.")}
                     </label>
                     <input
                       type="text"
@@ -1229,7 +1230,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Email Address (इमेल)
+                      {pickLang(currentLang, "Email Address", "इमेल")}
                     </label>
                     <input
                       type="email"
@@ -1256,420 +1257,409 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
           )}
 
           {/* ========================================================= */}
-          {/* STEP 2: ADD LAND (CAN BE MULTIPLE)                        */}
+          {/* STEP 2: ADD LAND (CAN BE MULTIPLE, COMPACT SINGLE VIEW)   */}
           {/* ========================================================= */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40">
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-emerald-600" />
-                    <span>Step 2: Land Parcels (जग्गा कित्ताहरू - Multiple)</span>
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    A taxpayer can own multiple land parcels. Add parcels using the measurement tool below.
-                  </p>
-                </div>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-xs">
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded-xl font-bold font-mono text-emerald-700 dark:text-emerald-300 text-xs">
-                    Registered: {lands.length} Parcels
-                  </span>
+                  <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <h3 className="font-bold text-xs sm:text-sm text-slate-900">
+                    {pickLang(currentLang, "Step 2: Land Parcels", "चरण २: जग्गा कित्ताहरू")}
+                  </h3>
                 </div>
+                <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-lg font-bold text-emerald-700 text-[11px]">
+                  Registered: {lands.length} Parcels
+                </span>
               </div>
 
-              {/* Form to add a land parcel */}
-              <form onSubmit={handleAddLandParcel} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
-                <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-emerald-600" />
-                  <span>Register Land Parcel (नयाँ जग्गा कित्ता फाराम)</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Form to add a land parcel - Compact Non-Scrollable Layout */}
+              <form onSubmit={handleAddLandParcel} className="p-3 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2.5">
+                {/* Row 1: Kitta Number, Ward Number, Acquisition Fiscal Year */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Kitta Number (कित्ता नं.) *</label>
+                    <label className="block text-[11px] text-slate-700 font-semibold mb-1">
+                      {pickLang(currentLang, "Kitta Number", "कित्ता नं.")} *
+                    </label>
                     <input
                       type="text"
                       required
                       value={landForm.kitta_number}
                       onChange={(e) => setLandForm({ ...landForm, kitta_number: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Moth / Shresta No (मोठ नं.)</label>
-                    <input
-                      type="text"
-                      value={landForm.moth_number}
-                      onChange={(e) => setLandForm({ ...landForm, moth_number: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Ward Number (वडा नं.) *</label>
+                    <label className="block text-[11px] text-slate-700 font-semibold mb-1">
+                      {pickLang(currentLang, "Ward Number", "वडा नं.")} *
+                    </label>
                     <input
                       type="number"
                       required
                       value={landForm.ward_no}
                       onChange={(e) => setLandForm({ ...landForm, ward_no: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Acquisition Fiscal Year (प्राप्ति आ.व.)</label>
+                    <label className="block text-[11px] text-slate-700 font-semibold mb-1">
+                      {pickLang(currentLang, "Acquisition Fiscal Year", "प्राप्ति आ.व.")}
+                    </label>
                     <select
                       value={landForm.acquisition_fy_id}
                       onChange={(e) => setLandForm({ ...landForm, acquisition_fy_id: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium text-slate-900"
                     >
                       {masters.fiscalYears.map((fy) => (
-                        <option key={fy.id} value={fy.id}>{fy.code} - {fy.fullname}</option>
+                        <option key={fy.id} value={fy.id}>{fy.code} - {localizeRecordText(fy.fullname, currentLang)}</option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                {/* Row 2: Land Rate, Malpot Rate */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Land Rate (नगरपालिका दर)</label>
+                    <label className="block text-[11px] text-slate-700 font-semibold mb-1">
+                      {pickLang(currentLang, "Land Rate", "नगरपालिका दर")}
+                    </label>
                     <select
                       value={landForm.land_rate_id}
                       onChange={(e) => setLandForm({ ...landForm, land_rate_id: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium text-slate-900"
                     >
                       {masters.landRates.map((lr) => (
-                        <option key={lr.id} value={lr.id}>{lr.rate_name || lr.code} (Rs. {Number(lr.rate_per_unit).toLocaleString()})</option>
+                        <option key={lr.id} value={lr.id}>{localizeRecordText(lr.rate_name || lr.code, currentLang)} (Rs. {Number(lr.rate_per_unit).toLocaleString()})</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Malpot Rate (मालपोत दर)</label>
+                    <label className="block text-[11px] text-slate-700 font-semibold mb-1">
+                      {pickLang(currentLang, "Malpot Rate", "मालपोत दर")}
+                    </label>
                     <select
                       value={landForm.malpot_rate_id}
                       onChange={(e) => setLandForm({ ...landForm, malpot_rate_id: Number(e.target.value) })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium text-slate-900"
                     >
                       {masters.malpotRates.map((mr) => (
-                        <option key={mr.id} value={mr.id}>{mr.rate_name || mr.code} (Rs. {Number(mr.rate_per_unit).toLocaleString()})</option>
+                        <option key={mr.id} value={mr.id}>{localizeRecordText(mr.rate_name || mr.code, currentLang)} (Rs. {Number(mr.rate_per_unit).toLocaleString()})</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Land Measurement Tool */}
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      Land Area Measurement & Auto-Conversion (क्षेत्रफल नाप)
-                    </span>
-                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLandMeasureUnit("ropani");
-                          setLandForm((p: any) => ({ ...p, unit_id: 1 }));
-                        }}
-                        className={`px-2.5 py-1 rounded-lg ${landMeasureUnit === "ropani" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 dark:text-slate-300"}`}
-                      >
-                        Ropani System
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLandMeasureUnit("bigha");
-                          setLandForm((p: any) => ({ ...p, unit_id: 2 }));
-                        }}
-                        className={`px-2.5 py-1 rounded-lg ${landMeasureUnit === "bigha" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 dark:text-slate-300"}`}
-                      >
-                        Bigha System
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLandMeasureUnit("sqft");
-                          setLandForm((p: any) => ({ ...p, unit_id: 3 }));
-                        }}
-                        className={`px-2.5 py-1 rounded-lg ${landMeasureUnit === "sqft" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 dark:text-slate-300"}`}
-                      >
-                        Sq. Feet
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLandMeasureUnit("sqmtre");
-                          setLandForm((p: any) => ({ ...p, unit_id: 4 }));
-                        }}
-                        className={`px-2.5 py-1 rounded-lg ${landMeasureUnit === "sqmtre" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 dark:text-slate-300"}`}
-                      >
-                        Sq. Metre
-                      </button>
-                    </div>
-                  </div>
-
-                  {landMeasureUnit === "ropani" && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div>
-                        <label className="block font-semibold mb-1">Ropani (रोपनी)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={ropaniParts.ropani}
-                          onChange={(e) => {
-                            const next = { ...ropaniParts, ropani: Number(e.target.value) };
-                            setRopaniParts(next);
-                            const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                {/* Row 3: Land Measurement - All in Single Row */}
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="flex flex-wrap lg:flex-nowrap items-end gap-2">
+                    <div className="shrink-0">
+                      <span className="block text-[11px] font-bold text-slate-800 mb-1">
+                        {pickLang(currentLang, "Land Measurement", "क्षेत्रफल नाप")}
+                      </span>
+                      <div className="flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px] font-semibold whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLandMeasureUnit("ropani");
+                            setLandForm((p: any) => ({ ...p, unit_id: 1 }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold mb-1">Aana (आना)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="15.99"
-                          step="any"
-                          value={ropaniParts.aana}
-                          onChange={(e) => {
-                            const next = { ...ropaniParts, aana: Number(e.target.value) };
-                            setRopaniParts(next);
-                            const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                          className={`px-2 py-1 rounded-md cursor-pointer ${landMeasureUnit === "ropani" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 hover:text-slate-900"}`}
+                        >
+                          {pickLang(currentLang, "Ropani", "रोपनी")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLandMeasureUnit("bigha");
+                            setLandForm((p: any) => ({ ...p, unit_id: 2 }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold mb-1">Paisa (पैसा)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="3.99"
-                          step="any"
-                          value={ropaniParts.paisa}
-                          onChange={(e) => {
-                            const next = { ...ropaniParts, paisa: Number(e.target.value) };
-                            setRopaniParts(next);
-                            const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                          className={`px-2 py-1 rounded-md cursor-pointer ${landMeasureUnit === "bigha" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 hover:text-slate-900"}`}
+                        >
+                          {pickLang(currentLang, "Bigha", "बिघा")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLandMeasureUnit("sqft");
+                            setLandForm((p: any) => ({ ...p, unit_id: 3 }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold mb-1">Daam (दाम)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="3.99"
-                          step="any"
-                          value={ropaniParts.dam}
-                          onChange={(e) => {
-                            const next = { ...ropaniParts, dam: Number(e.target.value) };
-                            setRopaniParts(next);
-                            const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                          className={`px-2 py-1 rounded-md cursor-pointer ${landMeasureUnit === "sqft" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 hover:text-slate-900"}`}
+                        >
+                          {pickLang(currentLang, "Sq.Ft", "वर्ग फिट")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLandMeasureUnit("sqmtre");
+                            setLandForm((p: any) => ({ ...p, unit_id: 4 }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
+                          className={`px-2 py-1 rounded-md cursor-pointer ${landMeasureUnit === "sqmtre" ? "bg-emerald-600 text-white font-bold" : "text-slate-600 hover:text-slate-900"}`}
+                        >
+                          {pickLang(currentLang, "Sq.M", "वर्ग मि.")}
+                        </button>
                       </div>
                     </div>
-                  )}
 
-                  {landMeasureUnit === "bigha" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div>
-                        <label className="block font-semibold mb-1">Bigha (बिघा)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={bighaParts.bigha}
-                          onChange={(e) => {
-                            const next = { ...bighaParts, bigha: Number(e.target.value) };
-                            setBighaParts(next);
-                            const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold mb-1">Kattha (कठ्ठा)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="19.99"
-                          step="any"
-                          value={bighaParts.kattha}
-                          onChange={(e) => {
-                            const next = { ...bighaParts, kattha: Number(e.target.value) };
-                            setBighaParts(next);
-                            const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold mb-1">Dhur (धुर)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="19.99"
-                          step="any"
-                          value={bighaParts.dhur}
-                          onChange={(e) => {
-                            const next = { ...bighaParts, dhur: Number(e.target.value) };
-                            setBighaParts(next);
-                            const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
-                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                            setSqftInput(sqft);
-                            setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
-                          }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {landMeasureUnit === "sqft" && (
-                    <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <label className="block font-semibold mb-1">Square Feet (वर्ग फिट)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={sqftInput}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSqftInput(val);
-                          setLandForm((p: any) => ({ ...p, area_sqfeet: val }));
-                          setSqmtreInput(Number((val / 10.7639).toFixed(2)));
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                      />
-                    </div>
-                  )}
-
-                  {landMeasureUnit === "sqmtre" && (
-                    <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <label className="block font-semibold mb-1">Square Metre (वर्ग मिटर) (1 sqm = 10.7639 sq.ft)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={sqmtreInput}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSqmtreInput(val);
-                          const sqft = convertSqmtreToSqft(val);
-                          setSqftInput(sqft);
-                          setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
-                        }}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
-                      />
-                    </div>
-                  )}
-
-                  {/* Formula Display & Obtain Value Action Box */}
-                  {(() => {
-                    const uId = Number(landForm.unit_id || 1);
-                    const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
-                    const unitName = uId === 1 ? "Ropani / Aana" : uId === 2 ? "Bigha / Katha" : uId === 4 ? "Sq.Metre" : "Sq.Feet";
-                    const selRate = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
-                    const rateVal = selRate ? Number(selRate.rate_per_unit || 800000) : 800000;
-                    const liveVal = Math.round((Number(landForm.area_sqfeet || 0) / baseSqFt) * rateVal);
-                    return (
-                      <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <span className="text-[11px] font-bold text-emerald-900 dark:text-emerald-200 uppercase tracking-wider flex items-center gap-1.5">
-                              <Calculator className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Land Valuation Formula (जग्गा मूल्याङ्कन सूत्र):</span>
-                            </span>
-                            <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                              ({Number(landForm.area_sqfeet || 0).toLocaleString()} sqft ÷ {baseSqFt} [{unitName}]) × Rs. {rateVal.toLocaleString()} = <span className="text-emerald-600 dark:text-emerald-400 font-black">Rs. {liveVal.toLocaleString()}</span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setLandForm((prev: any) => ({ ...prev, assessed_valuation: liveVal }));
-                              setStatusMsg({ type: "success", text: `Land value obtained: Rs. ${liveVal.toLocaleString()} using formula: (${landForm.area_sqfeet} ÷ ${baseSqFt}) × Rs. ${rateVal.toLocaleString()}` });
+                    {landMeasureUnit === "ropani" && (
+                      <div className="flex-1 grid grid-cols-4 gap-1.5 min-w-0">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Ropani", "रोपनी")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ropaniParts.ropani}
+                            onChange={(e) => {
+                              const next = { ...ropaniParts, ropani: Number(e.target.value) };
+                              setRopaniParts(next);
+                              const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
                             }}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
-                          >
-                            <Calculator className="w-3.5 h-3.5" />
-                            <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
-                          </button>
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Aana", "आना")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="15.99"
+                            step="any"
+                            value={ropaniParts.aana}
+                            onChange={(e) => {
+                              const next = { ...ropaniParts, aana: Number(e.target.value) };
+                              setRopaniParts(next);
+                              const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Paisa", "पैसा")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="3.99"
+                            step="any"
+                            value={ropaniParts.paisa}
+                            onChange={(e) => {
+                              const next = { ...ropaniParts, paisa: Number(e.target.value) };
+                              setRopaniParts(next);
+                              const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Daam", "दाम")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="3.99"
+                            step="any"
+                            value={ropaniParts.dam}
+                            onChange={(e) => {
+                              const next = { ...ropaniParts, dam: Number(e.target.value) };
+                              setRopaniParts(next);
+                              const sqft = convertRopaniToSqft(next.ropani, next.aana, next.paisa, next.dam);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {landMeasureUnit === "bigha" && (
+                      <div className="flex-1 grid grid-cols-3 gap-1.5 min-w-0">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Bigha", "बिघा")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={bighaParts.bigha}
+                            onChange={(e) => {
+                              const next = { ...bighaParts, bigha: Number(e.target.value) };
+                              setBighaParts(next);
+                              const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Kattha", "कठ्ठा")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="19.99"
+                            step="any"
+                            value={bighaParts.kattha}
+                            onChange={(e) => {
+                              const next = { ...bighaParts, kattha: Number(e.target.value) };
+                              setBighaParts(next);
+                              const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Dhur", "धुर")}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="19.99"
+                            step="any"
+                            value={bighaParts.dhur}
+                            onChange={(e) => {
+                              const next = { ...bighaParts, dhur: Number(e.target.value) };
+                              setBighaParts(next);
+                              const sqft = convertBighaToSqft(next.bigha, next.kattha, next.dhur);
+                              setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                              setSqftInput(sqft);
+                              setSqmtreInput(Number((sqft / 10.7639).toFixed(2)));
+                            }}
+                            className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {landMeasureUnit === "sqft" && (
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Square Feet", "वर्ग फिट")}</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={sqftInput}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setSqftInput(val);
+                            setLandForm((p: any) => ({ ...p, area_sqfeet: val }));
+                            setSqmtreInput(Number((val / 10.7639).toFixed(2)));
+                          }}
+                          className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                        />
+                      </div>
+                    )}
+
+                    {landMeasureUnit === "sqmtre" && (
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">{pickLang(currentLang, "Square Metre [1 sqm = 10.7639 sq.ft]", "वर्ग मिटर [१ वर्ग मि. = १०.७६३९ वर्ग फिट]")}</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={sqmtreInput}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setSqmtreInput(val);
+                            const sqft = convertSqmtreToSqft(val);
+                            setSqftInput(sqft);
+                            setLandForm((p: any) => ({ ...p, area_sqfeet: sqft }));
+                          }}
+                          className="w-full px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-bold text-slate-900"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 4: Land Valuation & Area Conversion All in Single Line */}
+                {(() => {
+                  const uId = Number(landForm.unit_id || 1);
+                  const baseSqFt = uId === 1 ? 342.25 : uId === 2 ? 3645 : uId === 4 ? 10.7639 : 1;
+                  const unitName = uId === 1 ? "Ropani / Aana" : uId === 2 ? "Bigha / Katha" : uId === 4 ? "Sq.Metre" : "Sq.Feet";
+                  const selRate = masters.landRates.find((r: any) => r.id === landForm.land_rate_id) || masters.landRates[0];
+                  const rateVal = selRate ? Number(selRate.rate_per_unit || 800000) : 800000;
+                  const liveVal = Math.round((Number(landForm.area_sqfeet || 0) / baseSqFt) * rateVal);
+                  return (
+                    <div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 px-3 py-2 bg-emerald-50/80 border border-emerald-200 rounded-xl text-[11px]">
+                      <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 min-w-0">
+                        <span className="font-bold text-emerald-900 whitespace-nowrap">
+                          Area: <span className="text-emerald-700">{Number(landForm.area_sqfeet || 0).toLocaleString()} Sq.Ft</span>
+                        </span>
+                        <span className="text-emerald-300">|</span>
+                        <span className="flex items-center gap-1 font-bold text-slate-800 whitespace-nowrap">
+                          <Calculator className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>
+                            ({Number(landForm.area_sqfeet || 0).toLocaleString()} ÷ {baseSqFt} [{unitName}]) × Rs. {rateVal.toLocaleString()} ={" "}
+                            <span className="text-emerald-700 font-extrabold">Rs. {liveVal.toLocaleString()}</span>
+                          </span>
+                        </span>
                         {landForm.assessed_valuation > 0 && (
-                          <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Locked Assessed Valuation: Rs. {Number(landForm.assessed_valuation).toLocaleString()}</span>
-                          </div>
+                          <>
+                            <span className="text-emerald-300">|</span>
+                            <span className="text-emerald-700 font-bold flex items-center gap-1 whitespace-nowrap">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              Locked: Rs. {Number(landForm.assessed_valuation).toLocaleString()}
+                            </span>
+                          </>
                         )}
                       </div>
-                    );
-                  })()}
 
-                  {/* Auto-Conversion Result Banner */}
-                  <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
-                      Auto Conversion Target: <span className="font-mono font-black">{Number(landForm.area_sqfeet || 0).toLocaleString()} Sq. Feet</span>
-                    </span>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1 text-[11px]"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+ Save This Land Parcel</span>
-                    </button>
-                  </div>
-                </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLandForm((prev: any) => ({ ...prev, assessed_valuation: liveVal }));
+                            setStatusMsg({ type: "success", text: `Land value obtained: Rs. ${liveVal.toLocaleString()} using formula: (${landForm.area_sqfeet} ÷ ${baseSqFt}) × Rs. ${rateVal.toLocaleString()}` });
+                          }}
+                          className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold rounded-lg transition-colors flex items-center gap-1 text-[11px] whitespace-nowrap cursor-pointer"
+                        >
+                          <Calculator className="w-3 h-3" />
+                          <span>Obtain Value</span>
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1 text-[11px] whitespace-nowrap cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Save Land Parcel</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </form>
 
-              {/* Registered Lands for this Taxpayer Table */}
-              <div className="space-y-2">
-                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                  <span>Registered Lands ({lands.length} Parcels)</span>
-                  {lands.length === 0 && <span className="text-amber-600 text-xs">At least 1 land parcel is recommended</span>}
-                </div>
+              {/* Registered Lands table is hidden in New Taxpayer workflow to fit single non-scrollable screen */}
+              {!inline && showRegisteredLands && (
+                <div className="space-y-2">
+                  <div className="font-bold text-slate-900 flex items-center justify-between">
+                    <span>Registered Lands ({lands.length} Parcels)</span>
+                  </div>
 
-                <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xs">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
-                      <tr>
-                        <th className="p-3">Kitta Number</th>
-                        <th className="p-3">Ward No</th>
-                        <th className="p-3">Area (Sq.Ft)</th>
-                        <th className="p-3">Measuring Unit</th>
-                        <th className="p-3">Land Rate</th>
-                        <th className="p-3">Valuation Formula</th>
-                        <th className="p-3 font-bold">Assessed Valuation (land_amount)</th>
-                        <th className="p-3 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
-                      {lands.length === 0 ? (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-200/75 border-b border-slate-300 text-slate-900 font-bold uppercase text-[11px]">
                         <tr>
-                          <td colSpan={8} className="p-6 text-center text-slate-400 font-sans">
-                            No land parcels registered yet. Use the form above to add multiple lands.
-                          </td>
+                          <th className="p-3">Kitta Number</th>
+                          <th className="p-3">Ward No</th>
+                          <th className="p-3">Area (Sq.Ft)</th>
+                          <th className="p-3">Measuring Unit</th>
+                          <th className="p-3">Land Rate</th>
+                          <th className="p-3">Valuation Formula</th>
+                          <th className="p-3 font-bold">Assessed Valuation (land_amount)</th>
+                          <th className="p-3 text-right">Action</th>
                         </tr>
-                      ) : (
-                        lands.map((l: any) => {
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {lands.map((l: any) => {
                           const lr = masters.landRates.find((r: any) => r.id === l.land_rate_id);
                           const rateVal = Number(lr?.rate_per_unit || 800000);
                           const uId = Number(l.unit_id || 1);
@@ -1678,31 +1668,30 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                           const displayVal = Number(l.assessed_valuation && Number(l.assessed_valuation) > 0 ? l.assessed_valuation : calcVal);
 
                           return (
-                            <tr key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                              <td className="p-3 font-bold text-slate-900 dark:text-white">
+                            <tr key={l.id} className="hover:bg-slate-50/60">
+                              <td className="p-3 font-bold text-slate-900">
                                 {l.kitta_number} <span className="font-normal text-slate-400">({l.moth_number})</span>
                               </td>
-                              <td className="p-3 text-indigo-600 dark:text-indigo-400 font-bold">Ward #{l.ward_no}</td>
+                              <td className="p-3 text-emerald-700 font-bold">Ward #{l.ward_no}</td>
                               <td className="p-3 font-bold">{Number(l.area_sqfeet || 0).toLocaleString()}</td>
-                              <td className="p-3 font-sans">
-                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px]">
+                              <td className="p-3">
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px]">
                                   {l.unit_id === 1 ? "Ropani" : l.unit_id === 2 ? "Bigha" : l.unit_id === 4 ? "Sq.Metre" : "Sq.Ft"}
                                 </span>
                               </td>
-                              <td className="p-3 text-slate-600 dark:text-slate-400">Rs. {rateVal.toLocaleString()}</td>
-                              <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                              <td className="p-3 text-slate-600">Rs. {rateVal.toLocaleString()}</td>
+                              <td className="p-3 text-slate-500 text-[11px]">
                                 ({Number(l.area_sqfeet || 0).toLocaleString()} ÷ {baseSqFt}) × Rs. {rateVal.toLocaleString()}
                               </td>
-                              <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                              <td className="p-3 font-bold text-emerald-600">
                                 Rs. {displayVal.toLocaleString()}
                               </td>
                               <td className="p-3 text-right">
-                                <div className="flex items-center justify-end gap-1.5 font-sans">
+                                <div className="flex items-center justify-end gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => handleObtainLandValue(l)}
-                                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors"
-                                    title="Obtain & Lock Value"
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-lg border border-emerald-200 transition-colors"
                                   >
                                     <Calculator className="w-3 h-3" />
                                     <span>Obtain Value</span>
@@ -1710,7 +1699,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteLand(l.id)}
-                                    className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg"
+                                    className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1718,34 +1707,33 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                               </td>
                             </tr>
                           );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Step 2 Footer Navigation */}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold"
+                  className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs cursor-pointer"
                 >
                   ← Back to Taxpayer
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    // Sync house form land id
                     if (lands.length > 0 && !houseForm.land_id) {
                       setHouseForm((prev: any) => ({ ...prev, land_id: lands[0].id }));
                     }
                     setCurrentStep(3);
                   }}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all text-xs"
+                  className="flex items-center gap-2 px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-xs transition-all text-xs cursor-pointer"
                 >
-                  <span>Continue to Houses (घर संरचनाहरू) →</span>
+                  <span>{pickLang(currentLang, "Continue to Houses", "घर संरचनाहरूमा जानुहोस्")} →</span>
                 </button>
               </div>
             </div>
@@ -1760,7 +1748,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                     <Home className="w-4 h-4 text-purple-600" />
-                    <span>Step 3: House Structures (घर संरचनाहरू - Linked to Land)</span>
+                    <span>{pickLang(currentLang, "Step 3: House Structures", "चरण ३: घर संरचनाहरू")}</span>
                   </h3>
                   <p className="text-xs text-slate-500">
                     Each land parcel can host multiple house structures. Select the land parcel this house belongs to.
@@ -1777,7 +1765,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
               <form onSubmit={handleAddHouseStructure} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
                 <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-purple-600" />
-                  <span>Register House Structure (घर संरचना फाराम)</span>
+                  <span>{pickLang(currentLang, "Register House Structure", "घर संरचना फाराम")}</span>
                 </div>
 
                 {/* House Land Association Controls (Single Land or Spanning Two Lands) */}
@@ -1786,7 +1774,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                     <div>
                       <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Land Parcel Association (घर बनेको जग्गा छनोट) *</span>
+                        <span>{pickLang(currentLang, "Land Parcel Association", "घर बनेको जग्गा छनोट")} *</span>
                       </label>
                       <p className="text-[11px] text-slate-500">
                         House is linked with land. A house may be made in single land or spanning two lands.
@@ -1807,7 +1795,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                         }`}
                       >
-                        Single Land (एकल कित्ता)
+                        {pickLang(currentLang, "Single Land", "एकल कित्ता")}
                       </button>
                       <button
                         type="button"
@@ -1822,7 +1810,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                         }`}
                       >
-                        Spanning Two Lands (दुई कित्तामा बनेको)
+                        {pickLang(currentLang, "Spanning Two Lands", "दुई कित्तामा बनेको")}
                       </button>
                     </div>
                   </div>
@@ -1831,7 +1819,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-[11px]">
-                        {houseLandMode === "two_lands" ? "Primary Land Parcel (पहिलो जग्गा कित्ता) *" : "Taxpayer Land Parcel (करदाताको जग्गा कित्ता) *"}
+                        {houseLandMode === "two_lands"
+                          ? `${pickLang(currentLang, "Primary Land Parcel", "पहिलो जग्गा कित्ता")} *`
+                          : `${pickLang(currentLang, "Taxpayer Land Parcel", "करदाताको जग्गा कित्ता")} *`}
                       </label>
                       <select
                         value={housePrimaryLandId || (lands[0]?.id ?? "")}
@@ -1857,7 +1847,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                     {houseLandMode === "two_lands" ? (
                       <div>
                         <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-[11px]">
-                          Secondary Land Parcel (दोस्रो जग्गा कित्ता - Spanning Land) *
+                          {pickLang(currentLang, "Secondary Land Parcel", "दोस्रो जग्गा कित्ता")} *
                         </label>
                         <select
                           value={houseSecondaryLandId || (lands[1]?.id ?? lands[0]?.id ?? "")}
@@ -1916,7 +1906,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      House Number (घर नं.) *
+                      {pickLang(currentLang, "House Number", "घर नं.")} *
                     </label>
                     <input
                       type="text"
@@ -1930,7 +1920,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Construction Structure Type *
+                      {pickLang(currentLang, "Construction Structure Type", "भवन निर्माण संरचना प्रकार")} *
                     </label>
                     <select
                       value={houseForm.construction_type_id}
@@ -1938,7 +1928,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
                     >
                       {masters.constructionTypes.map((c) => (
-                        <option key={c.id} value={c.id}>{c.fullanme}</option>
+                        <option key={c.id} value={c.id}>{localizeRecordText(c.fullanme, currentLang)}</option>
                       ))}
                     </select>
                   </div>
@@ -1965,7 +1955,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Floor Count (कुल तला)</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">{pickLang(currentLang, "Floor Count", "कुल तला")}</label>
                     <input
                       type="number"
                       value={houseForm.floor_no}
@@ -1994,7 +1984,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         <div>
                           <span className="text-[11px] font-bold text-purple-900 dark:text-purple-200 uppercase tracking-wider flex items-center gap-1.5">
                             <Calculator className="w-3.5 h-3.5 text-purple-600" />
-                            <span>House Valuation Formula (घर मूल्याङ्कन सूत्र):</span>
+                            <span>{pickLang(currentLang, "House Valuation Formula:", "घर मूल्याङ्कन सूत्र:")}</span>
                           </span>
                           <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                             Plinth Area ({plinth.toLocaleString()} sqft) × Construction Rate (Rs. 2,800/sqft) = <span className="text-purple-600 dark:text-purple-400 font-black">Rs. {liveHouseVal.toLocaleString()}</span>
@@ -2009,7 +1999,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                           className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
                         >
                           <Calculator className="w-3.5 h-3.5" />
-                          <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
+                          <span>{pickLang(currentLang, "Obtain Value", "मान प्राप्त गर्नुहोस्")}</span>
                         </button>
                       </div>
                       {houseForm.assessed_valuation > 0 && (
@@ -2089,7 +2079,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                                 )}
                               </td>
                               <td className="p-3 font-bold">{h.plinth_area} sqft</td>
-                              <td className="p-3 font-sans">{cType?.fullanme || "RCC Frame"}</td>
+                              <td className="p-3 font-sans">{localizeRecordText(cType?.fullanme, currentLang) || "RCC Frame"}</td>
                               <td className="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                                 {formulaDesc}
                               </td>
@@ -2144,7 +2134,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   }}
                   className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all text-xs"
                 >
-                  <span>Continue to Floor Slabs (तला इकाइहरू) →</span>
+                    <span>{pickLang(currentLang, "Continue to Floor Slabs", "तला इकाइहरूमा जानुहोस्")} →</span>
                 </button>
               </div>
             </div>
@@ -2159,7 +2149,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                     <Layers className="w-4 h-4 text-indigo-600" />
-                    <span>Step 4: Floor Slabs (तला इकाइहरू - Linked to House)</span>
+                    <span>{pickLang(currentLang, "Step 4: Floor Slabs", "चरण ४: तला इकाइहरू")}</span>
                   </h3>
                   <p className="text-xs text-slate-500">
                     Each house has multiple floor slabs. Select the house and add ground, first, or upper floor units.
@@ -2176,13 +2166,13 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
               <form onSubmit={handleAddFloorSlab} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs space-y-4">
                 <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <Plus className="w-4 h-4 text-indigo-600" />
-                  <span>Register Floor Unit (तला फाराम)</span>
+                  <span>{pickLang(currentLang, "Register Floor Unit", "तला फाराम")}</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-3">
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Belongs to House Structure (कुन घरको तला हो - Linked to House) *
+                      {pickLang(currentLang, "Belongs to House Structure", "कुन घरको तला हो")} *
                     </label>
                     <select
                       value={floorForm.house_id || (houses[0]?.id ?? "")}
@@ -2245,7 +2235,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
 
                   <div>
                     <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                      Floor Level (तला क्रम नं. - 0 = Ground Floor) *
+                      {pickLang(currentLang, "Floor Level (0 = Ground Floor)", "तला क्रम नं. (० = भुइँतला)")} *
                     </label>
                     <input
                       type="number"
@@ -2268,7 +2258,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Construction Rate (दर)</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">{pickLang(currentLang, "Construction Rate", "संरचना दर")}</label>
                     <select
                       value={floorForm.rate_id}
                       onChange={(e) => setFloorForm({ ...floorForm, rate_id: Number(e.target.value) })}
@@ -2295,7 +2285,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Depreciation % (ह्रास कट्टी)</label>
+                    <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">{pickLang(currentLang, "Depreciation %", "ह्रास कट्टी %")}</label>
                     <input
                       type="number"
                       step="any"
@@ -2329,7 +2319,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                         <div>
                           <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-1.5">
                             <Calculator className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>Floor Valuation Formula (तला मूल्याङ्कन सूत्र):</span>
+                            <span>{pickLang(currentLang, "Floor Valuation Formula:", "तला मूल्याङ्कन सूत्र:")}</span>
                           </span>
                           <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                             ({flArea.toLocaleString()} sqft × Rs. {crVal.toLocaleString()}) - {depPercent}% dep. = <span className="text-indigo-600 dark:text-indigo-400 font-black">Rs. {liveFloorVal.toLocaleString()}</span>
@@ -2344,7 +2334,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                           className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center gap-1.5 text-xs shrink-0"
                         >
                           <Calculator className="w-3.5 h-3.5" />
-                          <span>Obtain Value (मान प्राप्त गर्नुहोस्)</span>
+                          <span>{pickLang(currentLang, "Obtain Value", "मान प्राप्त गर्नुहोस्")}</span>
                         </button>
                       </div>
                       {floorForm.floor_assessed_valuation > 0 && (
@@ -2469,7 +2459,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                   onClick={() => setCurrentStep(5)}
                   className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all text-xs"
                 >
-                  <span>Continue to Valuation & Calculation (कर गणना) →</span>
+                  <span>{pickLang(currentLang, "Continue to Valuation & Calculation", "कर गणनामा जानुहोस्")} →</span>
                 </button>
               </div>
             </div>
@@ -2545,7 +2535,9 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                             : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                         }`}
                       >
-                        {calcUseMalpot ? "Malpot Rate (सरकारी दर)" : "Land Rate (नगरपालिका दर)"}
+                        {calcUseMalpot
+                          ? pickLang(currentLang, "Malpot Rate", "मालपोत दर")
+                          : pickLang(currentLang, "Land Rate", "नगरपालिका दर")}
                       </button>
                     </div>
                   </div>
@@ -2626,7 +2618,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-xs space-y-1.5">
                   <div className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-emerald-600" />
-                    <span>How land_amount is Calculated (जग्गा मूल्याङ्कन सूत्र):</span>
+                    <span>{pickLang(currentLang, "How land_amount is Calculated:", "जग्गा मूल्याङ्कन सूत्र:")}</span>
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 text-[11px]">
                     Each parcel's area in square feet is normalized by the unit conversion factor (Ropani = 342.25 sqft/aana, Bigha = 3645 sqft/katha, Sqft = 1:1), then divided by area_per_unit and multiplied by rate_per_unit.
@@ -2762,7 +2754,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-900/40 text-xs space-y-1.5">
                   <div className="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-indigo-600" />
-                    <span>How floor_amount is Calculated (तला मूल्याङ्कन सूत्र):</span>
+                    <span>{pickLang(currentLang, "How floor_amount is Calculated:", "तला मूल्याङ्कन सूत्र:")}</span>
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 text-[11px]">
                     Every floor slab calculates raw construction amount (Area × Rate), subtracts structural age-based depreciation percentage, and applies the floor modifier percent.
@@ -2904,7 +2896,7 @@ export const OneDoorRegistrationModal: React.FC<OneDoorRegistrationModalProps> =
                 <div className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/40 text-xs space-y-1.5">
                   <div className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
                     <Home className="w-4 h-4 text-purple-600" />
-                    <span>How house_amount is Calculated (घर मूल्याङ्कन सूत्र):</span>
+                    <span>{pickLang(currentLang, "How house_amount is Calculated:", "घर मूल्याङ्कन सूत्र:")}</span>
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 text-[11px]">
                     House valuation aggregates the net evaluated amounts of all linked floor slabs, multiplied by an editable plinth multiplier factor and plus/minus any custom municipal adjustment.

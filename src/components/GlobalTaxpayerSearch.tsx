@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, User, Shield, Phone, MapPin, X, ArrowRight, Plus, Sparkles, Building, Hash } from "lucide-react";
 import { ApiController } from "../api/controller.ts";
-import { SupportedLang, translations } from "../utils/i18n.ts";
+import { SupportedLang, translations, pickLang, localizeRecordText } from "../utils/i18n.ts";
 
 interface GlobalTaxpayerSearchProps {
   currentLang: SupportedLang;
@@ -197,13 +197,13 @@ export const GlobalTaxpayerSearch: React.FC<GlobalTaxpayerSearchProps> = ({
                     }`}
                   >
                     <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5 border border-indigo-200 dark:border-indigo-800">
-                      {tp.fullanme?.charAt(0) || "T"}
+                      {localizeRecordText(tp.fullanme, currentLang)?.charAt(0) || "T"}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs md:text-sm text-slate-900 dark:text-white truncate">
-                          {tp.fullanme}
+                          {localizeRecordText(tp.fullanme, currentLang)}
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-semibold shrink-0">
                           {tp.code}
@@ -214,7 +214,7 @@ export const GlobalTaxpayerSearch: React.FC<GlobalTaxpayerSearchProps> = ({
                         {tp.citizenship_no && (
                           <div className="flex items-center gap-1 font-mono text-[10px]">
                             <Shield className="w-3 h-3 text-emerald-500" />
-                            <span>नागरिकता: {tp.citizenship_no}</span>
+                            <span>{pickLang(currentLang, "Citizen: ", "नागरिकता: ")}{tp.citizenship_no}</span>
                           </div>
                         )}
                         {tp.pan_vat_no && (
@@ -225,7 +225,7 @@ export const GlobalTaxpayerSearch: React.FC<GlobalTaxpayerSearchProps> = ({
                         )}
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-indigo-400" />
-                          <span>वडा नं. {tp.ward_no || 1}</span>
+                          <span>{pickLang(currentLang, "Ward #", "वडा नं. ")}{tp.ward_no || 1}</span>
                         </div>
                         {tp.mobile_no && (
                           <div className="flex items-center gap-1 font-mono text-[10px]">

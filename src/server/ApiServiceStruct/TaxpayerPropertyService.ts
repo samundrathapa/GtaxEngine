@@ -470,11 +470,11 @@ class TaxpayerPropertyDatabase {
 
     // 2. Measuring Units
     const defaultUnits: { id: number; code: string; name: string; val: number }[] = [
-      { id: 1, code: "SQFT", name: "Square Feet (वर्गफुट)", val: 1.0 },
-      { id: 2, code: "ROPANI", name: "Ropani (रोपनी)", val: 5476.0 },
-      { id: 3, code: "AANA", name: "Aana (आना)", val: 342.25 },
-      { id: 4, code: "KATTHA", name: "Kattha (कठ्ठा)", val: 3645.0 },
-      { id: 5, code: "BIGHA", name: "Bigha (बीघा)", val: 72900.0 }
+      { id: 1, code: "SQFT", name: "Square Feet", val: 1.0 },
+      { id: 2, code: "ROPANI", name: "Ropani", val: 5476.0 },
+      { id: 3, code: "AANA", name: "Aana", val: 342.25 },
+      { id: 4, code: "KATTHA", name: "Kattha", val: 3645.0 },
+      { id: 5, code: "BIGHA", name: "Bigha", val: 72900.0 }
     ];
 
     defaultUnits.forEach((u) => {
@@ -496,10 +496,10 @@ class TaxpayerPropertyDatabase {
 
     // 3. Construction Types
     const defaultConst: { id: number; code: string; name: string }[] = [
-      { id: 1, code: "RCC", name: "R.C.C. Frame Structure (पक्की ढलान)" },
-      { id: 2, code: "BRICK_CEMENT", name: "Brick Masonry with Cement (इँटा-सिमेन्ट गारो)" },
-      { id: 3, code: "MUD_BRICK", name: "Mud Mortar & Traditional (माटो-इँटा कच्ची)" },
-      { id: 4, code: "STEEL_TRUSS", name: "Prefab / Steel Structure (ट्रस / प्रिफ्याब)" }
+      { id: 1, code: "RCC", name: "R.C.C. Frame Structure" },
+      { id: 2, code: "BRICK_CEMENT", name: "Brick Masonry with Cement" },
+      { id: 3, code: "MUD_BRICK", name: "Mud Mortar & Traditional" },
+      { id: 4, code: "STEEL_TRUSS", name: "Prefab / Steel Structure" }
     ];
 
     defaultConst.forEach((c) => {
@@ -520,10 +520,10 @@ class TaxpayerPropertyDatabase {
 
     // 4. Land Natures
     const defaultNatures: { id: number; code: string; name: string }[] = [
-      { id: 1, code: "RESIDENTIAL", name: "Residential (आवासीय क्षेत्र)" },
-      { id: 2, code: "COMMERCIAL", name: "Commercial High-Street (व्यापारिक क्षेत्र)" },
-      { id: 3, code: "AGRICULTURAL", name: "Agricultural (कृषि प्रयोजन)" },
-      { id: 4, code: "HIGHWAY", name: "Highway Facing (राजमार्गसँग जोडिएको)" }
+      { id: 1, code: "RESIDENTIAL", name: "Residential" },
+      { id: 2, code: "COMMERCIAL", name: "Commercial High-Street" },
+      { id: 3, code: "AGRICULTURAL", name: "Agricultural" },
+      { id: 4, code: "HIGHWAY", name: "Highway Facing" }
     ];
 
     defaultNatures.forEach((n) => {
@@ -744,7 +744,7 @@ class TaxpayerPropertyDatabase {
     this.companies.set(1, {
       id: 1,
       code: "KMC-01",
-      fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      fullname: "Kathmandu Metropolitan City",
       address: "Bagmati Province, Kathmandu Ward No. 3",
       phone: "+977-01-4231481",
       email: "info@kathmandu.gov.np",
@@ -763,7 +763,7 @@ class TaxpayerPropertyDatabase {
     this.companies.set(2, {
       id: 2,
       code: "LMC-02",
-      fullname: "Lalitpur Metropolitan City (ललितपुर महानगरपालिका)",
+      fullname: "Lalitpur Metropolitan City",
       address: "Pulchowk, Lalitpur Ward No. 3",
       phone: "+977-01-5521260",
       email: "info@lalitpur.gov.np",
@@ -783,12 +783,12 @@ class TaxpayerPropertyDatabase {
     this.applicationSettings.set(1, {
       id: 1,
       code: "APP-CONF-01",
-      fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
-      fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      fullname: "Kathmandu Metropolitan City",
+      fullanme: "Kathmandu Metropolitan City",
       company_id: 1,
       fiscal_year_id: 2,
       unit_type_id: 3,
-      municipality_name: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      municipality_name: "Kathmandu Metropolitan City",
       ward_count: 32,
       theme_preference: "slate",
       default_language: "eng",
@@ -952,12 +952,12 @@ class TaxpayerPropertyDatabase {
     const existing = this.applicationSettings.get(1) || {
       id: 1,
       code: "APP-CONF-01",
-      fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
-      fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      fullname: "Kathmandu Metropolitan City",
+      fullanme: "Kathmandu Metropolitan City",
       company_id: 1,
       fiscal_year_id: 2,
       unit_type_id: 3,
-      municipality_name: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+      municipality_name: "Kathmandu Metropolitan City",
       is_deleted: false,
       insert_by: user,
       insert_on: now,

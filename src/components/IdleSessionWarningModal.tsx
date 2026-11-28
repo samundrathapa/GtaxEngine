@@ -1,5 +1,6 @@
 import React from "react";
 import { Clock, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
+import { SupportedLang, pickLang } from "../utils/i18n.ts";
 
 interface IdleSessionWarningModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface IdleSessionWarningModalProps {
   timeoutMinutes: number;
   onStayLoggedIn: () => void;
   onLogoutNow: () => void;
+  currentLang?: SupportedLang;
 }
 
 export const IdleSessionWarningModal: React.FC<IdleSessionWarningModalProps> = ({
@@ -14,7 +16,8 @@ export const IdleSessionWarningModal: React.FC<IdleSessionWarningModalProps> = (
   secondsRemaining,
   timeoutMinutes,
   onStayLoggedIn,
-  onLogoutNow
+  onLogoutNow,
+  currentLang = "eng"
 }) => {
   if (!isOpen) return null;
 
@@ -35,7 +38,7 @@ export const IdleSessionWarningModal: React.FC<IdleSessionWarningModalProps> = (
               </span>
             </div>
             <h3 className="text-base font-bold text-white">
-              Are you still there? (सत्र निष्क्रियता चेतावनी)
+              {pickLang(currentLang, "Are you still there?", "के तपाईं अझै पनि हुनुहुन्छ?")}
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               For municipal financial data security, your session will automatically log out due to inactivity in:

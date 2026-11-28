@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
-import { SupportedLang, translations } from "../../utils/i18n.ts";
+import { SupportedLang, translations, pickLang, localizeRecordText } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { PaginationControls, getPaginationSlice } from "../../components/PaginationControls.tsx";
@@ -43,7 +43,7 @@ interface MultiYearTaxEngineProps {
 }
 
 export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
-  currentLang = "nep",
+  currentLang = "eng",
   initialTaxpayerId,
   currentSession
 }) => {
@@ -198,19 +198,9 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          {/* <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span>Gtax Municipal Engine</span>
-            <span>·</span>
-            <span>बहु-आर्थिक वर्ष कर गणना प्रणाली</span>
-            <span>·</span>
-            <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">
-              Multi-Fiscal-Year Assessment
-            </span>
-          </div> */}
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Multi-Fiscal-Year Tax Liability Engine (आ.व. कर दायित्व गणना)
+            {pickLang(currentLang, "Multi-Fiscal-Year Tax Liability Engine", "बहु-आर्थिक वर्ष कर दायित्व गणना प्रणाली")}
           </h2>
-      
         </div>
 
         <div className="flex items-center gap-2">
@@ -257,7 +247,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           {/* Taxpayer Selection */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Select Taxpayer (करदाता छनोट)
+              {pickLang(currentLang, "Select Taxpayer", "करदाता छनोट")}
             </label>
             <select
               value={selectedTaxpayerId}
@@ -266,7 +256,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             >
               {taxpayers.map((tp) => (
                 <option key={tp.id} value={tp.id}>
-                  {tp.fullanme} ({tp.code}) - Ward {tp.ward_no || 1}
+                  {localizeRecordText(tp.fullanme, currentLang)} ({tp.code}) - Ward {tp.ward_no || 1}
                 </option>
               ))}
             </select>
@@ -275,7 +265,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           {/* From Fiscal Year */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              From Fiscal Year (शुरु आर्थिक वर्ष)
+              {pickLang(currentLang, "From Fiscal Year", "शुरु आर्थिक वर्ष")}
             </label>
             <select
               value={fromFiscalYearId}
@@ -284,7 +274,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             >
               {fiscalYears.map((fy) => (
                 <option key={fy.id} value={fy.id}>
-                  {fy.code} - {fy.fullname}
+                  {fy.code} - {localizeRecordText(fy.fullname, currentLang)}
                 </option>
               ))}
             </select>
@@ -293,7 +283,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           {/* To Fiscal Year */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              To Fiscal Year (अन्तिम आर्थिक वर्ष)
+              {pickLang(currentLang, "To Fiscal Year", "अन्तिम आर्थिक वर्ष")}
             </label>
             <select
               value={toFiscalYearId}
@@ -302,7 +292,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
             >
               {fiscalYears.map((fy) => (
                 <option key={fy.id} value={fy.id}>
-                  {fy.code} - {fy.fullname}
+                  {fy.code} - {localizeRecordText(fy.fullname, currentLang)}
                 </option>
               ))}
             </select>
@@ -311,7 +301,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           {/* Scope Mode: Consolidated vs Individual */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Assessment Scope (दायरा)
+              {pickLang(currentLang, "Assessment Scope", "दायरा")}
             </label>
             <select
               value={scope}
@@ -322,8 +312,8 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               className="w-full px-3 py-2 text-xs md:text-sm font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             >
               <option value="all">Consolidated (All Land & Houses)</option>
-              <option value="land">Individual Land Parcel (जग्गा कित्ता)</option>
-              <option value="house">Individual House / Structure (घर)</option>
+              <option value="land">{pickLang(currentLang, "Individual Land Parcel", "जग्गा कित्ता")}</option>
+              <option value="house">{pickLang(currentLang, "Individual House / Structure", "घर")}</option>
             </select>
           </div>
         </div>
@@ -333,7 +323,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-4">
             <div className="w-full max-w-md">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Select Specific Land Parcel (जग्गा छनोट)
+                {pickLang(currentLang, "Select Specific Land Parcel", "जग्गा छनोट")}
               </label>
               <select
                 value={selectedPropertyId || ""}
@@ -355,7 +345,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-4">
             <div className="w-full max-w-md">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Select Specific House Structure (घर छनोट)
+                {pickLang(currentLang, "Select Specific House Structure", "घर छनोट")}
               </label>
               <select
                 value={selectedPropertyId || ""}
@@ -408,7 +398,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               <div className="text-base font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono">
                 + NPR {result.totalFinesAccrued?.toLocaleString()}
               </div>
-              <div className="text-[10px] text-rose-500 mt-0.5">बक्यौता जरिवाना / ब्याज</div>
+              <div className="text-[10px] text-rose-500 mt-0.5">{pickLang(currentLang, "Overdue fine / interest", "बक्यौता जरिवाना / ब्याज")}</div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/60 p-4 rounded-2xl shadow-xs bg-emerald-50/20 dark:bg-emerald-950/20">
@@ -418,7 +408,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
                 - NPR {result.totalRebatesDeducted?.toLocaleString()}
               </div>
-              <div className="text-[10px] text-emerald-500 mt-0.5">समयमै बुझाउने छुट</div>
+              <div className="text-[10px] text-emerald-500 mt-0.5">{pickLang(currentLang, "Timely payment discount", "समयमै बुझाउने छुट")}</div>
             </div>
 
             <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white p-4 rounded-2xl shadow-md">
@@ -428,7 +418,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               <div className="text-lg font-black mt-1 font-mono text-emerald-300">
                 NPR {result.netGrandTotalPayable?.toLocaleString()}
               </div>
-              <div className="text-[10px] text-slate-300 mt-0.5">कुल बुझाउनुपर्ने कर दायित्व</div>
+              <div className="text-[10px] text-slate-300 mt-0.5">{pickLang(currentLang, "Total payable tax liability", "कुल बुझाउनुपर्ने कर दायित्व")}</div>
             </div>
           </div>
 
@@ -440,7 +430,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               </div>
               <div>
                 <div className="font-bold text-slate-900 dark:text-white text-sm">
-                  {result.taxpayer?.fullanme}
+                  {localizeRecordText(result.taxpayer?.fullanme, currentLang)}
                 </div>
                 <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                   Code: {result.taxpayer?.code} · Citizenship: {result.taxpayer?.citizenship_no || "N/A"} · PAN: {result.taxpayer?.pan_vat_no || "N/A"} · Ward {result.taxpayer?.ward_no || 1}
@@ -460,7 +450,7 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-                  Historical Tax Liability & Cumulative Progression Chart (कर इतिहास ग्राफ)
+                  {pickLang(currentLang, "Historical Tax Liability & Cumulative Progression Chart", "कर इतिहास तथा संचित प्रगति ग्राफ")}
                 </h3>
               </div>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
@@ -547,17 +537,17 @@ export const MultiYearTaxEngine: React.FC<MultiYearTaxEngineProps> = ({
                       <td className="px-4 py-3 whitespace-nowrap">
                         {item.status === "arrears" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                            Prior Arrears (बक्यौता)
+                            {pickLang(currentLang, "Prior Arrears", "बक्यौता")}
                           </span>
                         )}
                         {item.status === "current" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                            Current FY (चालु वर्ष)
+                            {pickLang(currentLang, "Current FY", "चालु वर्ष")}
                           </span>
                         )}
                         {item.status === "advance" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            Advance (अग्रिम)
+                            {pickLang(currentLang, "Advance", "अग्रिम")}
                           </span>
                         )}
                       </td>

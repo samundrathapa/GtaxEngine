@@ -243,7 +243,7 @@ export class TableCacheDbSyncService {
       }) as any;
     } else if (table === "tbl_appication_setting" || table === "tbl_application_setting") {
       rows = rows.map((r: any) => {
-        const name = r.fullname || r.fullanme || r.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
+        const name = r.fullname || r.fullanme || r.municipality_name || "Kathmandu Metropolitan City";
         return {
           ...r,
           code: r.code || "APP-CONF-01",
@@ -1056,7 +1056,7 @@ export class TableCacheDbSyncService {
 
     if (tblLower === "tbl_appication_setting" || tblLower === "tbl_application_setting") {
       const clean: Record<string, any> = {};
-      const name = payload.fullname || payload.fullanme || payload.municipality_name || "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)";
+      const name = payload.fullname || payload.fullanme || payload.municipality_name || "Kathmandu Metropolitan City";
 
       assignCol(clean, "code", payload.code || "APP-CONF-01");
       assignCol(clean, "fullname", name);
@@ -1532,29 +1532,29 @@ export class TableCacheDbSyncService {
     this.inMemoryStores.set("tbl_fiscal_year", generateFiscalYears2021To2086());
 
     this.inMemoryStores.set("tbl_unit", [
-      { id: 1, code: "AANA", fullanme: "Aana (आना) - 342.25 Sq.Ft", unit_value: 342.25, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, code: "ROPANI", fullanme: "Ropani (रोपनी) - 5476 Sq.Ft / 16 Aana", unit_value: 5476.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, code: "PAISA", fullanme: "Paisa (पैसा) - 85.56 Sq.Ft / 4 Daam", unit_value: 85.5625, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 4, code: "DAAM", fullanme: "Daam (दाम) - 21.39 Sq.Ft", unit_value: 21.3906, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 5, code: "KATTHA", fullanme: "Kattha (कट्ठा) - 3645 Sq.Ft (Terai/Madhesh)", unit_value: 3645.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 6, code: "BIGHA", fullanme: "Bigha (बिघा) - 72900 Sq.Ft / 20 Kattha", unit_value: 72900.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 7, code: "SQFT", fullanme: "Square Feet (वर्ग फिट)", unit_value: 1.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
+      { id: 1, code: "AANA", fullanme: "Aana - 342.25 Sq.Ft", unit_value: 342.25, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 2, code: "ROPANI", fullanme: "Ropani - 5476 Sq.Ft / 16 Aana", unit_value: 5476.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 3, code: "PAISA", fullanme: "Paisa - 85.56 Sq.Ft / 4 Daam", unit_value: 85.5625, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 4, code: "DAAM", fullanme: "Daam - 21.39 Sq.Ft", unit_value: 21.3906, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 5, code: "KATTHA", fullanme: "Kattha - 3645 Sq.Ft", unit_value: 3645.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 6, code: "BIGHA", fullanme: "Bigha - 72900 Sq.Ft / 20 Kattha", unit_value: 72900.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 7, code: "SQFT", fullanme: "Square Feet", unit_value: 1.0, is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
     ]);
 
     this.inMemoryStores.set("tbl_construction_type", [
-      { id: 1, code: "RCC_PILLAR", fullanme: "R.C.C. Pillar & Slab Structure Grade A (पक्की पिलर भवन)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, code: "LOAD_BEARING", fullanme: "Brick Masonry in Cement Mortar Load Bearing (इँटा-सिमेन्ट गाह्रो)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, code: "BRICK_MUD", fullanme: "Traditional Brick with Mud Mortar Masonry (माटो-इँटा जोडाई)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 4, code: "STEEL_TRUSS", fullanme: "Engineered Steel Truss & Industrial Prefab Panel (स्टिल ट्रस)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 5, code: "WOOD_FRAME", fullanme: "Traditional Timber Frame & Stone Masonry (काठ-ढुङ्गा संरचना)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
+      { id: 1, code: "RCC_PILLAR", fullanme: "R.C.C. Pillar & Slab Structure Grade A", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 2, code: "LOAD_BEARING", fullanme: "Brick Masonry in Cement Mortar Load Bearing", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 3, code: "BRICK_MUD", fullanme: "Traditional Brick with Mud Mortar Masonry", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 4, code: "STEEL_TRUSS", fullanme: "Engineered Steel Truss & Industrial Prefab Panel", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 5, code: "WOOD_FRAME", fullanme: "Traditional Timber Frame & Stone Masonry", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
     ]);
 
     this.inMemoryStores.set("tbl_land_nature", [
-      { id: 1, code: "COMMERCIAL", fullanme: "High Street Commercial & Business Corridor (व्यापारिक क्षेत्र)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 2, code: "RESIDENTIAL", fullanme: "Municipal Urban Residential Zone (आवासीय क्षेत्र)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 3, code: "AGRICULTURAL", fullanme: "Fertile Cultivation & Farmland Zone (कृषि क्षेत्र)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 4, code: "INDUSTRIAL", fullanme: "Industrial & Manufacturing Zone (औद्योगिक क्षेत्र)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
-      { id: 5, code: "HIGHWAY", fullanme: "National / Provincial Highway Facing (राजमार्गसँग जोडिएको)", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
+      { id: 1, code: "COMMERCIAL", fullanme: "High Street Commercial & Business Corridor", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 2, code: "RESIDENTIAL", fullanme: "Municipal Urban Residential Zone", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 3, code: "AGRICULTURAL", fullanme: "Fertile Cultivation & Farmland Zone", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 4, code: "INDUSTRIAL", fullanme: "Industrial & Manufacturing Zone", is_deleted: false, insert_by: "1", update_by: "1", is_active: true },
+      { id: 5, code: "HIGHWAY", fullanme: "National / Provincial Highway Facing", is_deleted: false, insert_by: "1", update_by: "1", is_active: true }
     ]);
 
     this.inMemoryStores.set("tbl_land_rate", [

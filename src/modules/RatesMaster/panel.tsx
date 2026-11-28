@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ApiController } from "../../api/controller.ts";
-import { SupportedLang, translations } from "../../utils/i18n.ts";
+import { SupportedLang, translations, pickLang, localizeRecordText } from "../../utils/i18n.ts";
 import { AuthSessionState } from "../Auth/model.ts";
 import { hasActionRight } from "../../utils/permissions.ts";
 import { MenuKey } from "../../shared/rbacConfig.ts";
@@ -416,7 +416,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         setFormData({ fiscal_year_id: null, tax_type_id: 1, ratesn: 1, years: 0, month: 3, calcpercent: 10, ratepercent: 10, flatrate: 0, isfine: false, days: 90 });
         break;
       case "land_nature":
-        setFormData({ code: "INDUSTRIAL", fullanme: "Industrial Zone (औद्योगिक क्षेत्र)" });
+        setFormData({ code: "INDUSTRIAL", fullanme: pickLang(currentLang, "Industrial Zone", "औद्योगिक क्षेत्र") });
         break;
       case "company":
         setFormData({ code: "NEW-MUN", fullname: "New Municipality Corporation", address: "Ward 1", phone: "+977-01-0000000", email: "info@municipality.gov.np", pan_vat_no: "300000000", registration_no: "REG-2081-01", is_active: true });
@@ -424,9 +424,9 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       case "application_setting":
         setFormData({
           code: "APP-CONF-01",
-          fullname: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
-          fullanme: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
-          municipality_name: "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)",
+          fullname: pickLang(currentLang, "Kathmandu Metropolitan City", "काठमाडौँ महानगरपालिका"),
+          fullanme: pickLang(currentLang, "Kathmandu Metropolitan City", "काठमाडौँ महानगरपालिका"),
+          municipality_name: pickLang(currentLang, "Kathmandu Metropolitan City", "काठमाडौँ महानगरपालिका"),
           company_id: 1,
           fiscal_year_id: 2,
           unit_type_id: 3,
@@ -445,7 +445,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
   const handleOpenEdit = (item: any) => {
     setEditingItem(item);
     const resolvedCode = item.code || (activeTab === "application_setting" ? "APP-CONF-01" : "");
-    const resolvedName = item.fullname || item.fullanme || item.municipality_name || (activeTab === "application_setting" ? "Kathmandu Metropolitan City (काठमाडौँ महानगरपालिका)" : "");
+    const resolvedName = localizeRecordText(item.fullname || item.fullanme || item.municipality_name, currentLang) || (activeTab === "application_setting" ? pickLang(currentLang, "Kathmandu Metropolitan City", "काठमाडौँ महानगरपालिका") : "");
     const parentList = getParentListForTab(activeTab);
     const numericParentId = item.parent_id ? Number(item.parent_id) : null;
     const parentDisplay = resolveParentDisplayName(numericParentId, parentList);
@@ -626,7 +626,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
     switch (activeTab) {
       case "company":
         return {
-          title: "Company Profile (संस्था / पालिका विवरण)",
+          title: pickLang(currentLang, "Company Profile", "संस्था / पालिका विवरण"),
           subtitle: "",
           icon: Landmark,
           iconColor: "text-amber-500",
@@ -634,7 +634,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "application_setting":
         return {
-          title: "Application Settings (प्रणाली सेटिङ)",
+          title: pickLang(currentLang, "Application Settings", "प्रणाली सेटिङ"),
           subtitle: "Global municipal configuration, active fiscal year & default taxation parameters",
           icon: Settings,
           iconColor: "text-indigo-600",
@@ -642,7 +642,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "fiscal_year":
         return {
-          title: "Fiscal Year Master (आर्थिक वर्ष व्यवस्थापन)",
+          title: pickLang(currentLang, "Fiscal Year Master", "आर्थिक वर्ष व्यवस्थापन"),
           subtitle: "Municipal accounting calendar, active fiscal years, and BS / AD date spans",
           icon: Calendar,
           iconColor: "text-blue-500",
@@ -650,7 +650,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "construction_type":
         return {
-          title: "Construction Types Master (संरचना प्रकार)",
+          title: pickLang(currentLang, "Construction Types Master", "संरचना प्रकार"),
           subtitle: "Building structure classifications (RCC, Timber, Adobe, Steel) for municipal valuation",
           icon: Building,
           iconColor: "text-purple-500",
@@ -658,7 +658,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "unit":
         return {
-          title: "Measurement Unit Master (इकाई नाप व्यवस्थापन)",
+          title: pickLang(currentLang, "Measurement Unit Master", "इकाई नाप व्यवस्थापन"),
           subtitle: "Standard land and area measurement units (Ropani, Bigha, Sq.Ft, Square Metre)",
           icon: Sliders,
           iconColor: "text-cyan-500",
@@ -666,7 +666,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "land_nature":
         return {
-          title: "Land Nature Master (जग्गाको प्रकृति व्यवस्थापन)",
+          title: pickLang(currentLang, "Land Nature Master", "जग्गाको प्रकृति व्यवस्थापन"),
           subtitle: "Zoning, agricultural, commercial, industrial and residential classifications",
           icon: Trees,
           iconColor: "text-emerald-500",
@@ -674,7 +674,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "malpot_rate":
         return {
-          title: "Malpot Valuation Rates (मालपोत दररेट)",
+          title: pickLang(currentLang, "Malpot Valuation Rates", "मालपोत दररेट"),
           subtitle: "Government statutory valuation rates per unit across municipal wards",
           icon: Layers,
           iconColor: "text-indigo-600",
@@ -682,7 +682,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "construction_rate":
         return {
-          title: "Construction Valuation Rates (संरचना दररेट)",
+          title: pickLang(currentLang, "Construction Valuation Rates", "संरचना दररेट"),
           subtitle: "Building structure rate matrix per square foot based on construction type",
           icon: Building,
           iconColor: "text-indigo-600",
@@ -690,7 +690,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "depreciation":
         return {
-          title: "Depreciation Rate Schedule (ह्रासकट्टी दररेट)",
+          title: pickLang(currentLang, "Depreciation Rate Schedule", "ह्रासकट्टी दररेट"),
           subtitle: "Annual building depreciation percentage matrix based on structure age",
           icon: TrendingDown,
           iconColor: "text-indigo-600",
@@ -698,7 +698,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "fine_rebate":
         return {
-          title: "Fine & Rebate Policy (जरिवाना र छुट व्यवस्थापन)",
+          title: pickLang(currentLang, "Fine & Rebate Policy", "जरिवाना र छुट व्यवस्थापन"),
           subtitle: "Early payment tax rebate incentives and delayed payment late fine tiers",
           icon: Gift,
           iconColor: "text-indigo-600",
@@ -706,7 +706,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
         };
       case "property_range":
         return {
-          title: "Property Tax Slabs & Ranges (सम्पत्ति कर स्ल्याब)",
+          title: pickLang(currentLang, "Property Tax Slabs & Ranges", "सम्पत्ति कर स्ल्याब"),
           subtitle: "Valuation ranges, progressive tax percentages, flat tiers, and minimum tax rules",
           icon: Sliders,
           iconColor: "text-indigo-600",
@@ -715,7 +715,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
       case "land_rate":
       default:
         return {
-          title: "Rate & Master Matrix Configuration (दररेट व्यवस्थापन)",
+          title: pickLang(currentLang, "Rate & Master Matrix Configuration", "दररेट व्यवस्थापन"),
           subtitle: "Municipal property and land valuation rates across wards and units",
           icon: DollarSign,
           iconColor: "text-indigo-600",
@@ -756,7 +756,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               title="Copy rates from Universal Default (Null) or another Fiscal Year"
             >
               <Copy className="w-4 h-4 text-emerald-600" />
-              <span>Copy Rate (दररेट प्रतिलिपि)</span>
+              <span>{pickLang(currentLang, "Copy Rate", "दररेट प्रतिलिपि")}</span>
             </button>
           )}
           <button
@@ -973,7 +973,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                       {rateStartIndex + idx + 1}
                     </td>
                     <td className="p-3.5 font-medium text-slate-900 dark:text-white">
-                      <div>{item.fullanme || item.fullname || (item.isfine ? "Fine Rule" : "Rebate Policy")}</div>
+                      <div>{localizeRecordText(item.fullanme || item.fullname, currentLang) || (item.isfine ? "Fine Rule" : "Rebate Policy")}</div>
                       {item.code && <div className="text-[10px] font-mono text-slate-400">{item.code}</div>}
                     </td>
 
@@ -1045,7 +1045,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           )}
                         </td>
                         <td className="p-3.5 font-mono">
-                          {masters.units.find((u: any) => u.id === item.unit_id)?.fullanme || `Unit #${item.unit_id || 1}`}
+                          {localizeRecordText(masters.units.find((u: any) => u.id === item.unit_id)?.fullanme, currentLang) || `Unit #${item.unit_id || 1}`}
                         </td>
                         <td className="p-3.5 font-mono font-bold text-slate-900 dark:text-white">
                           Rs. {Number(item.rate_per_unit).toLocaleString()}
@@ -1057,7 +1057,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           {item.area_upto ?? 0}
                         </td>
                         <td className="p-3.5">
-                          {masters.constructionTypes.find((c) => c.id === item.const_type_id)?.fullanme || `Type #${item.const_type_id}`}
+                          {localizeRecordText(masters.constructionTypes.find((c) => c.id === item.const_type_id)?.fullanme, currentLang) || `Type #${item.const_type_id}`}
                         </td>
                         <td className="p-3.5 text-slate-600 dark:text-slate-300">
                           {resolveParentDisplayName(item.parent_id, masters.constructionRates) || "-"}
@@ -1081,7 +1081,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           )}
                         </td>
                         <td className="p-3.5">
-                          {masters.constructionTypes.find((c) => c.id === (item.construction_type_id || item.const_type_id))?.fullanme || item.construction_type || `Type #${item.construction_type_id || item.const_type_id || 1}`}
+                          {localizeRecordText(masters.constructionTypes.find((c) => c.id === (item.construction_type_id || item.const_type_id))?.fullanme, currentLang) || item.construction_type || `Type #${item.construction_type_id || item.const_type_id || 1}`}
                         </td>
                         <td className="p-3.5 font-mono">
                           {item.year_from} - {item.year_to} Years
@@ -1110,7 +1110,13 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                           )}
                         </td>
                         <td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
-                          {item.tax_type_id === 1 ? "Sampati Kar (सम्पत्ति कर)" : item.tax_type_id === 2 ? "Malpot Kar (मालपोत)" : item.tax_type_id === 3 ? "Bhumikar (भूमिकर)" : `Tax Type #${item.tax_type_id}`}
+                          {item.tax_type_id === 1
+                            ? pickLang(currentLang, "Sampati Kar", "सम्पत्ति कर")
+                            : item.tax_type_id === 2
+                            ? pickLang(currentLang, "Malpot Kar", "मालपोत कर")
+                            : item.tax_type_id === 3
+                            ? pickLang(currentLang, "Bhumikar", "भूमिकर")
+                            : `Tax Type #${item.tax_type_id}`}
                         </td>
                         <td className="p-3.5">
                           <span
@@ -1185,14 +1191,14 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                       <>
                         <td className="p-3.5">
                           <span className="font-bold text-slate-900 dark:text-white">
-                            {masters.companies.find((c) => c.id === item.company_id)?.fullname || `Company #${item.company_id}`}
+                            {localizeRecordText(masters.companies.find((c) => c.id === item.company_id)?.fullname, currentLang) || `Company #${item.company_id}`}
                           </span>
                         </td>
                         <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                           {masters.fiscalYears.find((f) => f.id === item.fiscal_year_id)?.code || `FY #${item.fiscal_year_id}`}
                         </td>
                         <td className="p-3.5 font-mono text-slate-600 dark:text-slate-300">
-                          <div>Unit: {masters.units.find((u) => u.id === item.unit_type_id)?.fullanme || `Unit #${item.unit_type_id}`}</div>
+                          <div>Unit: {localizeRecordText(masters.units.find((u) => u.id === item.unit_type_id)?.fullanme, currentLang) || `Unit #${item.unit_type_id}`}</div>
                           <div className="text-[10px] text-slate-400">Total Wards: {item.ward_count || 32}</div>
                         </td>
                       </>
@@ -1872,9 +1878,9 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         onChange={(e) => setFormData({ ...formData, tax_type_id: Number(e.target.value) })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
                       >
-                        <option value={1}>Sampati Kar (सम्पत्ति कर / Property Tax)</option>
-                        <option value={2}>Malpot Kar (मालपोत कर / Land Revenue)</option>
-                        <option value={3}>Bhumikar (भूमिकर / Integrated Land Tax)</option>
+                        <option value={1}>{pickLang(currentLang, "Sampati Kar (Property Tax)", "सम्पत्ति कर")}</option>
+                        <option value={2}>{pickLang(currentLang, "Malpot Kar (Land Revenue)", "मालपोत कर")}</option>
+                        <option value={3}>{pickLang(currentLang, "Bhumikar (Integrated Land Tax)", "भूमिकर")}</option>
                       </select>
                     </div>
                   </div>
@@ -1889,8 +1895,8 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                         onChange={(e) => setFormData({ ...formData, isfine: e.target.value === "fine" })}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                       >
-                        <option value="rebate">Early Payment Rebate (छुट)</option>
-                        <option value="fine">Delayed Penalty / Fine (जरिवाना)</option>
+                        <option value="rebate">{pickLang(currentLang, "Early Payment Rebate", "छुट")}</option>
+                        <option value="fine">{pickLang(currentLang, "Delayed Penalty / Fine", "जरिवाना")}</option>
                       </select>
                     </div>
 
@@ -2360,7 +2366,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Copy Rate Matrix (दररेट प्रतिलिपि)
+                    {pickLang(currentLang, "Copy Rate Matrix", "दररेट प्रतिलिपि")}
                   </h3>
                   <div className="text-[11px] text-slate-500 font-mono">
                     Clone universal default (Null) or specific FY rates into a target FY
@@ -2383,7 +2389,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               {/* Source Fiscal Year */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Source Rate Source (स्रोत आर्थिक वर्ष / बेस दर)
+                  {pickLang(currentLang, "Source Fiscal Year / Base Rate", "स्रोत आर्थिक वर्ष / बेस दर")}
                 </label>
                 <select
                   value={copySourceFy}
@@ -2393,7 +2399,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                   <option value="null">Universal Default (fiscal_year_id IS NULL)</option>
                   {masters.fiscalYears.map((fy: any) => (
                     <option key={fy.id} value={String(fy.id)}>
-                      {fy.code} - {fy.fullname} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "(Active Default)" : ""}
+                      {fy.code} - {localizeRecordText(fy.fullname, currentLang)} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "(Active Default)" : ""}
                     </option>
                   ))}
                 </select>
@@ -2411,7 +2417,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               {/* Target Fiscal Year */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Target Fiscal Year (प्रतिलिपि गरिने आर्थिक वर्ष)
+                  {pickLang(currentLang, "Target Fiscal Year", "प्रतिलिपि गरिने आर्थिक वर्ष")}
                 </label>
                 <select
                   value={copyTargetFy}
@@ -2420,7 +2426,7 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
                 >
                   {masters.fiscalYears.map((fy: any) => (
                     <option key={fy.id} value={fy.id}>
-                      {fy.code} - {fy.fullname} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "★ (Active App Default)" : ""}
+                      {fy.code} - {localizeRecordText(fy.fullname, currentLang)} {fy.id === (masters.applicationSettings[0]?.fiscal_year_id || 2) ? "★ (Active App Default)" : ""}
                     </option>
                   ))}
                 </select>
@@ -2432,20 +2438,20 @@ export const RatesMasterPanel: React.FC<RatesMasterPanelProps> = ({
               {/* Rate Table Scope */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Rate Matrix Scope (दररेट विधा)
+                  {pickLang(currentLang, "Rate Matrix Scope", "दररेट विधा")}
                 </label>
                 <select
                   value={copyCategory}
                   onChange={(e) => setCopyCategory(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
                 >
-                  <option value="all">All Rate Categories (सबै दररेट सूचीहरू - All 6 Matrices)</option>
-                  <option value="land_rate">Land Rate (जग्गाको दररेट - tbl_land_rate)</option>
-                  <option value="malpot_rate">Malpot Rate (सरकारी मूल्यांकन - tbl_malpot_rates)</option>
-                  <option value="construction_rate">Construction Rate (संरचना दररेट - tbl_construction_rates)</option>
-                  <option value="depreciation">Depreciation Schedule (ह्रासकट्टी - tbl_depreciation)</option>
-                  <option value="fine_rebate">Fine & Rebate Policy (जरिवाना तथा छुट - tbl_fine_rebate)</option>
-                  <option value="property_range">Property Range Slabs (कर स्ल्याब - tbl_property_range)</option>
+                  <option value="all">{pickLang(currentLang, "All Rate Categories (All 6 Matrices)", "सबै दररेट सूचीहरू")}</option>
+                  <option value="land_rate">{pickLang(currentLang, "Land Rate (tbl_land_rate)", "जग्गाको दररेट")}</option>
+                  <option value="malpot_rate">{pickLang(currentLang, "Malpot Rate (tbl_malpot_rates)", "सरकारी मूल्यांकन")}</option>
+                  <option value="construction_rate">{pickLang(currentLang, "Construction Rate (tbl_construction_rates)", "संरचना दररेट")}</option>
+                  <option value="depreciation">{pickLang(currentLang, "Depreciation Schedule (tbl_depreciation)", "ह्रासकट्टी")}</option>
+                  <option value="fine_rebate">{pickLang(currentLang, "Fine & Rebate Policy (tbl_fine_rebate)", "जरिवाना तथा छुट")}</option>
+                  <option value="property_range">{pickLang(currentLang, "Property Range Slabs (tbl_property_range)", "कर स्ल्याब")}</option>
                 </select>
               </div>
 

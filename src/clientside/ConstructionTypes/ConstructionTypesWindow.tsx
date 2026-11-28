@@ -80,7 +80,7 @@ export const ConstructionTypesWindow: React.FC<ConstructionTypesWindowProps> = (
               value={formData.name || ""}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              placeholder="e.g. RCC Frame Structure (पक्की)"
+              placeholder="e.g. RCC Frame Structure"
             />
           </div>
 
